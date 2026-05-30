@@ -1,0 +1,1736 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#19191A" />
+<title>Behind closed doors · Boudoir Video · the World of Boudoir</title>
+<meta name="description" content="Komm mit hinter die Kulissen eines echten Boudoir Shootings. 15 Minuten ehrlicher Einblick — kostenfrei in deinen Posteingang." />
+<meta property="og:title" content="Behind closed doors — der ehrliche Boudoir-Einblick" />
+<meta property="og:description" content="15 Minuten Video. Was wirklich an einem Boudoir-Shooting-Tag passiert. 0 € · kein Spam · direkt per Mail." />
+<meta property="og:image" content="assets/melanie_main.jpg" />
+<meta property="og:type" content="website" />
+
+<link rel="icon" type="image/png" href="https://static.showit.co/200/LrikFLH4TvuT2GPezKYcgg/220229/wofb_stempel_1.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Open+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+@font-face {
+  font-family: "Editors Note";
+  src: url("assets/editors_note.woff") format("woff");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  --bg:    #F6F6F2;
+  --paper: #FFFFFF;
+  --linen: #ECEBE8;
+  --stone: #DFDEDA;
+  --smoke: #7D7878;
+  --taupe: #9F877F;
+  --ink:   #19191A;
+  --black: #000000;
+  --red:   #C8102E;
+  --red-soft: #FBE9EC;
+  --red-deep: #9C0822;
+  --serif: "Editors Note", "Cormorant Garamond", Georgia, serif;
+  --body:  "Open Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --ui:    "Montserrat", "Open Sans", sans-serif;
+  --shadow-sm: 0 1px 2px rgba(25,25,26,0.04), 0 2px 6px rgba(25,25,26,0.04);
+  --shadow-md: 0 6px 16px rgba(25,25,26,0.06), 0 2px 4px rgba(25,25,26,0.04);
+  --shadow-lg: 0 24px 48px rgba(25,25,26,0.12), 0 6px 12px rgba(25,25,26,0.06);
+  --radius: 4px;
+  --max: 1180px;
+  --gutter: clamp(20px, 5vw, 56px);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.6em;
+}
+h1 { font-size: clamp(36px, 6vw, 72px); }
+h2 { font-size: clamp(28px, 4.2vw, 48px); }
+h3 { font-size: clamp(22px, 3vw, 30px); }
+p { margin: 0 0 1em; }
+em, i { font-style: italic; font-family: var(--serif); }
+b, strong { font-weight: 700; color: var(--ink); }
+
+.eyebrow {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.eyebrow.ink { color: var(--ink); }
+.eyebrow.smoke { color: var(--smoke); }
+
+.script {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--red);
+}
+
+/* ============ LAYOUT ============ */
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+.wrap-narrow { max-width: 760px; margin: 0 auto; padding: 0 var(--gutter); }
+section { padding: clamp(72px, 10vw, 128px) 0; position: relative; }
+
+/* ============ TOP NAV ============ */
+.topnav {
+  position: relative;
+  z-index: 50;
+  padding: 20px var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.topnav__logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: opacity 0.18s ease;
+}
+.topnav__logo img {
+  height: 64px;
+  width: auto;
+  display: block;
+}
+.topnav__logo:hover { opacity: 0.7; }
+@media (max-width: 640px) {
+  .topnav__logo img { height: 52px; }
+}
+.topnav__trust {
+  font-family: var(--ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--smoke);
+  display: flex;
+  gap: 14px;
+}
+.topnav__trust span { white-space: nowrap; }
+.topnav__trust span + span::before {
+  content: "·"; padding-right: 14px; color: var(--stone);
+}
+@media (max-width: 640px) {
+  .topnav__trust span:not(:last-child) { display: none; }
+  .topnav__trust span + span::before { display: none; }
+}
+
+/* ============ HERO ============ */
+.hero {
+  padding: clamp(16px, 3vw, 32px) 0 clamp(48px, 8vw, 96px);
+  position: relative;
+}
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(32px, 5vw, 56px);
+  align-items: start;
+}
+@media (min-width: 960px) {
+  .hero__grid { grid-template-columns: 1.05fr 1fr; gap: 80px; align-items: center; }
+}
+.hero__copy { order: 1; }
+.hero__visual { order: 2; }
+@media (min-width: 960px) {
+  .hero__copy { order: 1; }
+  .hero__visual { order: 2; }
+}
+
+.hero__eyebrow { display: inline-block; margin-bottom: 22px; }
+.hero__eyebrow::before {
+  content: ""; display: inline-block;
+  width: 28px; height: 1px; background: var(--red);
+  vertical-align: middle; margin-right: 10px;
+  transform: translateY(-2px);
+}
+
+.hero h1 {
+  font-size: clamp(34px, 6.4vw, 72px);
+  line-height: 1.02;
+  margin-bottom: 24px;
+}
+.hero h1 em { color: var(--red); }
+
+.hero__lede {
+  font-size: clamp(16px, 1.9vw, 19px);
+  line-height: 1.6;
+  color: var(--ink);
+  max-width: 540px;
+  margin-bottom: 28px;
+}
+
+/* Hero form card */
+.hero-form {
+  background: var(--paper);
+  border: 1px solid var(--stone);
+  border-radius: var(--radius);
+  padding: clamp(20px, 3vw, 28px);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  max-width: 520px;
+}
+.hero-form::before {
+  content: ""; position: absolute;
+  top: -1px; left: -1px; right: -1px; height: 3px;
+  background: var(--red);
+}
+.hero-form__label {
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--smoke);
+  margin-bottom: 14px;
+}
+.hero-form__label b { color: var(--red); font-weight: 700; }
+
+/* Hero — Video Preview (with player chrome) */
+.hero__visual { position: relative; }
+
+.video-preview {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--ink);
+  box-shadow: var(--shadow-lg);
+  aspect-ratio: 4/5;
+  cursor: pointer;
+  isolation: isolate;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  display: block;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.video-preview__media { position: absolute; inset: 0; }
+.video-preview__media img {
+  width: 100%; height: 100%; object-fit: cover;
+  filter: blur(3px) brightness(0.7) saturate(1.05);
+  transform: scale(1.08);
+  transition: filter 0.5s ease, transform 0.5s ease;
+}
+.video-preview:hover .video-preview__media img,
+.video-preview:focus-visible .video-preview__media img {
+  filter: blur(0.5px) brightness(0.85) saturate(1.05);
+  transform: scale(1.04);
+}
+.video-preview__veil {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(60% 50% at 50% 45%, transparent 0%, rgba(25,25,26,0.35) 100%),
+    linear-gradient(180deg, rgba(25,25,26,0.4) 0%, transparent 28%, transparent 55%, rgba(25,25,26,0.9) 100%);
+  z-index: 1;
+}
+
+.video-preview__top {
+  position: absolute;
+  top: 18px; left: 18px; right: 18px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.video-preview__atelier {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(246,246,242,0.92);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.video-preview__atelier .dot {
+  width: 7px; height: 7px; border-radius: 99px;
+  background: var(--red);
+  box-shadow: 0 0 0 4px rgba(200,16,46,0.25);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.video-preview__stamp {
+  background: var(--red);
+  color: var(--bg);
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  padding: 8px 10px 7px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+.video-preview__stamp b {
+  display: block;
+  font-size: 20px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  margin-bottom: 4px;
+  letter-spacing: 0;
+}
+
+.video-preview__play {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: 92px; height: 92px;
+  border-radius: 99px;
+  border: none;
+  background: rgba(255,255,255,0.96);
+  color: var(--red);
+  display: grid; place-items: center;
+  cursor: pointer;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  transition: transform 0.2s ease, background 0.18s ease, color 0.18s ease;
+}
+.video-preview__play::before {
+  content: ""; position: absolute; inset: -14px;
+  border-radius: 99px;
+  border: 2px solid rgba(255,255,255,0.55);
+  animation: ringPulse 2.6s ease-out infinite;
+  pointer-events: none;
+}
+.video-preview__play::after {
+  content: ""; position: absolute; inset: -28px;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,0.25);
+  animation: ringPulse 2.6s ease-out 0.7s infinite;
+  pointer-events: none;
+}
+.video-preview__play svg {
+  width: 34px; height: 34px;
+  margin-left: 4px;
+  fill: currentColor;
+}
+.video-preview:hover .video-preview__play,
+.video-preview:focus-visible .video-preview__play {
+  background: var(--red);
+  color: var(--paper);
+  transform: translate(-50%, -50%) scale(1.04);
+}
+@keyframes ringPulse {
+  0%   { transform: scale(0.9);  opacity: 0.8; }
+  100% { transform: scale(1.5);  opacity: 0;   }
+}
+
+.video-preview__cue {
+  position: absolute;
+  bottom: 22px; left: 0; right: 0;
+  z-index: 3;
+  text-align: center;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: rgba(246,246,242,0.78);
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+.video-preview__cue::before {
+  content: ""; display: inline-block;
+  width: 14px; height: 1px;
+  background: rgba(246,246,242,0.6);
+  vertical-align: middle;
+  margin-right: 10px;
+  transform: translateY(-2px);
+}
+.video-preview__cue::after {
+  content: ""; display: inline-block;
+  width: 14px; height: 1px;
+  background: rgba(246,246,242,0.6);
+  vertical-align: middle;
+  margin-left: 10px;
+  transform: translateY(-2px);
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(1.4); }
+}
+
+/* ============ FORM ============ */
+.form {
+  display: grid;
+  gap: 12px;
+}
+.form__field {
+  position: relative;
+}
+.form__field label {
+  position: absolute;
+  left: 16px; top: 18px;
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--smoke);
+  pointer-events: none;
+  transition: all 0.18s ease;
+  background: var(--paper);
+  padding: 0 4px;
+}
+.form__field input:focus + label,
+.form__field input:not(:placeholder-shown) + label {
+  top: -6px;
+  font-size: 9.5px;
+  color: var(--red);
+}
+.form__field input {
+  width: 100%;
+  height: 56px;
+  padding: 24px 16px 8px;
+  font-family: var(--body);
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--stone);
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.form__field input:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
+}
+.form__field input::placeholder { color: transparent; }
+
+.form__submit {
+  width: 100%;
+  min-height: 56px;
+  padding: 16px 22px;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 3px;
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: background 0.18s ease, transform 0.12s ease;
+  position: relative;
+  overflow: hidden;
+}
+.form__submit:hover { background: var(--red); }
+.form__submit:active { transform: scale(0.99); }
+.form__submit[disabled] { opacity: 0.7; cursor: progress; }
+.form__submit .arrow { transition: transform 0.2s ease; }
+.form__submit:hover .arrow { transform: translateX(4px); }
+.form__submit .spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 99px;
+  animation: spin 0.8s linear infinite;
+}
+.form.is-loading .form__submit .spinner { display: inline-block; }
+.form.is-loading .form__submit .label,
+.form.is-loading .form__submit .arrow { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.form__trust {
+  font-family: var(--body);
+  font-size: 12.5px;
+  color: var(--smoke);
+  text-align: center;
+  margin-top: 14px;
+  line-height: 1.5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 12px;
+}
+.form__trust .dot { color: var(--stone); }
+.form__trust svg { width: 12px; height: 12px; color: var(--red); flex-shrink: 0; }
+.form__trust b { color: var(--ink); font-weight: 600; }
+
+/* Success state */
+.form__success {
+  display: none;
+  text-align: center;
+  padding: 12px 0 8px;
+}
+.form.is-success .form__field,
+.form.is-success .form__submit,
+.form.is-success .form__trust { display: none; }
+.form.is-success .form__success { display: block; }
+.form__success svg {
+  width: 56px; height: 56px;
+  color: var(--red);
+  margin: 0 auto 14px;
+}
+.form__success h4 {
+  font-family: var(--serif);
+  font-size: 28px;
+  margin: 0 0 8px;
+}
+.form__success p {
+  font-size: 14.5px;
+  color: var(--smoke);
+  margin: 0;
+}
+
+/* ============ 3-STEP SECTION ============ */
+.steps {
+  padding: clamp(48px, 7vw, 80px) 0;
+  background: var(--linen);
+  border-top: 1px solid var(--stone);
+  border-bottom: 1px solid var(--stone);
+}
+.steps__head {
+  text-align: center;
+  margin-bottom: clamp(32px, 5vw, 48px);
+}
+.steps__head .eyebrow { margin-bottom: 12px; display: inline-block; }
+.steps__head h3 {
+  font-size: clamp(24px, 3.4vw, 34px);
+  margin: 0;
+  line-height: 1.15;
+}
+.steps__head h3 em { color: var(--red); }
+
+.steps__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  position: relative;
+}
+@media (min-width: 760px) {
+  .steps__list { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+}
+/* connector line between steps on desktop */
+@media (min-width: 760px) {
+  .steps__list::before {
+    content: ""; position: absolute;
+    top: 70px; left: 16%; right: 16%;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--stone) 0 6px, transparent 6px 12px);
+    z-index: 0;
+  }
+}
+
+.step {
+  background: var(--paper);
+  border: 1px solid var(--stone);
+  border-radius: var(--radius);
+  padding: 24px 24px 22px;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+.step:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--taupe);
+}
+
+.step__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.step__num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--red);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.step__icon {
+  width: 44px; height: 44px;
+  border-radius: 99px;
+  background: var(--bg);
+  display: grid; place-items: center;
+  color: var(--ink);
+  border: 1px solid var(--stone);
+  margin-left: auto;
+}
+.step__icon svg { width: 20px; height: 20px; }
+
+.step h4 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.step p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--smoke);
+  margin: 0;
+}
+.step__meta {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-top: 12px;
+}
+
+/* ============ DECORATIVE DIVIDER ============ */
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--red);
+  margin: 0;
+}
+.divider::before, .divider::after {
+  content: ""; height: 1px; flex: 1;
+  background: linear-gradient(90deg, transparent, var(--stone), transparent);
+  max-width: 80px;
+}
+
+/* ============ EMPATHY SECTION ============ */
+.empathy {
+  background: var(--linen);
+  position: relative;
+}
+.empathy__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: center;
+}
+@media (min-width: 880px) {
+  .empathy__grid { grid-template-columns: 1fr 1.2fr; }
+}
+.empathy__photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  aspect-ratio: 3/4;
+  box-shadow: var(--shadow-md);
+}
+.empathy__photo img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.empathy__photo::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 60%, rgba(25,25,26,0.15));
+  pointer-events: none;
+}
+.empathy__body h2 {
+  font-size: clamp(28px, 4vw, 44px);
+  margin-bottom: 24px;
+}
+.empathy__body h2 em { color: var(--red); }
+.empathy__body p {
+  font-size: 17px;
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+.empathy__body .conclusion {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(20px, 2.6vw, 26px);
+  line-height: 1.3;
+  color: var(--ink);
+  padding-left: 18px;
+  border-left: 2px solid var(--red);
+  margin-top: 32px;
+}
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 4px 0;
+  transition: color 0.18s, border-color 0.18s, gap 0.18s;
+}
+.btn-link:hover { color: var(--red); border-color: var(--red); gap: 14px; }
+
+/* ============ INCLUDES (4 CARDS) ============ */
+.includes__head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 64px;
+}
+.includes__head h2 em { color: var(--red); }
+.includes__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+@media (min-width: 640px) { .includes__grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1024px) { .includes__grid { grid-template-columns: repeat(4, 1fr); } }
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--stone);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.card__media {
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  position: relative;
+}
+.card__media img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.card:hover .card__media img { transform: scale(1.04); }
+.card__num {
+  position: absolute;
+  top: 14px; left: 14px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 28px;
+  color: var(--paper);
+  text-shadow: 0 2px 14px rgba(0,0,0,0.4);
+  font-weight: 500;
+}
+.card__body {
+  padding: 22px 24px 26px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.card h3 {
+  font-size: 22px;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+.card p {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--smoke);
+  margin: 0;
+}
+
+.includes__cta {
+  text-align: center;
+  margin-top: 56px;
+}
+
+/* ============ LISA SECTION ============ */
+.lisa {
+  background: var(--ink);
+  color: var(--bg);
+  overflow: hidden;
+}
+.lisa h2, .lisa h3 { color: var(--bg); }
+.lisa__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(48px, 7vw, 88px);
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .lisa__grid { grid-template-columns: 5fr 7fr; }
+}
+
+/* Photo + nameplate wrapper */
+.lisa__photo-wrap {
+  margin: 0;
+  position: relative;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.lisa__photo {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  aspect-ratio: 4/5;
+  box-shadow: 0 28px 56px rgba(0,0,0,0.45);
+}
+.lisa__photo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Cursive "Lisa" signature stamp on photo */
+.lisa__signature-stamp {
+  position: absolute;
+  bottom: 22px; left: 22px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 0.85;
+  color: var(--paper);
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.55);
+  z-index: 2;
+}
+.lisa__signature-stamp::after {
+  content: ""; display: block;
+  width: 36px; height: 2px;
+  background: var(--red);
+  margin-top: 8px;
+}
+
+/* Editorial nameplate below photo */
+.lisa__nameplate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(246,246,242,0.18);
+  gap: 4px;
+}
+.lisa__nameplate-name {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--paper);
+}
+.lisa__nameplate-role {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+
+/* Text column */
+.lisa__text { position: relative; }
+
+.lisa__eyebrow {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: clamp(11px, 1.1vw, 13px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding: 8px 14px;
+  background: rgba(200,16,46,0.12);
+  border-left: 3px solid var(--red);
+  border-radius: 2px;
+}
+.lisa__eyebrow .dot {
+  width: 8px; height: 8px; border-radius: 99px;
+  background: var(--red);
+  animation: pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.lisa__quote {
+  font-family: var(--serif);
+  font-size: clamp(26px, 3.6vw, 42px);
+  line-height: 1.18;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  margin-bottom: 32px;
+  position: relative;
+  padding-left: 8px;
+}
+.lisa__quote em { color: var(--red); font-style: italic; }
+.lisa__quote::before {
+  content: "„";
+  display: block;
+  font-size: 96px;
+  line-height: 0.55;
+  color: var(--red);
+  margin-bottom: 0;
+  margin-left: -8px;
+  font-style: italic;
+}
+
+.lisa__body {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(246,246,242,0.85);
+}
+.lisa__body p { margin-bottom: 16px; }
+.lisa__body b { color: var(--paper); }
+.lisa__body i, .lisa__body em { color: rgba(246,246,242,0.95); font-style: italic; }
+
+.lisa__signoff {
+  margin-top: 36px;
+  padding-top: 26px;
+  border-top: 1px solid rgba(246,246,242,0.18);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.lisa__signoff .eyebrow {
+  color: var(--red);
+  margin-bottom: 8px;
+}
+.lisa__signoff h3 {
+  font-size: clamp(24px, 2.6vw, 30px);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+.lisa__signoff em {
+  color: rgba(246,246,242,0.7);
+  font-size: 14.5px;
+  font-family: var(--serif);
+  font-style: italic;
+}
+.lisa__signoff .stats {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(246,246,242,0.15);
+}
+.lisa__signoff .stat {
+  display: flex;
+  flex-direction: column;
+}
+.lisa__signoff .stat b {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--red);
+  letter-spacing: -0.02em;
+  font-variant-numeric: oldstyle-nums;
+}
+.lisa__signoff .stat span {
+  font-family: var(--ui);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(246,246,242,0.6);
+  margin-top: 6px;
+}
+
+/* ============ MUST-SEE ============ */
+.must-see__head {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 56px;
+}
+.must-see__head h2 em { color: var(--red); }
+.must-see__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.must-see__item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 18px;
+  align-items: flex-start;
+  background: var(--paper);
+  border: 1px solid var(--stone);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.must-see__item:hover { border-color: var(--red); transform: translateX(4px); }
+.must-see__check {
+  width: 32px; height: 32px;
+  border-radius: 99px;
+  background: var(--red-soft);
+  color: var(--red);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.must-see__check svg { width: 14px; height: 14px; }
+.must-see__item p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* ============ FINAL CTA ============ */
+.final-cta {
+  background: linear-gradient(180deg, var(--bg) 0%, var(--linen) 100%);
+  position: relative;
+}
+.final-cta__inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(40px, 6vw, 72px);
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .final-cta__inner { grid-template-columns: 1fr 1fr; }
+}
+.final-cta__copy {
+  text-align: left;
+}
+.final-cta__copy .eyebrow { margin-bottom: 18px; display: inline-block; }
+.final-cta__copy h2 {
+  font-size: clamp(30px, 4.4vw, 48px);
+  margin-bottom: 22px;
+}
+.final-cta__copy h2 em { color: var(--red); }
+.final-cta__copy p {
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  max-width: 520px;
+}
+
+.final-form {
+  background: var(--paper);
+  border: 1px solid var(--stone);
+  border-radius: var(--radius);
+  padding: clamp(28px, 4vw, 40px);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+.final-form::before {
+  content: ""; position: absolute;
+  top: 0; left: 0; height: 3px; width: 64px;
+  background: var(--red);
+}
+.final-form__title {
+  font-family: var(--serif);
+  font-size: clamp(22px, 3vw, 28px);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.final-form__sub {
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 22px;
+}
+
+/* ============ FOOTER ============ */
+footer {
+  padding: 36px var(--gutter) calc(36px + env(safe-area-inset-bottom));
+  text-align: center;
+  color: var(--smoke);
+  font-size: 13px;
+  border-top: 1px solid var(--stone);
+}
+footer .logo-mini {
+  height: 72px;
+  width: auto;
+  display: block;
+  margin: 0 auto 14px;
+  opacity: 0.85;
+}
+footer .links {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+footer .links a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--stone); }
+footer .links a:hover { color: var(--ink); text-decoration-color: var(--red); }
+
+/* ============ STICKY MOBILE CTA ============ */
+.sticky-cta {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 80;
+  transform: translateY(110%);
+  transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.18);
+}
+.sticky-cta.is-visible { transform: translateY(0); }
+.sticky-cta__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.sticky-cta__text b {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.sticky-cta__text span {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+.sticky-cta a {
+  background: var(--red);
+  color: var(--bg);
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 14px 18px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  white-space: nowrap;
+  transition: background 0.18s ease;
+}
+.sticky-cta a:hover { background: var(--red-deep); }
+@media (min-width: 860px) {
+  .sticky-cta { display: none; }
+}
+
+/* Body padding for sticky bar */
+@media (max-width: 859px) {
+  body.has-sticky { padding-bottom: 80px; }
+}
+
+/* ============ MISC ============ */
+::selection { background: var(--red); color: var(--bg); }
+</style>
+</head>
+
+<body>
+
+<!-- =========== TOP NAV =========== -->
+<header class="topnav">
+  <a href="/" class="topnav__logo" aria-label="the World of Boudoir">
+    <img src="assets/wofb_logo_stamp.png" alt="the World of Boudoir" />
+  </a>
+  <div class="topnav__trust">
+    <span>0 € · Kein Spam</span>
+    <span>1 Mail · Direkt zum Video</span>
+    <span>Studio Bamberg</span>
+  </div>
+</header>
+
+<!-- =========== HERO =========== -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero__grid">
+
+      <div class="hero__copy">
+        <div class="eyebrow hero__eyebrow">0 € Video · Behind closed doors</div>
+        <h1>Ein <em>privater</em> Zugang zu dem, was sonst verborgen bleibt.</h1>
+        <p class="hero__lede">
+          Komm mit hinter die Kulissen eines echten Boudoir Shootings und
+          erlebe hautnah, wie dieses Erlebnis wirklich abläuft —
+          ohne dass du selbst vor der Kamera stehst.
+        </p>
+
+        <!-- HERO FORM (above the fold) -->
+        <form class="hero-form form" id="form-hero" data-form
+              action="https://theworldofboudoir.activehosted.com/proc.php"
+              method="POST" novalidate>
+          <div class="hero-form__label">→ Schick mir das <b>15-Minuten-Video</b> kostenfrei per Mail</div>
+
+          <input type="hidden" name="u" value="6A0C41C5CFFF5">
+          <input type="hidden" name="f" value="31">
+          <input type="hidden" name="s" value="">
+          <input type="hidden" name="c" value="0">
+          <input type="hidden" name="m" value="0">
+          <input type="hidden" name="act" value="sub">
+          <input type="hidden" name="v" value="2">
+          <input type="hidden" name="or" value="74fddfb4-0516-4b94-86e2-6db52417b4b2">
+
+          <div class="form__field">
+            <input type="text" id="hero-fullname" name="fullname" required
+                   placeholder=" " autocomplete="given-name" autocapitalize="words" />
+            <label for="hero-fullname">Wie heißt du?</label>
+          </div>
+          <div class="form__field">
+            <input type="email" id="hero-email" name="email" required
+                   placeholder=" " autocomplete="email" inputmode="email" spellcheck="false" />
+            <label for="hero-email">Deine E-Mail-Adresse</label>
+          </div>
+
+          <button type="submit" class="form__submit">
+            <span class="label">Schick mir das Video</span>
+            <span class="arrow" aria-hidden="true">→</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+
+          <div class="form__trust">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span><b>Kein Spam.</b> Nur diese eine Mail mit dem Video. Du kannst dich jederzeit abmelden.</span>
+          </div>
+
+          <div class="form__success" role="status" aria-live="polite">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <h4>Schau in dein Postfach.</h4>
+            <p>In den nächsten 2 Minuten landet die Mail mit deinem Video bei dir. Falls nicht — wirf auch einen Blick in den Spam-Ordner.</p>
+          </div>
+        </form>
+
+      </div>
+
+      <aside class="hero__visual">
+        <button type="button" class="video-preview"
+                aria-label="Video freischalten — E-Mail eintragen und kostenfrei ansehen"
+                data-play-cta>
+          <div class="video-preview__media">
+            <img src="assets/hero_drone.gif" alt="Stimmungsaufnahme aus Lisas Boudoir-Studio in Bamberg" />
+          </div>
+          <div class="video-preview__veil" aria-hidden="true"></div>
+
+          <div class="video-preview__top">
+            <span class="video-preview__atelier" aria-hidden="true">
+              <span class="dot"></span>
+              <span>Atelier · Bamberg</span>
+            </span>
+            <span class="video-preview__stamp" aria-label="kostenfrei">
+              <b>0 €</b>
+              Boudoir Video
+            </span>
+          </div>
+
+          <span class="video-preview__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </span>
+
+          <div class="video-preview__cue" aria-hidden="true">
+            Klick öffnet die Eintragung
+          </div>
+        </button>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+<!-- =========== 3-STEP HOW IT WORKS =========== -->
+<section class="steps" aria-label="So funktioniert es">
+  <div class="wrap">
+
+    <div class="steps__head">
+      <div class="eyebrow">So einfach geht's</div>
+      <h3>In drei Schritten zu <em>deinem Video</em></h3>
+    </div>
+
+    <ol class="steps__list">
+      <li class="step">
+        <div class="step__head">
+          <div class="step__num">i.</div>
+          <div class="step__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="6" width="18" height="13" rx="2"/>
+              <path d="M3 8l9 6 9-6"/>
+            </svg>
+          </div>
+        </div>
+        <h4>E-Mail eintragen</h4>
+        <p>Name + Mail in zehn Sekunden. Mehr braucht es nicht.</p>
+        <div class="step__meta">≈ 10 Sek.</div>
+      </li>
+
+      <li class="step">
+        <div class="step__head">
+          <div class="step__num">ii.</div>
+          <div class="step__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <polyline points="8 12.5 11 15.5 16 9.5"/>
+            </svg>
+          </div>
+        </div>
+        <h4>Mail bestätigen</h4>
+        <p>Ein Klick in der ersten Mail bestätigt deinen Wunsch — DSGVO-konform.</p>
+        <div class="step__meta">1 Klick</div>
+      </li>
+
+      <li class="step">
+        <div class="step__head">
+          <div class="step__num">iii.</div>
+          <div class="step__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+        </div>
+        <h4>Video schauen</h4>
+        <p>15 Minuten ehrlicher Einblick — direkt in deinem Postfach.</p>
+        <div class="step__meta">15 Min. · Behind closed doors</div>
+      </li>
+    </ol>
+
+  </div>
+</section>
+
+<!-- =========== EMPATHY =========== -->
+<section class="empathy" id="empathy">
+  <div class="wrap">
+    <div class="empathy__grid">
+
+      <div class="empathy__photo">
+        <img src="assets/lisa_mit_kamera.jpg" alt="Lisa mit Kamera während eines Boudoir-Shootings im Studio" loading="lazy" />
+      </div>
+
+      <div class="empathy__body">
+        <div class="eyebrow ink" style="margin-bottom:18px">Vielleicht kennst du das</div>
+        <h2>Du willst sowas schon seit Langem machen. Aber dann <em>kommen die Zweifel.</em></h2>
+        <p>
+          <b>„Ich sehe aber nicht so aus, wie die anderen Frauen."</b>
+          Oder du bist dir auf einmal doch nicht sicher, ob das wirklich was für dich wäre.
+          Geschweige denn, wie solch ein Shooting in der Realität abläuft.
+        </p>
+        <p>
+          Du hast nur Mini-Schnipsel auf Instagram gesehen — aber nie den echten,
+          ungeschönten Ablauf. Diese Lücke schließt das Video. Damit du <i>siehst</i>,
+          was sich hinter dem geschlossenen Türen wirklich abspielt.
+        </p>
+        <div class="conclusion">
+          Dann ist dieses Video genau für dich.
+        </div>
+        <div style="margin-top:32px">
+          <a class="btn-link" href="#eintragung">Schau es dir an <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- =========== INCLUDES (4 CARDS) =========== -->
+<section class="includes" id="includes">
+  <div class="wrap">
+
+    <div class="includes__head">
+      <div class="eyebrow" style="margin-bottom:18px">Das siehst du in diesem Video</div>
+      <h2>Tauche ein in <em>Melanies</em> Boudoir-Shooting</h2>
+      <p style="font-size:16px; color:var(--smoke); margin: 0 auto; max-width: 560px;">
+        Vier Stationen eines echten Shootingtages — von der ersten Outfit-Beratung
+        bis zur finalen Bildauswahl. So läuft es ab.
+      </p>
+    </div>
+
+    <div class="includes__grid">
+
+      <article class="card">
+        <div class="card__media">
+          <img src="assets/bts_fitting.jpg" alt="Lisa und Kundin beim Anprobieren von Outfits im Studio" loading="lazy" />
+          <div class="card__num">i.</div>
+        </div>
+        <div class="card__body">
+          <h3>Fitting-Termin</h3>
+          <p>Folge Melanie, wie sie die idealen Outfits auswählt — und wie ich sie dabei berate, damit jedes Stück zu ihr, ihrem Körper und ihren Wünschen passt.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card__media">
+          <img src="assets/bts_makeup.jpg" alt="Make-up und Hair-Styling vor dem Boudoir Shooting" loading="lazy" />
+          <div class="card__num">ii.</div>
+        </div>
+        <div class="card__body">
+          <h3>Haare &amp; Make-up</h3>
+          <p>Sieh dabei zu, wie aus der Alltagsversion von Melanie ihre sexy Königin erwacht — inkl. der ausführlichen Beratung, bevor das Styling beginnt.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card__media">
+          <img src="assets/bts_shooting.jpg" alt="Lisa führt durch das Boudoir-Shooting mit professioneller Anleitung" loading="lazy" />
+          <div class="card__num">iii.</div>
+        </div>
+        <div class="card__body">
+          <h3>Shooting unter Anleitung</h3>
+          <p>Erfahre, wie der Teil des Shootings abläuft, vor dem jede Frau Angst hat — und wie leicht es vor Ort wirklich ist. Es macht sogar Spaß.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card__media">
+          <img src="assets/bts_auswahl.jpg" alt="Persönlicher Bildauswahltermin nach dem Shooting" loading="lazy" />
+          <div class="card__num">iv.</div>
+        </div>
+        <div class="card__body">
+          <h3>Persönliche Bildauswahl</h3>
+          <p>Du siehst, wie Melanie ihre Favoriten auswählt und ihre Lieblingsprodukte gestaltet — vom luxuriösen Fotoalbum bis zum Lieblings-Wandbild.</p>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="includes__cta">
+      <a class="btn-link" href="#eintragung">Schicke mir das Video zu <span aria-hidden="true">→</span></a>
+      <div style="font-family: var(--serif); font-style: italic; color: var(--smoke); margin-top: 8px; font-size: 14px;">
+        für 0 € · direkt in dein Postfach
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========== LISA (Dark Section) =========== -->
+<section class="lisa" id="ueber-lisa">
+  <div class="wrap">
+    <div class="lisa__grid">
+
+      <figure class="lisa__photo-wrap">
+        <div class="lisa__photo">
+          <img src="assets/lisa_portrait.jpg" alt="Portrait von Lisa, Boudoir Fotografin in Bamberg" loading="lazy" />
+          <span class="lisa__signature-stamp" aria-hidden="true">Lisa</span>
+        </div>
+        <figcaption class="lisa__nameplate">
+          <span class="lisa__nameplate-name">Lisa</span>
+          <span class="lisa__nameplate-role">Boudoir Photographer · Bamberg</span>
+        </figcaption>
+      </figure>
+
+      <div class="lisa__text">
+
+        <div class="lisa__eyebrow">
+          <span class="dot" aria-hidden="true"></span>
+          Deine Fotografin
+        </div>
+
+        <div class="lisa__quote">
+          Wenn wir aufhören, unser Aussehen negativ zu bewerten, erlangen wir unser <em>wahres Selbstbewusstsein</em>.
+        </div>
+
+        <div class="lisa__body">
+          <p>
+            … das sagt eine Boudoir-Fotografin, bei der es <i>vermeintlich</i> NUR um das Aussehen geht.
+            <i>Oder doch nicht?</i>
+          </p>
+          <p>
+            Deine Boudoir-Bilder <b>zeigen dir mehr als deinen Körper in schönen Dessous verpackt:</b>
+            Sie zeigen dir durch empowerndes Posing deine selbstbewussteste Ausstrahlung. Genau das, was entsteht,
+            wenn du aufhörst, dich klein zu machen.
+          </p>
+          <p>
+            Ich habe dieses Video ins Leben gerufen, <b>damit du die Überzeugung verlierst, dass du dafür nicht
+            gut genug bist</b> oder die einzige sein wirst, die das nicht hinbekommt. Es zeigt dir genau, wie
+            solch ein Photoshooting abläuft — und dass du nicht alleine gelassen wirst.
+          </p>
+        </div>
+
+        <div class="lisa__signoff">
+          <div class="eyebrow">Ich bin Lisa</div>
+          <h3>Feministin. Dog Mom. Workaholic.</h3>
+          <em>Meine Mission: Frauen wie dich in ihre Selbstermächtigung bringen.</em>
+          <div class="stats">
+            <div class="stat"><b>500+</b><span>Shootings</span></div>
+            <div class="stat"><b>15</b><span>Min. Video</span></div>
+            <div class="stat"><b>0&nbsp;€</b><span>Für dich</span></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- =========== MUST SEE =========== -->
+<section class="must-see">
+  <div class="wrap">
+    <div class="must-see__head">
+      <div class="eyebrow" style="margin-bottom:18px">Must-See</div>
+      <h2>Dieses Video ist <em>genau dann</em> für dich, wenn …</h2>
+    </div>
+
+    <div class="must-see__list">
+      <div class="must-see__item">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du dich <b>schon länger mit einem Boudoir-Shooting beschäftigst</b> und jetzt richtig eintauchen willst — <i>ohne selbst direkt vor der Kamera zu stehen.</i></p>
+      </div>
+      <div class="must-see__item">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du <b>total neu im Thema Boudoir</b> bist und alles darüber erfahren und wissen möchtest, bevor du eine Entscheidung triffst.</p>
+      </div>
+      <div class="must-see__item">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du einen <b>liebevolleren Blick auf dich selbst</b> bekommen willst — <i>am besten auf Knopfdruck.</i></p>
+      </div>
+      <div class="must-see__item">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du <b>vor der Buchung absolut sicher sein willst,</b> was dich bei deinem Boudoir Shooting erwartet.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========== FINAL CTA + FORM =========== -->
+<section class="final-cta" id="eintragung">
+  <div class="wrap">
+    <div class="final-cta__inner">
+
+      <div class="final-cta__copy">
+        <div class="eyebrow">Jetzt sichern</div>
+        <h2>Du verdienst <em>ausdrucksstarke</em> Boudoir-Bilder, die deine Weiblichkeit ausdrücken.</h2>
+        <p>
+          Trag deine Mail ein, schau mir 15 Minuten lang zu, wie eine echte Frau durch genau das geht —
+          und entscheide danach. Kostet dich <b>nichts außer deine Zeit.</b>
+        </p>
+        <p style="margin-top:18px; font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--smoke);">
+          Aus über 500 Boudoir-Shootings mit verschiedensten Frauen weiß ich:
+          <span style="color:var(--ink)">jede Frau kann das.</span> Sie braucht nur jemanden, der ihr zeigt wie.
+        </p>
+      </div>
+
+      <form class="final-form form" id="form-final" data-form
+            action="https://theworldofboudoir.activehosted.com/proc.php"
+            method="POST" novalidate>
+        <div class="final-form__title">Schau, wie einfach es mit mir ist.</div>
+        <div class="final-form__sub">0 € · 1 Mail · Direkt zum Video</div>
+
+        <input type="hidden" name="u" value="6A0C41C5CFFF5">
+        <input type="hidden" name="f" value="31">
+        <input type="hidden" name="s" value="">
+        <input type="hidden" name="c" value="0">
+        <input type="hidden" name="m" value="0">
+        <input type="hidden" name="act" value="sub">
+        <input type="hidden" name="v" value="2">
+        <input type="hidden" name="or" value="74fddfb4-0516-4b94-86e2-6db52417b4b2">
+
+        <div class="form__field">
+          <input type="text" id="final-fullname" name="fullname" required
+                 placeholder=" " autocomplete="given-name" autocapitalize="words" />
+          <label for="final-fullname">Wie heißt du?</label>
+        </div>
+        <div class="form__field">
+          <input type="email" id="final-email" name="email" required
+                 placeholder=" " autocomplete="email" inputmode="email" spellcheck="false" />
+          <label for="final-email">Deine E-Mail-Adresse</label>
+        </div>
+
+        <button type="submit" class="form__submit">
+          <span class="label">Schick mir das Video — kostenfrei</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+
+        <div class="form__trust">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span><b>Kein Spam.</b> Du erhältst genau eine Mail mit dem Video. Abmeldung jederzeit per Klick.</span>
+        </div>
+
+        <div class="form__success" role="status" aria-live="polite">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <h4>Geschafft.</h4>
+          <p>Deine Mail ist unterwegs. In den nächsten Minuten findest du das Video in deinem Postfach.</p>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</section>
+
+<!-- =========== FOOTER =========== -->
+<footer>
+  <img class="logo-mini" src="assets/wofb_logo_stamp.png" alt="the World of Boudoir" />
+  <p>the World of Boudoir · Boudoir-Fotografie · Bamberg</p>
+  <div class="links">
+    <a href="/impressum">Impressum</a>
+    <a href="/datenschutz">Datenschutz</a>
+    <a href="/agb">AGB</a>
+  </div>
+  <p style="margin-top:12px; font-size:12px;">© 2026 the World of Boudoir</p>
+</footer>
+
+<!-- =========== STICKY MOBILE CTA =========== -->
+<div class="sticky-cta" id="stickyCta" aria-hidden="true">
+  <div class="sticky-cta__text">
+    <b>0 € Video · 15 Min.</b>
+    <span>Behind closed doors</span>
+  </div>
+  <a href="#eintragung" data-sticky-cta>Jetzt sichern <span aria-hidden="true">→</span></a>
+</div>
+
+<script>
+(function () {
+  // -------- Sticky CTA visibility ----------
+  var sticky = document.getElementById('stickyCta');
+  var hero = document.querySelector('.hero');
+  var finalCta = document.getElementById('eintragung');
+  if (sticky && hero && finalCta) {
+    document.body.classList.add('has-sticky');
+    var lastShown = false;
+    var update = function () {
+      var heroBottom = hero.getBoundingClientRect().bottom;
+      var finalTop = finalCta.getBoundingClientRect().top;
+      var vh = window.innerHeight;
+      var shouldShow = heroBottom < 100 && finalTop > vh * 0.6;
+      if (shouldShow !== lastShown) {
+        sticky.classList.toggle('is-visible', shouldShow);
+        sticky.setAttribute('aria-hidden', String(!shouldShow));
+        lastShown = shouldShow;
+      }
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+  }
+
+  // -------- Form submission (in-page success state) ----------
+  // ActiveCampaign accepts no-cors POSTs — we lose the response body, but the
+  // submission succeeds. We show our own success state to keep the user on
+  // the page instead of bouncing to AC's default thank-you screen.
+  var forms = document.querySelectorAll('[data-form]');
+  forms.forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var name = form.querySelector('input[name="fullname"]');
+      var email = form.querySelector('input[name="email"]');
+      if (!name || !email || !name.value.trim() || !email.value.trim()) return; // let browser show required
+      // basic email sanity
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value)) return;
+
+      e.preventDefault();
+      form.classList.add('is-loading');
+      var btn = form.querySelector('.form__submit');
+      if (btn) btn.disabled = true;
+
+      var data = new FormData(form);
+      fetch(form.action, { method: 'POST', mode: 'no-cors', body: data })
+        .catch(function () {})
+        .finally(function () {
+          form.classList.remove('is-loading');
+          form.classList.add('is-success');
+          if (btn) btn.disabled = false;
+          // Scroll success into view if user submitted from hero
+          if (form.id === 'form-hero') {
+            setTimeout(function () {
+              form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 80);
+          }
+        });
+    });
+  });
+
+  // -------- Video preview click → focus email field ----------
+  var playCta = document.querySelector('[data-play-cta]');
+  if (playCta) {
+    playCta.addEventListener('click', function (e) {
+      e.preventDefault();
+      var email = document.getElementById('hero-email');
+      var fullname = document.getElementById('hero-fullname');
+      var target = fullname && !fullname.value ? fullname : email;
+      if (target) {
+        target.focus({ preventScroll: false });
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+
+  // -------- Smooth-anchor with offset ----------
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var id = a.getAttribute('href');
+      if (id.length < 2) return;
+      var target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      var top = target.getBoundingClientRect().top + window.pageYOffset - 24;
+      window.scrollTo({ top: top, behavior: 'smooth' });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

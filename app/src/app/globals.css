@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #f6f6f2;
+    --paper: #ffffff;
+    --linen: #ecebe8;
+    --stone: #dfdeda;
+    --smoke: #7d7878;
+    --taupe: #9f877f;
+    --ink: #19191a;
+    --accent: #c8102e;
+    --accent-soft: #fbe9ec;
+    --accent-deep: #9c0822;
+    --success: #2f6b4a;
+    --success-soft: #e6efe9;
+    --success-deep: #1f4a32;
+  }
+
+  html,
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 500;
+    /* color: inherit — wir setzen Body-Color (--ink) als Default und lassen dunkle
+       Sections (z.B. Hero, Kontakt-Block) ihre eigene helle Farbe vererben. */
+    color: inherit;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+  ::selection { background: var(--accent); color: white; }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 999px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--taupe); }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
+
+@layer components {
+  /* ========= Eyebrow ========= */
+  .eyebrow {
+    font-family: "Montserrat", "Open Sans", sans-serif;
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .eyebrow-muted { color: var(--smoke); }
+
+  /* ========= Buttons ========= */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium text-sm transition-all select-none;
+    font-family: "Montserrat", "Open Sans", sans-serif;
+    letter-spacing: 0.03em;
+  }
+  .btn-primary {
+    @apply btn text-white;
+    background: var(--ink);
+  }
+  .btn-primary:hover { background: #000; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-accent {
+    @apply btn text-white;
+    background: var(--accent);
+  }
+  .btn-accent:hover { background: var(--accent-deep); }
+
+  .btn-secondary {
+    @apply btn bg-paper text-ink border border-stone;
+  }
+  .btn-secondary:hover { background: var(--linen); }
+
+  .btn-ghost {
+    @apply btn text-smoke;
+    background: transparent;
+  }
+  .btn-ghost:hover { background: var(--linen); color: var(--ink); }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg text-smoke transition-colors;
+  }
+  .btn-icon:hover { background: var(--linen); color: var(--ink); }
+
+  /* ========= Inputs ========= */
+  .input, .textarea, .select {
+    @apply block w-full rounded-lg bg-paper border border-stone px-3.5 h-10 text-sm text-ink placeholder:text-smoke/60 transition-all;
+    font-family: inherit;
+  }
+  .textarea { @apply py-2.5 h-auto leading-relaxed; min-height: 80px; }
+  .input:focus, .textarea:focus, .select:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(25,25,26,0.08);
+  }
+  .label {
+    @apply block text-xs font-semibold text-ink/80 mb-1.5;
+    font-family: "Montserrat", "Open Sans", sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ========= Card ========= */
+  .card {
+    @apply bg-paper rounded-xl2 border border-stone/70 shadow-soft;
+  }
+  .card-hover { transition: all 0.2s ease; }
+  .card-hover:hover { @apply shadow-md; border-color: var(--taupe); }
+
+  /* ========= Badge ========= */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold;
+    font-family: "Montserrat", "Open Sans", sans-serif;
+    letter-spacing: 0.05em;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
+
+  /* ========= Topbar / Sidebar ========= */
+  .nav-link {
+    @apply flex items-center gap-3 h-10 px-3 rounded-lg text-sm text-smoke transition-all;
+  }
+  .nav-link:hover { background: var(--linen); color: var(--ink); }
+  .nav-link.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .nav-link.active svg { color: var(--accent); }
+
+  /* ========= Avatar ========= */
+  .avatar {
+    @apply inline-flex items-center justify-center rounded-full bg-linen text-ink font-semibold overflow-hidden;
+    font-family: "Montserrat", "Open Sans", sans-serif;
+  }
+
+  /* ========= Tablecell ========= */
+  .table-th {
+    @apply text-left text-[11px] font-bold text-smoke px-4 py-3;
+    font-family: "Montserrat", "Open Sans", sans-serif;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .table-td { @apply px-4 py-3.5 text-sm text-ink align-middle; }
+  .table-row { border-top: 1px solid rgba(223,222,218,0.7); }
+  .table-row:hover { background: rgba(236,235,232,0.5); }
+
+  /* ========= Hairline ========= */
+  .hairline { border-top: 1px solid rgba(223,222,218,0.7); }
+}
+
+/* Fade-in für Page-Inhalte */
+.page-enter { animation: fadeUp 0.2s ease-out; }
+@keyframes fadeUp {
+  from { opacity: 0.7; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}

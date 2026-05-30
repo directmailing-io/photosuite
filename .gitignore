@@ -1,0 +1,46 @@
+.DS_Store
+*.log
+*.tmp
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Env files — NIE committen (enthalten Secrets)
+.env
+.env.local
+.env.*.local
+.env.production
+*.env
+
+# Build artefacts
+dist/
+build/
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Prisma generated client (wird per `prisma generate` neu erzeugt)
+# prisma/generated/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Editor backups
+*~
+
+# Uploads (User-Generated Content gehört nicht ins Repo)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# OS
+Thumbs.db

@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lisa CRM · Kalender-Integration einrichten</title>
+  <style>
+    :root {
+      --bg: #f6f6f2;
+      --paper: #ffffff;
+      --linen: #ecebe8;
+      --stone: #dfdeda;
+      --smoke: #7d7878;
+      --taupe: #9f877f;
+      --ink: #19191a;
+      --accent: #c8102e;
+      --accent-soft: #fbe9ec;
+      --accent-deep: #9c0822;
+      --success: #2f6b4a;
+      --success-soft: #e6efe9;
+      --warn: #b87200;
+      --warn-soft: #fcf3e1;
+    }
+    * { box-sizing: border-box; }
+    html, body { background: var(--bg); color: var(--ink); margin: 0; padding: 0; font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.65; }
+    h1, h2, h3, h4 { font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif; font-weight: 500; letter-spacing: -0.01em; line-height: 1.15; margin: 0; }
+    h1 { font-size: clamp(36px, 5vw, 56px); }
+    h2 { font-size: clamp(28px, 3vw, 36px); margin-top: 1em; }
+    h3 { font-size: 22px; margin-top: 1.5em; }
+    h4 { font-size: 17px; margin-top: 1.5em; color: var(--ink); }
+    p { margin: 0.8em 0; }
+    a { color: var(--accent-deep); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--accent); }
+    code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; background: var(--linen); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--stone); }
+    pre { background: var(--linen); border: 1px solid var(--stone); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 13px; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; font-weight: 600; color: var(--accent); }
+    .container { max-width: 1180px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 240px 1fr; gap: 48px; }
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; padding: 0 20px; }
+      nav.toc { position: static !important; }
+    }
+    header.hero {
+      padding: 72px 0 48px;
+      border-bottom: 1px solid var(--stone);
+      margin-bottom: 48px;
+    }
+    header.hero .container { display: block; max-width: 800px; }
+    header.hero h1 { margin-top: 12px; }
+    header.hero p.lede { font-size: 18px; color: var(--smoke); margin-top: 18px; max-width: 660px; }
+    nav.toc {
+      position: sticky;
+      top: 32px;
+      align-self: start;
+      font-size: 13px;
+      padding: 16px 0;
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+    nav.toc h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--smoke); margin: 0 0 12px; font-family: inherit; font-weight: 600; }
+    nav.toc ol { list-style: none; padding: 0; margin: 0; counter-reset: tocitem; }
+    nav.toc ol > li { counter-increment: tocitem; margin: 8px 0; }
+    nav.toc ol > li::before { content: counter(tocitem) "."; color: var(--smoke); margin-right: 8px; font-variant-numeric: tabular-nums; font-weight: 600; }
+    nav.toc a { color: var(--ink); text-decoration: none; }
+    nav.toc a:hover { color: var(--accent); }
+    nav.toc ul { list-style: none; padding: 0 0 0 18px; margin: 6px 0; font-size: 12px; }
+    nav.toc ul li { margin: 4px 0; }
+    nav.toc ul a { color: var(--smoke); }
+    main { max-width: 760px; padding-bottom: 96px; }
+    section { padding-top: 24px; }
+    section + section { border-top: 1px solid var(--stone); margin-top: 56px; padding-top: 56px; }
+    section .section-eyebrow { display: block; margin-bottom: 6px; }
+    ol.steps {
+      counter-reset: stepnum;
+      list-style: none;
+      padding: 0;
+      margin: 24px 0;
+    }
+    ol.steps > li {
+      counter-increment: stepnum;
+      position: relative;
+      padding-left: 56px;
+      margin-bottom: 24px;
+      min-height: 36px;
+    }
+    ol.steps > li::before {
+      content: counter(stepnum);
+      position: absolute;
+      left: 0;
+      top: -2px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    ol.steps > li strong.action {
+      display: block;
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    ol.steps > li p { margin: 4px 0; }
+    .url-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      text-decoration: none;
+      color: var(--ink);
+      margin: 2px 0;
+      max-width: 100%;
+      word-break: break-all;
+    }
+    .url-pill::before {
+      content: "→";
+      color: var(--accent);
+      font-family: serif;
+      font-weight: bold;
+    }
+    .url-pill:hover { background: var(--linen); }
+    button.copy {
+      background: transparent;
+      border: 1px solid var(--stone);
+      color: var(--smoke);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+      font-family: inherit;
+    }
+    button.copy:hover { background: var(--linen); color: var(--ink); }
+    button.copy.ok { background: var(--success-soft); color: var(--success); border-color: var(--success); }
+    .callout {
+      border-left: 3px solid var(--accent);
+      padding: 14px 18px;
+      background: var(--accent-soft);
+      border-radius: 0 8px 8px 0;
+      margin: 18px 0;
+      font-size: 14px;
+    }
+    .callout.info { border-color: var(--ink); background: var(--linen); }
+    .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+    .callout.success { border-color: var(--success); background: var(--success-soft); }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .field-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .field-table th, .field-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--stone); font-size: 14px; vertical-align: top; }
+    .field-table th { font-weight: 600; background: var(--linen); width: 38%; }
+    .field-table code { white-space: nowrap; }
+    .provider-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 48px 0 8px;
+    }
+    .provider-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .provider-logo svg { display: block; }
+    .provider-header h3 { margin: 0; }
+    .provider-header p { margin: 4px 0 0; font-size: 14px; color: var(--smoke); }
+    .role-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 24px 28px;
+      border-radius: 16px;
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      margin: 16px 0 32px;
+    }
+    .role-banner .icon { font-size: 28px; line-height: 1; }
+    .role-banner.platform { background: linear-gradient(135deg, #19191a 0%, #2a2526 100%); color: var(--bg); border-color: transparent; }
+    .role-banner.platform p { color: rgba(255,255,255,0.85); }
+    .role-banner.user { background: var(--linen); }
+    .role-banner h4 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 22px; }
+    .role-banner p { margin: 6px 0 0; font-size: 14px; }
+    .needed-from-you {
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin: 16px 0;
+    }
+    .needed-from-you h4 { font-family: "Cormorant Garamond", serif; font-size: 22px; margin-bottom: 12px; }
+    .needed-from-you ul { padding-left: 22px; margin: 0; }
+    .needed-from-you li { margin: 6px 0; font-size: 15px; }
+    .needed-from-you code { background: var(--linen); }
+    footer.app-footer {
+      border-top: 1px solid var(--stone);
+      padding: 32px 0;
+      margin-top: 64px;
+      font-size: 12px;
+      color: var(--smoke);
+    }
+    footer.app-footer .container { display: block; max-width: 760px; }
+    .pill {
+      display: inline-block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .pill.platform { background: var(--ink); color: var(--bg); }
+    .pill.user { background: var(--success-soft); color: var(--success); }
+    @media print {
+      nav.toc { display: none; }
+      .container { display: block; max-width: 100%; padding: 0; }
+      header.hero { padding: 32px 0 24px; }
+      section + section { page-break-before: auto; margin-top: 32px; padding-top: 32px; }
+      .provider-header { page-break-inside: avoid; }
+      ol.steps > li { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="container">
+    <span class="eyebrow">Lisa CRM · Setup-Guide</span>
+    <h1>Kalender-Integration<br/>einrichten</h1>
+    <p class="lede">
+      Schritt-für-Schritt durch alle Anbieter — Google, Apple, Microsoft, Nextcloud, mailbox.org und Posteo.
+      Klar getrennt, was du als Plattform-Betreiber einmalig machst und was deine User selbst tun.
+    </p>
+  </div>
+</header>
+
+<div class="container">
+
+<nav class="toc" aria-label="Inhaltsverzeichnis">
+  <h4>Inhalt</h4>
+  <ol>
+    <li><a href="#ueberblick">Überblick: Wer macht was</a></li>
+    <li><a href="#google">
+        <span class="pill platform">Plattform</span> Google Calendar
+      </a>
+      <ul>
+        <li><a href="#google-1">Projekt anlegen</a></li>
+        <li><a href="#google-2">Calendar API aktivieren</a></li>
+        <li><a href="#google-3">Branding</a></li>
+        <li><a href="#google-4">Zielgruppe</a></li>
+        <li><a href="#google-5">Test-Nutzer</a></li>
+        <li><a href="#google-6">Scopes</a></li>
+        <li><a href="#google-7">OAuth-Client</a></li>
+        <li><a href="#google-8">Werte kopieren</a></li>
+      </ul>
+    </li>
+    <li><a href="#microsoft">
+        <span class="pill platform">Plattform</span> Microsoft Outlook
+      </a></li>
+    <li><a href="#apple">
+        <span class="pill user">User</span> Apple iCloud
+      </a></li>
+    <li><a href="#nextcloud">
+        <span class="pill user">User</span> Nextcloud
+      </a></li>
+    <li><a href="#mailbox">
+        <span class="pill user">User</span> mailbox.org
+      </a></li>
+    <li><a href="#posteo">
+        <span class="pill user">User</span> Posteo
+      </a></li>
+    <li><a href="#was-ich-brauche">Was ich von dir brauche</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================================================================= -->
+<section id="ueberblick">
+  <span class="eyebrow section-eyebrow">Überblick</span>
+  <h2>Wer macht was?</h2>
+  <p>
+    Es gibt zwei verschiedene Arten von Setup. Verwechseln darfst du sie nicht — sie sind grundverschieden.
+  </p>
+
+  <div class="role-banner platform">
+    <div class="icon">⚙️</div>
+    <div>
+      <h4><span class="pill platform">Plattform</span> &nbsp; Einmal von dir</h4>
+      <p>Du registrierst „photosuite.io" bei Google und Microsoft. Dauer: insgesamt ca. 10 Minuten. Danach können alle deine 500 User mit einem einzigen Klick ihren Google- oder Outlook-Kalender verbinden — sie müssen selbst nichts einrichten.</p>
+    </div>
+  </div>
+
+  <div class="role-banner user">
+    <div class="icon">👤</div>
+    <div>
+      <h4><span class="pill user">User</span> &nbsp; Jeder User selbst</h4>
+      <p>Apple, Nextcloud, mailbox.org und Posteo geben keine OAuth-Plattform-Registrierung her. Bei diesen Anbietern erzeugt jeder User in seinem Account ein App-Passwort und gibt es in photosuite.io ein. Du als Plattform musst dafür nichts tun.</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>Hinweis: Warum ist das so?</strong>
+    Google und Microsoft sind Identity-Provider mit zentraler App-Verwaltung — sie verlangen, dass deine SaaS-App einmal angemeldet wird, damit deren User sich mit einem Klick bei dir einloggen können.
+    Apple und CalDAV-Anbieter haben keine vergleichbare Plattform-API — dort regelt jeder User seine eigenen Zugriffe lokal.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="google">
+  <div class="provider-header">
+    <div class="provider-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32" height="32" aria-label="Google">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.1 35 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.2 5.2C40.9 35.7 44 30.3 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+      </svg>
+    </div>
+    <div>
+      <h3>Google Calendar</h3>
+      <p><span class="pill platform">Plattform</span> &nbsp; Einmaliger Setup in der Google Cloud Console · ca. 5 Min</p>
+    </div>
+  </div>
+
+  <p>
+    Wir registrieren „photosuite.io" bei Google. Am Ende hast du zwei Werte — <code>Client ID</code> und <code>Client Secret</code> — die du mir nennst. Danach ist Google für alle User verfügbar.
+  </p>
+
+  <div class="callout info">
+    <strong>Was du brauchst:</strong> einen Google-Account (gewöhnliches Gmail oder Workspace). Kein bezahlter Plan, kein Cloud-Guthaben nötig.
+  </div>
+
+  <ol class="steps">
+    <li id="google-1">
+      <strong class="action">Projekt anlegen</strong>
+      <p>Öffne die Projekt-Erstellung direkt:</p>
+      <a class="url-pill" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com/projectcreate</a>
+      <button class="copy" data-copy="https://console.cloud.google.com/projectcreate">Kopieren</button>
+      <p>Felder ausfüllen:</p>
+      <table class="field-table">
+        <tr><th>Projektname</th><td><code>photosuite-crm</code></td></tr>
+        <tr><th>Organisation</th><td>„Keine Organisation" wählen (außer du nutzt Google Workspace)</td></tr>
+      </table>
+      <p>Unten rechts blauer Button <strong>ERSTELLEN</strong>. Warte ~10 Sekunden, bis das Projekt erscheint, und prüfe oben im Header, dass es als aktives Projekt angezeigt wird.</p>
+    </li>
+
+    <li id="google-2">
+      <strong class="action">Google Calendar API aktivieren</strong>
+      <p>Direkt zur API-Library:</p>
+      <a class="url-pill" href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">console.cloud.google.com/apis/library/calendar-json.googleapis.com</a>
+      <button class="copy" data-copy="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com">Kopieren</button>
+      <p>Blauer Button <strong>AKTIVIEREN</strong>. Aktivierung dauert ca. 10 Sekunden.</p>
+    </li>
+
+    <li id="google-3">
+      <strong class="action">Branding konfigurieren</strong>
+      <p>Direkter Link:</p>
+      <a class="url-pill" href="https://console.cloud.google.com/auth/branding" target="_blank" rel="noopener">console.cloud.google.com/auth/branding</a>
+      <button class="copy" data-copy="https://console.cloud.google.com/auth/branding">Kopieren</button>
+      <p>Klicke <strong>ERSTE SCHRITTE</strong>, dann fülle aus:</p>
+      <table class="field-table">
+        <tr><th>App-Name</th><td><code>photosuite.io</code></td></tr>
+        <tr><th>Nutzersupport-E-Mail</th><td>deine eigene E-Mail (aus dem Dropdown)</td></tr>
+        <tr><th>E-Mail-Adresse des Entwicklers</th><td>deine eigene E-Mail</td></tr>
+        <tr><th>Logo</th><td>optional — kannst du leer lassen</td></tr>
+        <tr><th>Datenschutz/Nutzungs-URLs</th><td>für Test-Mode nicht erforderlich</td></tr>
+      </table>
+      <p>Speichern und weiter.</p>
+    </li>
+
+    <li id="google-4">
+      <strong class="action">Zielgruppe wählen</strong>
+      <p>Direkter Link:</p>
+      <a class="url-pill" href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">console.cloud.google.com/auth/audience</a>
+      <button class="copy" data-copy="https://console.cloud.google.com/auth/audience">Kopieren</button>
+      <p>Wähle <strong>Extern</strong>. Die App bleibt im Test-Modus — das ist genau richtig zum Start.</p>
+    </li>
+
+    <li id="google-5">
+      <strong class="action">Test-Nutzer hinzufügen</strong>
+      <p>Auf derselben Seite zu <strong>Testnutzer</strong> scrollen. <strong>+ NUTZER HINZUFÜGEN</strong> klicken und folgende Adressen eintragen:</p>
+      <ul style="margin: 8px 0 0 22px;">
+        <li>deine eigene Gmail-Adresse</li>
+        <li>für jede Person, die später Google verbinden soll, ihre Gmail-Adresse</li>
+      </ul>
+      <div class="callout warn">
+        <strong>Test-Mode-Limits:</strong> max. 100 Tester insgesamt. Jede OAuth-Genehmigung läuft nach 7 Tagen ab und der User muss neu zustimmen. Für den Start völlig OK — bei mehr Usern wechseln wir später in den Production-Modus.
+      </div>
+    </li>
+
+    <li id="google-6">
+      <strong class="action">Scope „Calendar Events" hinzufügen</strong>
+      <p>Direkter Link:</p>
+      <a class="url-pill" href="https://console.cloud.google.com/auth/scopes" target="_blank" rel="noopener">console.cloud.google.com/auth/scopes</a>
+      <button class="copy" data-copy="https://console.cloud.google.com/auth/scopes">Kopieren</button>
+      <p>Klick <strong>BEREICHE HINZUFÜGEN ODER ENTFERNEN</strong>, im Filter nach <code>calendar</code> suchen, Häkchen bei:</p>
+      <pre>https://www.googleapis.com/auth/calendar.events</pre>
+      <button class="copy" data-copy="https://www.googleapis.com/auth/calendar.events">Scope kopieren</button>
+      <p>Unten <strong>AKTUALISIEREN</strong>, dann <strong>SPEICHERN</strong>.</p>
+    </li>
+
+    <li id="google-7">
+      <strong class="action">OAuth-Client erstellen</strong>
+      <p>Direkter Link:</p>
+      <a class="url-pill" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">console.cloud.google.com/auth/clients</a>
+      <button class="copy" data-copy="https://console.cloud.google.com/auth/clients">Kopieren</button>
+      <p>Klick <strong>+ CLIENT ERSTELLEN</strong>:</p>
+      <table class="field-table">
+        <tr><th>Anwendungstyp</th><td><code>Webanwendung</code></td></tr>
+        <tr><th>Name</th><td><code>photosuite Web Client</code></td></tr>
+        <tr>
+          <th>Autorisierte JavaScript-Quellen</th>
+          <td>
+            <code>http://localhost:3006</code>
+            <button class="copy" data-copy="http://localhost:3006">Kopieren</button>
+          </td>
+        </tr>
+        <tr>
+          <th>Autorisierte Weiterleitungs-URIs</th>
+          <td>
+            <code>http://localhost:3006/api/calendar/google/callback</code>
+            <button class="copy" data-copy="http://localhost:3006/api/calendar/google/callback">Kopieren</button>
+          </td>
+        </tr>
+      </table>
+      <p>Blauer Button <strong>ERSTELLEN</strong>.</p>
+      <div class="callout warn">
+        <strong>Wichtig:</strong> Die Redirect-URI muss <em>exakt</em> übereinstimmen — auch Groß-/Kleinschreibung und Schema (<code>http</code> vs <code>https</code>) zählen. Wenn du später eine echte Domain hast (z.B. <code>app.photosuite.io</code>), kommt eine zweite URI mit <code>https://...</code> dazu.
+      </div>
+    </li>
+
+    <li id="google-8">
+      <strong class="action">Client ID und Secret kopieren</strong>
+      <p>Direkt nach Erstellung erscheint ein Popup mit beiden Werten:</p>
+      <ul style="margin: 8px 0 0 22px;">
+        <li><strong>Client ID</strong> — z.B. <code>1234567890-abcd…apps.googleusercontent.com</code></li>
+        <li><strong>Client-Schlüssel (Client Secret)</strong> — z.B. <code>GOCSPX-abc123…</code></li>
+      </ul>
+      <div class="callout">
+        <strong>SOFORT KOPIEREN:</strong> Das Client Secret wird ab 2024 nach Schließen nur noch als Hash gespeichert und kann nicht erneut angezeigt werden. Notfalls Button <strong>JSON HERUNTERLADEN</strong> klicken — die Datei enthält beides.
+      </div>
+      <p><strong>Sende mir beide Werte</strong> (du kannst sie hier in den Chat einfügen — ich trage sie sicher in die App ein und die Originale verschwinden aus dem Chatverlauf).</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ================================================================= -->
+<section id="microsoft">
+  <div class="provider-header">
+    <div class="provider-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" width="28" height="28" aria-label="Microsoft">
+        <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+        <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+        <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+      </svg>
+    </div>
+    <div>
+      <h3>Microsoft Outlook</h3>
+      <p><span class="pill platform">Plattform</span> &nbsp; Einmaliger Setup im Microsoft Entra Admin Center · ca. 5 Min</p>
+    </div>
+  </div>
+
+  <p>Wir registrieren „photosuite.io" bei Microsoft. Auch hier brauchst du am Ende zwei Werte: <code>Anwendungs-ID</code> und <code>Wert des geheimen Clientschlüssels</code>.</p>
+
+  <div class="callout info">
+    <strong>Was du brauchst:</strong> ein gewöhnliches Microsoft-Konto (Outlook.com, Hotmail oder ein 365-Konto). Kein bezahltes Azure-Abo nötig.
+  </div>
+
+  <ol class="steps">
+    <li>
+      <strong class="action">Bei Microsoft Entra anmelden und App registrieren</strong>
+      <p>Direkter Link zur App-Erstellung:</p>
+      <a class="url-pill" href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade" target="_blank" rel="noopener">entra.microsoft.com → Neue Registrierung</a>
+      <button class="copy" data-copy="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade">Kopieren</button>
+      <p>Mit deinem Microsoft-Account einloggen, falls noch nicht. Beim allerersten Mal erstellt Microsoft automatisch einen „Standardverzeichnis"-Tenant für dich — das passiert im Hintergrund.</p>
+    </li>
+
+    <li>
+      <strong class="action">Registrierungs-Formular ausfüllen</strong>
+      <table class="field-table">
+        <tr><th>Name</th><td><code>photosuite.io Calendar Sync</code></td></tr>
+        <tr>
+          <th>Unterstützte Kontotypen</th>
+          <td>
+            <strong>Konten in einem beliebigen Organisationsverzeichnis (beliebiger Microsoft Entra ID-Mandant — mehrinstanzenfähig) und persönliche Microsoft-Konten</strong>
+            <div style="margin-top:6px; color: var(--smoke); font-size: 12px;">3. Option von oben — damit decken wir Outlook.com & Microsoft 365 ab</div>
+          </td>
+        </tr>
+        <tr>
+          <th>Umleitungs-URI</th>
+          <td>
+            Plattform-Dropdown auf <strong>Web</strong> stellen, dann URI:<br/>
+            <code>http://localhost:3006/api/calendar/microsoft/callback</code>
+            <button class="copy" data-copy="http://localhost:3006/api/calendar/microsoft/callback">Kopieren</button>
+          </td>
+        </tr>
+      </table>
+      <p>Button <strong>Registrieren</strong>.</p>
+    </li>
+
+    <li>
+      <strong class="action">API-Berechtigung „Calendars.ReadWrite" hinzufügen</strong>
+      <p>Im linken Menü deiner App → <strong>API-Berechtigungen</strong> → <strong>+ Berechtigung hinzufügen</strong>.</p>
+      <ol style="margin: 8px 0 0 22px;">
+        <li>Kachel <strong>Microsoft Graph</strong> klicken</li>
+        <li>Reiter <strong>Delegierte Berechtigungen</strong> wählen (nicht „Anwendungsberechtigungen"!)</li>
+        <li>Suchfeld → <code>Calendars.ReadWrite</code> → Häkchen setzen</li>
+        <li>Unten <strong>Berechtigungen hinzufügen</strong></li>
+      </ol>
+    </li>
+
+    <li>
+      <strong class="action">Client Secret erstellen</strong>
+      <p>Linkes Menü → <strong>Zertifikate &amp; Geheimnisse</strong> → Tab <strong>Geheime Clientschlüssel</strong> → <strong>+ Neuer geheimer Clientschlüssel</strong>.</p>
+      <table class="field-table">
+        <tr><th>Beschreibung</th><td><code>photosuite Production Secret</code></td></tr>
+        <tr><th>Gültig bis</th><td><strong>24 Monate</strong> (Maximum — weniger Renewal-Aufwand)</td></tr>
+      </table>
+      <p>Button <strong>Hinzufügen</strong>.</p>
+      <div class="callout">
+        <strong>KRITISCH:</strong> Microsoft zeigt jetzt zwei Spalten: <strong>Wert</strong> und <strong>Geheime ID</strong>. Der <strong>Wert</strong> (lange Zeichenkette mit Punkt drin) wird <em>nur einmal</em> angezeigt. Bei Seitenwechsel ist er für immer verloren. Sofort kopieren!
+      </div>
+    </li>
+
+    <li>
+      <strong class="action">Anwendungs-ID kopieren</strong>
+      <p>Linkes Menü deiner App → <strong>Übersicht</strong>. Du siehst:</p>
+      <ul style="margin: 8px 0 0 22px;">
+        <li><strong>Anwendungs-ID (Client)</strong> — eine GUID, z.B. <code>a1b2c3d4-e5f6-7890-abcd-ef1234567890</code></li>
+      </ul>
+      <p>Mit dem Copy-Icon kopieren.</p>
+      <p><strong>Sende mir beide Werte:</strong> die Anwendungs-ID und den vorher kopierten Client-Secret-Wert.</p>
+      <div class="callout info">
+        <strong>Verzeichnis-ID:</strong> Diese brauchst du <em>nicht</em>. Wir nutzen den <code>/common</code>-Endpoint, der mit beliebigen Microsoft-Konten arbeitet.
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- ================================================================= -->
+<section id="apple">
+  <div class="provider-header">
+    <div class="provider-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 170" width="28" height="28" aria-label="Apple" fill="#19191a">
+        <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.197-2.12-9.973-3.17-14.34-3.17-4.58 0-9.492 1.05-14.746 3.17-5.262 2.13-9.501 3.24-12.742 3.35-4.929.21-9.842-1.96-14.746-6.52-3.13-2.73-7.045-7.41-11.735-14.04-5.032-7.08-9.169-15.29-12.41-24.65-3.471-10.11-5.211-19.9-5.211-29.378 0-10.857 2.346-20.221 7.045-28.068 3.693-6.303 8.606-11.275 14.755-14.925s12.793-5.51 19.948-5.629c3.915 0 9.049 1.211 15.429 3.591 6.362 2.388 10.447 3.599 12.238 3.599 1.339 0 5.877-1.416 13.57-4.239 7.275-2.618 13.415-3.702 18.445-3.275 13.63 1.1 23.87 6.473 30.68 16.153-12.19 7.386-18.22 17.731-18.1 31.002.11 10.337 3.86 18.939 11.23 25.769 3.34 3.17 7.07 5.62 11.22 7.36-.9 2.61-1.85 5.11-2.86 7.51zM119.11 7.24c0 8.102-2.96 15.667-8.86 22.669-7.12 8.324-15.732 13.134-25.071 12.375a25.222 25.222 0 0 1-.188-3.07c0-7.778 3.386-16.102 9.399-22.908 3.002-3.446 6.82-6.311 11.45-8.597 4.62-2.252 8.99-3.497 13.1-3.71.12 1.083.17 2.166.17 3.24z"/>
+      </svg>
+    </div>
+    <div>
+      <h3>Apple iCloud</h3>
+      <p><span class="pill user">User</span> &nbsp; Jeder User legt sein eigenes App-Passwort bei Apple an · ca. 2 Min</p>
+    </div>
+  </div>
+
+  <p>Dies ist die Anleitung, die du <em>deinen Usern</em> gibst (kannst du auch direkt in photosuite.io integrieren). Funktioniert sofort, ohne dass du Plattform-seitig etwas einrichten musst.</p>
+
+  <div class="callout warn">
+    <strong>Voraussetzung:</strong> Die Apple-ID muss <strong>Zwei-Faktor-Authentifizierung</strong> aktiviert haben. Ohne 2FA gibt es den Menüpunkt „App-spezifische Passwörter" nicht.
+  </div>
+
+  <ol class="steps">
+    <li>
+      <strong class="action">Apple-ID-Verwaltung öffnen</strong>
+      <a class="url-pill" href="https://account.apple.com" target="_blank" rel="noopener">account.apple.com</a>
+      <button class="copy" data-copy="https://account.apple.com">Kopieren</button>
+      <p>Mit der Apple-ID anmelden, mit der iCloud-Kalender genutzt wird.</p>
+    </li>
+    <li>
+      <strong class="action">Anmelden und Sicherheit → App-spezifische Passwörter</strong>
+      <p>Linke Seitenleiste → <strong>Anmelden und Sicherheit</strong> → <strong>App-spezifische Passwörter</strong>.</p>
+    </li>
+    <li>
+      <strong class="action">Neues Passwort generieren</strong>
+      <p>Plus-Symbol → Name vergeben: <code>photosuite</code> → <strong>Erstellen</strong>. Apple-ID-Passwort zur Bestätigung erneut eingeben.</p>
+    </li>
+    <li>
+      <strong class="action">Passwort sofort kopieren und in photosuite.io eintragen</strong>
+      <p>Das Passwort hat das Format <code>abcd-efgh-ijkl-mnop</code> (19 Zeichen, vier Blöcke mit Bindestrichen). In photosuite.io → Einstellungen → Kalender → Apple iCloud:</p>
+      <table class="field-table">
+        <tr><th>Apple-Mail</th><td>die eigene Apple-ID-E-Mail (z.B. <code>name@icloud.com</code>)</td></tr>
+        <tr><th>App-spezifisches Passwort</th><td>der gerade kopierte 19-Zeichen-Code, mit Bindestrichen</td></tr>
+      </table>
+    </li>
+  </ol>
+
+  <div class="callout">
+    <strong>Stolperfallen:</strong>
+    <ul style="margin: 6px 0 0 22px;">
+      <li>Bindestriche müssen mit kopiert werden — sie sind Teil des Passworts.</li>
+      <li>Alles Kleinbuchstaben, kein Vertippen bei <code>l</code> vs <code>1</code> oder <code>o</code> vs <code>0</code>.</li>
+      <li>Wenn die Apple-ID das Hauptpasswort ändert, werden <strong>alle</strong> App-Passwörter ungültig — neues erstellen.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="nextcloud">
+  <div class="provider-header">
+    <div class="provider-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 110" width="40" height="22" aria-label="Nextcloud" fill="#0082C9">
+        <path d="M55.92 18.27c-19.13 0-35.3 12.97-40.16 30.55C11.04 38.92 1.4 32.27-9.7 32.27v.01C-26.43 32.28-40 45.85-40 62.59c0 16.74 13.57 30.31 30.3 30.31 11.1 0 20.74-6.65 25.46-16.55 4.86 17.58 21.03 30.55 40.16 30.55 19.04 0 35.13-12.83 40.07-30.28 4.78 9.78 14.34 16.28 25.35 16.28 16.74 0 30.31-13.57 30.31-30.31 0-16.74-13.57-30.31-30.31-30.31-11.01 0-20.57 6.5-25.35 16.28-4.94-17.45-21.03-30.29-40.07-30.29zm0 14c15.61 0 28.16 12.55 28.16 28.15 0 15.6-12.55 28.16-28.16 28.16-15.6 0-28.15-12.56-28.15-28.16 0-15.6 12.55-28.15 28.15-28.15zm105.36 14c9.18 0 16.31 7.13 16.31 16.31 0 9.18-7.13 16.31-16.31 16.31-9.18 0-16.3-7.13-16.3-16.31 0-9.18 7.12-16.31 16.3-16.31zm-170.98.01c9.17 0 16.3 7.12 16.3 16.3 0 9.18-7.13 16.31-16.3 16.31-9.18 0-16.31-7.13-16.31-16.31 0-9.18 7.13-16.3 16.31-16.3z" transform="translate(40 0)"/>
+      </svg>
+    </div>
+    <div>
+      <h3>Nextcloud</h3>
+      <p><span class="pill user">User</span> &nbsp; User trägt seine Nextcloud-URL + App-Passwort ein · ca. 2 Min</p>
+    </div>
+  </div>
+
+  <ol class="steps">
+    <li>
+      <strong class="action">In der eigenen Nextcloud anmelden</strong>
+      <p>Im Browser zur Nextcloud-Web-Adresse (z.B. <code>https://cloud.beispiel.de</code>). Einloggen mit dem regulären Account.</p>
+    </li>
+    <li>
+      <strong class="action">Persönliche Einstellungen → Sicherheit</strong>
+      <p>Oben rechts auf das Profilbild → <strong>Persönliche Einstellungen</strong>. Linke Seitenleiste → <strong>Sicherheit</strong>.</p>
+    </li>
+    <li>
+      <strong class="action">App-Passwort erzeugen</strong>
+      <p>Zum Abschnitt <strong>Geräte &amp; Sitzungen</strong> scrollen. App-Namen eintragen (<code>photosuite</code>), dann <strong>Neues App-Passwort erstellen</strong>. Nextcloud-Passwort zur Bestätigung.</p>
+    </li>
+    <li>
+      <strong class="action">Werte in photosuite.io eintragen</strong>
+      <table class="field-table">
+        <tr><th>Server-URL</th><td>die Web-Adresse der Nextcloud, z.B. <code>https://cloud.beispiel.de</code></td></tr>
+        <tr><th>Benutzername</th><td>der <strong>Login-Name</strong> der Nextcloud (NICHT die E-Mail-Adresse!)</td></tr>
+        <tr><th>App-Passwort</th><td>das gerade angezeigte Passwort</td></tr>
+      </table>
+    </li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>Häufigster Fehler:</strong> E-Mail-Adresse statt Login-Name eingeben → 401 Unauthorized. In Nextcloud ist der Login-Name oft ein kurzer Handle (z.B. <code>maria</code> statt <code>maria@firma.de</code>) und ist in der URL nach dem Login sichtbar.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="mailbox">
+  <div class="provider-header">
+    <div class="provider-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" aria-label="mailbox.org" fill="none" stroke="#0e7c66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </svg>
+    </div>
+    <div>
+      <h3>mailbox.org</h3>
+      <p><span class="pill user">User</span> &nbsp; App-Passwort für CalDAV/CardDAV · ca. 2 Min</p>
+    </div>
+  </div>
+
+  <ol class="steps">
+    <li>
+      <strong class="action">In mailbox.org Office anmelden</strong>
+      <a class="url-pill" href="https://office.mailbox.org" target="_blank" rel="noopener">office.mailbox.org</a>
+      <button class="copy" data-copy="https://office.mailbox.org">Kopieren</button>
+    </li>
+    <li>
+      <strong class="action">Einstellungen → Sicherheit → Applikationspasswörter</strong>
+      <p>Oben rechts auf das Zahnrad → <strong>Alle Einstellungen</strong> → linke Seitenleiste <strong>Sicherheit</strong> → <strong>Applikationspasswörter</strong>.</p>
+    </li>
+    <li>
+      <strong class="action">Neues App-Passwort mit Scope CalDAV/CardDAV</strong>
+      <p><strong>Neues Passwort hinzufügen</strong>. Aus der Liste vordefinierter Scopes wählen:</p>
+      <p><code>Kalender- und Adressbuch-Client (CalDAV/CardDAV)</code></p>
+      <p>Bezeichnung: <code>photosuite</code>.</p>
+    </li>
+    <li>
+      <strong class="action">Beide Werte kopieren — User UND Passwort</strong>
+      <div class="callout">
+        <strong>mailbox.org-Besonderheit:</strong> Du bekommst <strong>zwei</strong> generierte Werte angezeigt: einen <em>technischen Benutzernamen</em> und ein <em>Passwort</em>. Beide werden nur einmal angezeigt — beide kopieren.
+      </div>
+      <table class="field-table">
+        <tr><th>Server-URL</th><td><code>https://dav.mailbox.org</code> <small style="color: var(--smoke);">(in photosuite.io vorausgefüllt)</small></td></tr>
+        <tr><th>Benutzername</th><td>der <strong>technische Benutzername</strong> aus dem Setup, <em>nicht</em> die eigene E-Mail</td></tr>
+        <tr><th>App-Passwort</th><td>der gerade angezeigte Code</td></tr>
+      </table>
+    </li>
+  </ol>
+</section>
+
+<!-- ================================================================= -->
+<section id="posteo">
+  <div class="provider-header">
+    <div class="provider-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" aria-label="Posteo" fill="none" stroke="#00833a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="5" width="18" height="14" rx="2"/>
+        <path d="M3 7l9 6 9-6"/>
+      </svg>
+    </div>
+    <div>
+      <h3>Posteo</h3>
+      <p><span class="pill user">User</span> &nbsp; CalDAV einmal aktivieren · ca. 1 Min</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Wichtig:</strong> Posteo aktiviert Kalender &amp; Adressbuch aus Datenschutzgründen standardmäßig <strong>nicht</strong>. Vor dem Verbinden muss das einmalig im Posteo-Account eingeschaltet werden. Posteo nutzt KEIN App-Passwort — das normale Login-Passwort wird verwendet.
+  </div>
+
+  <ol class="steps">
+    <li>
+      <strong class="action">Bei Posteo anmelden</strong>
+      <a class="url-pill" href="https://posteo.de" target="_blank" rel="noopener">posteo.de</a>
+      <button class="copy" data-copy="https://posteo.de">Kopieren</button>
+    </li>
+    <li>
+      <strong class="action">Einstellungen → Kalender aktivieren</strong>
+      <p>Linke Seitenleiste → <strong>Einstellungen</strong>. Reiter <strong>Kalender</strong> → Schalter <strong>Kalender aktivieren</strong> auf „ein".</p>
+    </li>
+    <li>
+      <strong class="action">In photosuite.io eintragen</strong>
+      <table class="field-table">
+        <tr><th>Server-URL</th><td><code>https://posteo.de:8443</code> <small style="color: var(--smoke);">(in photosuite.io vorausgefüllt)</small></td></tr>
+        <tr><th>Benutzername</th><td>die vollständige Posteo-E-Mail, <strong>komplett kleingeschrieben</strong> (z.B. <code>maria@posteo.de</code>)</td></tr>
+        <tr><th>Passwort</th><td>das reguläre Posteo-Login-Passwort</td></tr>
+      </table>
+    </li>
+  </ol>
+
+  <div class="callout">
+    <strong>Stolperfalle Port 8443:</strong> Posteo nutzt für CalDAV nicht den Standard-Port 443. In sehr restriktiven Firmen-Netzen kann der Port blockiert sein — dann hilft eine private Internet-Verbindung oder VPN.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="was-ich-brauche">
+  <span class="eyebrow section-eyebrow">Abschluss</span>
+  <h2>Was ich von dir brauche</h2>
+
+  <div class="needed-from-you">
+    <h4>Nach Google-Setup (Schritt 8)</h4>
+    <ul>
+      <li><strong>Client ID</strong> — endet auf <code>.apps.googleusercontent.com</code></li>
+      <li><strong>Client Secret</strong> — beginnt typischerweise mit <code>GOCSPX-</code></li>
+    </ul>
+  </div>
+
+  <div class="needed-from-you">
+    <h4>Nach Microsoft-Setup</h4>
+    <ul>
+      <li><strong>Anwendungs-ID (Client)</strong> — eine GUID, z.B. <code>a1b2c3d4-e5f6-7890-abcd-ef1234567890</code></li>
+      <li><strong>Wert des geheimen Clientschlüssels</strong> — lange Zeichenkette mit Punkt drin</li>
+    </ul>
+  </div>
+
+  <div class="callout success">
+    <strong>Was passiert dann?</strong> Ich trage die Werte verschlüsselt in die App ein, schalte Google und Microsoft als Connect-Provider scharf, und prüfe einmal end-to-end, dass der OAuth-Flow durchläuft. Apple, Nextcloud, mailbox.org und Posteo sind bereits jetzt nutzbar — jeder User trägt seine Credentials selbst über die Anleitung in den Einstellungen ein.
+  </div>
+
+  <p style="margin-top: 32px; color: var(--smoke); font-size: 14px;">
+    Falls du irgendwo hängst — z.B. „der Button heißt anders" oder „ich finde die Seite nicht" — schreib mir die Stelle und ich gehe live mit dir weiter. Google und Microsoft ändern ihre UI gelegentlich; ich passe die Anleitung dann hier nach.
+  </p>
+</section>
+
+</main>
+</div>
+
+<footer class="app-footer">
+  <div class="container">
+    <p><strong>Lisa CRM · Setup-Guide für Kalender-Integration</strong> · Stand Mai 2026</p>
+    <p>Erstellt für photosuite.io. Alle Marken gehören ihren jeweiligen Inhabern.</p>
+  </div>
+</footer>
+
+<script>
+// Copy-Buttons
+document.querySelectorAll("button.copy").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const text = btn.getAttribute("data-copy");
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = btn.textContent;
+      btn.textContent = "Kopiert ✓";
+      btn.classList.add("ok");
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove("ok");
+      }, 1500);
+    } catch (e) {
+      btn.textContent = "Fehler";
+    }
+  });
+});
+</script>
+
+</body>
+</html>

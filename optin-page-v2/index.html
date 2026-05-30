@@ -1,0 +1,1635 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#19191A" />
+<title>Behind closed doors · 0 € Boudoir Video · Studio Bamberg</title>
+<meta name="description" content="Komm hinter die geschlossenen Türen eines echten Boudoir-Shootings. 15 ungeschönte Minuten, kostenfrei in deinen Posteingang." />
+<meta property="og:title" content="Behind closed doors. Das ehrliche Boudoir-Video." />
+<meta property="og:description" content="15 Minuten ungeschönt. Was an einem Boudoir-Shootingtag wirklich passiert. 0 € · 1 Mail · direkt zum Video." />
+<meta property="og:image" content="assets/melanie_main.jpg" />
+<meta property="og:type" content="website" />
+<link rel="icon" type="image/png" href="assets/wofb_logo_stamp.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Open+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+@font-face {
+  font-family: "Editors Note";
+  src: url("assets/editors_note.woff") format("woff");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  --bg:    #F6F6F2;
+  --paper: #FFFFFF;
+  --linen: #ECEBE8;
+  --stone: #DFDEDA;
+  --smoke: #7D7878;
+  --taupe: #9F877F;
+  --ink:   #19191A;
+  --black: #000000;
+  --red:   #C8102E;
+  --red-soft: #FBE9EC;
+  --red-deep: #9C0822;
+  --serif: "Editors Note", "Cormorant Garamond", Georgia, serif;
+  --body:  "Open Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --ui:    "Montserrat", "Open Sans", sans-serif;
+  --max:   1280px;
+  --gutter: clamp(20px, 4.5vw, 56px);
+  --shadow-md: 0 6px 20px rgba(25,25,26,0.10), 0 2px 6px rgba(25,25,26,0.04);
+  --shadow-lg: 0 28px 64px rgba(25,25,26,0.20), 0 8px 16px rgba(25,25,26,0.10);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+  .parallax { background-attachment: scroll !important; }
+}
+
+/* ========== TYPOGRAPHY ========== */
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5em;
+}
+p { margin: 0 0 1em; }
+em, i { font-style: italic; font-family: var(--serif); }
+b, strong { font-weight: 700; color: inherit; }
+.eyebrow {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.eyebrow.light { color: rgba(255,255,255,0.85); }
+.script {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--red);
+}
+
+/* ========== LAYOUT ========== */
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+.wrap-narrow { max-width: 880px; margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ========== TOP NAV ========== */
+.topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 22px var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  color: var(--bg);
+}
+.topbar__logo img {
+  height: 72px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.96;
+  transition: opacity 0.18s ease;
+}
+.topbar__logo:hover img { opacity: 1; }
+.topbar__nav {
+  display: flex;
+  gap: 22px;
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.topbar__nav a { opacity: 0.85; transition: opacity 0.18s, color 0.18s; }
+.topbar__nav a:hover { opacity: 1; color: var(--red); }
+@media (max-width: 720px) {
+  .topbar { padding: 16px var(--gutter); }
+  .topbar__logo img { height: 56px; }
+  .topbar__nav { display: none; }
+}
+
+/* ========== HERO ========== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  color: var(--bg);
+  overflow: hidden;
+  isolation: isolate;
+  padding: 120px 0 64px;
+}
+.hero__bg {
+  position: absolute; inset: 0;
+  z-index: -2;
+  background-image: url("assets/bg_02.jpg");
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  transform: translateZ(0);
+}
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(25,25,26,0.6) 0%, rgba(25,25,26,0.25) 25%, rgba(25,25,26,0.55) 75%, rgba(25,25,26,0.95) 100%),
+    linear-gradient(90deg, rgba(25,25,26,0.6) 0%, transparent 50%);
+}
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(28px, 4vw, 56px);
+  align-items: end;
+  width: 100%;
+}
+@media (min-width: 980px) {
+  .hero__grid { grid-template-columns: 1.3fr 1fr; align-items: end; gap: 80px; }
+}
+
+.hero__copy { max-width: 720px; }
+.hero__eyebrow { display: inline-block; color: rgba(255,255,255,0.92); margin-bottom: 22px; }
+.hero__eyebrow::before {
+  content: ""; display: inline-block;
+  width: 32px; height: 1px; background: var(--red);
+  vertical-align: middle; margin-right: 12px;
+  transform: translateY(-2px);
+}
+.hero h1 {
+  font-size: clamp(44px, 8.5vw, 108px);
+  line-height: 0.98;
+  color: var(--bg);
+  margin-bottom: 26px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.hero h1 em { color: var(--red); font-style: italic; }
+.hero h1 .br { display: block; }
+
+.hero__lede {
+  font-size: clamp(15px, 1.8vw, 19px);
+  line-height: 1.55;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 28px;
+  max-width: 560px;
+}
+.hero__lede b { color: var(--bg); }
+
+.hero__cues {
+  display: flex; gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+.hero__cues > span { display: inline-flex; align-items: center; gap: 8px; }
+.hero__cues .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--red); }
+
+/* Floating form card */
+.form-card {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: clamp(22px, 3vw, 32px);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  max-width: 480px;
+  margin-left: auto;
+  width: 100%;
+}
+.form-card::before {
+  content: ""; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: var(--red);
+  border-radius: 4px 4px 0 0;
+}
+.form-card__eyebrow {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.form-card__eyebrow .badge {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-size: 9.5px;
+}
+.form-card__title {
+  font-family: var(--serif);
+  font-size: clamp(22px, 2.6vw, 28px);
+  line-height: 1.1;
+  margin-bottom: 4px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.form-card__title em { color: var(--red); font-style: italic; }
+.form-card__sub {
+  font-size: 13.5px;
+  color: var(--smoke);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+/* ========== FORM ========== */
+.form {
+  display: grid;
+  gap: 10px;
+}
+.form__field {
+  position: relative;
+}
+.form__field label {
+  position: absolute;
+  left: 16px; top: 18px;
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--smoke);
+  pointer-events: none;
+  transition: all 0.18s ease;
+  background: var(--paper);
+  padding: 0 4px;
+}
+.form__field input:focus + label,
+.form__field input:not(:placeholder-shown) + label {
+  top: -6px;
+  font-size: 9.5px;
+  color: var(--red);
+}
+.form__field input {
+  width: 100%;
+  height: 56px;
+  padding: 24px 16px 8px;
+  font-family: var(--body);
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--stone);
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.form__field input:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
+}
+.form__field input::placeholder { color: transparent; }
+
+.form__submit {
+  width: 100%;
+  min-height: 56px;
+  padding: 16px 22px;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 3px;
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: background 0.18s, transform 0.12s;
+  margin-top: 6px;
+  position: relative;
+}
+.form__submit:hover { background: var(--red); }
+.form__submit:active { transform: scale(0.99); }
+.form__submit[disabled] { opacity: 0.65; cursor: progress; }
+.form__submit .arrow { transition: transform 0.2s ease; }
+.form__submit:hover .arrow { transform: translateX(4px); }
+.form__submit .spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 99px;
+  animation: spin 0.8s linear infinite;
+}
+.form.is-loading .form__submit .spinner { display: inline-block; }
+.form.is-loading .form__submit .label,
+.form.is-loading .form__submit .arrow { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.form__trust {
+  font-size: 12px;
+  color: var(--smoke);
+  text-align: center;
+  margin-top: 12px;
+  line-height: 1.5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 10px;
+}
+.form__trust svg { width: 11px; height: 11px; color: var(--red); flex-shrink: 0; }
+.form__trust b { color: var(--ink); font-weight: 600; }
+
+.form__success {
+  display: none;
+  text-align: center;
+  padding: 12px 0 4px;
+}
+.form.is-success .form__field,
+.form.is-success .form__submit,
+.form.is-success .form__trust { display: none; }
+.form.is-success .form__success { display: block; }
+.form__success svg { width: 52px; height: 52px; color: var(--red); margin: 0 auto 12px; }
+.form__success h4 {
+  font-family: var(--serif);
+  font-size: 26px;
+  margin: 0 0 6px;
+  font-weight: 500;
+}
+.form__success p { font-size: 14px; color: var(--smoke); margin: 0; }
+
+/* Hero scroll cue */
+.hero__scrollcue {
+  position: absolute;
+  bottom: 22px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-family: var(--ui);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: floatY 2.6s ease-in-out infinite;
+}
+.hero__scrollcue::after {
+  content: "";
+  width: 1px; height: 30px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.5), transparent);
+}
+@keyframes floatY {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 8px); }
+}
+@media (max-width: 720px) {
+  .hero__scrollcue { display: none; }
+}
+
+/* ========== MARQUEE ========== */
+.marquee {
+  background: var(--ink);
+  color: var(--bg);
+  overflow: hidden;
+  padding: 18px 0;
+  position: relative;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.marquee__track {
+  display: flex;
+  gap: 64px;
+  animation: marquee 38s linear infinite;
+  white-space: nowrap;
+  width: max-content;
+}
+.marquee span {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(20px, 2.6vw, 30px);
+  color: var(--bg);
+  display: inline-flex;
+  align-items: center;
+  gap: 64px;
+  letter-spacing: -0.01em;
+}
+.marquee .dot {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 99px;
+  background: var(--red);
+  flex-shrink: 0;
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ========== STEPS ========== */
+.steps {
+  padding: clamp(72px, 9vw, 108px) 0;
+  background: var(--bg);
+}
+.steps__head {
+  text-align: center;
+  margin-bottom: clamp(40px, 5vw, 56px);
+}
+.steps__head .eyebrow { margin-bottom: 12px; display: inline-block; }
+.steps__head h2 {
+  font-size: clamp(30px, 4vw, 44px);
+  margin: 0;
+  line-height: 1.1;
+}
+.steps__head h2 em { color: var(--red); }
+.steps__head p {
+  margin: 14px auto 0;
+  max-width: 540px;
+  color: var(--smoke);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+.steps__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  position: relative;
+}
+@media (min-width: 800px) {
+  .steps__list { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .steps__list::before {
+    content: ""; position: absolute;
+    top: 38px; left: 16%; right: 16%;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--stone) 0 6px, transparent 6px 12px);
+    z-index: 0;
+  }
+}
+.step {
+  background: var(--paper);
+  border: 1px solid var(--stone);
+  border-radius: 4px;
+  padding: 24px 26px 22px;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.step:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--taupe);
+}
+.step__head {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 14px;
+}
+.step__num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--red);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.step__icon {
+  width: 40px; height: 40px;
+  border-radius: 99px;
+  background: var(--bg);
+  display: grid; place-items: center;
+  color: var(--ink);
+  border: 1px solid var(--stone);
+  margin-left: auto;
+}
+.step__icon svg { width: 18px; height: 18px; }
+.step h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 22px;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+.step p {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--smoke);
+  margin: 0;
+}
+.step__meta {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-top: 14px;
+}
+
+/* ========== STATIONS (4 BTS) ========== */
+.stations {
+  padding: clamp(72px, 10vw, 120px) 0;
+  background: var(--linen);
+}
+.stations__head {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto clamp(48px, 6vw, 72px);
+}
+.stations__head h2 {
+  font-size: clamp(32px, 4.5vw, 56px);
+  margin: 14px 0 18px;
+}
+.stations__head h2 em { color: var(--red); }
+.stations__head p {
+  font-size: 16px;
+  color: var(--smoke);
+  line-height: 1.6;
+}
+
+.station {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  margin: 0 0 clamp(56px, 7vw, 96px);
+  align-items: center;
+}
+.station:last-child { margin-bottom: 0; }
+@media (min-width: 880px) {
+  .station { grid-template-columns: 1fr 1fr; gap: 64px; }
+  .station--reverse .station__visual { order: 2; }
+}
+.station__visual {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  aspect-ratio: 4/3;
+  box-shadow: var(--shadow-md);
+}
+.station__visual img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.station:hover .station__visual img { transform: scale(1.04); }
+.station__num {
+  position: absolute;
+  top: 16px; left: 18px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 64px;
+  color: var(--paper);
+  text-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+}
+.station__copy .eyebrow { margin-bottom: 10px; display: inline-block; }
+.station__copy h3 {
+  font-size: clamp(28px, 3.5vw, 40px);
+  margin: 0 0 16px;
+  line-height: 1.1;
+}
+.station__copy h3 em { color: var(--red); }
+.station__copy p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* ========== CINEMATIC PARALLAX QUOTE ========== */
+.cinematic-quote {
+  position: relative;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg);
+  padding: clamp(72px, 10vw, 120px) 0;
+  text-align: center;
+  isolation: isolate;
+  overflow: hidden;
+}
+.cinematic-quote .parallax-bg {
+  background-image: url("assets/bg_04.jpg");
+  background-position: center top;
+}
+.cinematic-quote::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(25,25,26,0.5) 0%, rgba(25,25,26,0.3) 50%, rgba(25,25,26,0.5) 100%);
+}
+.cinematic-quote .wrap-narrow { position: relative; z-index: 2; }
+.cinematic-quote .eyebrow { color: rgba(255,255,255,0.85); display: inline-block; margin-bottom: 22px; }
+.cinematic-quote blockquote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(28px, 5vw, 58px);
+  line-height: 1.1;
+  margin: 0 0 32px;
+  color: var(--bg);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.cinematic-quote blockquote em { color: var(--red); font-style: italic; }
+.cinematic-quote blockquote::before {
+  content: "„";
+  display: block;
+  font-size: clamp(80px, 12vw, 140px);
+  line-height: 0.5;
+  color: var(--red);
+  margin: 0 0 12px;
+}
+.cinematic-quote cite {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-style: normal;
+}
+.cinematic-quote cite .line {
+  width: 32px; height: 2px;
+  background: var(--red);
+  margin-bottom: 4px;
+}
+.cinematic-quote cite .name {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  color: var(--bg);
+  font-weight: 500;
+}
+.cinematic-quote cite .role {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ========== PARALLAX BG SHARED ========== */
+.parallax-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center center;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  /* iOS / Touch devices: drop fixed BG (Safari quirks), keep visible image */
+  .parallax-bg { background-attachment: scroll; }
+}
+
+/* ========== LISA ========== */
+.lisa {
+  background: var(--ink);
+  color: var(--bg);
+  padding: clamp(72px, 10vw, 120px) 0;
+  overflow: hidden;
+}
+.lisa h2, .lisa h3 { color: var(--bg); }
+.lisa__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(40px, 6vw, 80px);
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .lisa__grid { grid-template-columns: 5fr 7fr; }
+}
+.lisa__photo-wrap {
+  margin: 0;
+  position: relative;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.lisa__photo {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 4/5;
+  box-shadow: 0 28px 56px rgba(0,0,0,0.5);
+}
+.lisa__photo img { width: 100%; height: 100%; object-fit: cover; }
+.lisa__signature {
+  position: absolute;
+  bottom: 22px; left: 22px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 56px;
+  color: var(--paper);
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.55);
+  z-index: 2;
+}
+.lisa__signature::after {
+  content: ""; display: block;
+  width: 36px; height: 2px;
+  background: var(--red);
+  margin-top: 8px;
+}
+.lisa__nameplate {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(246,246,242,0.18);
+}
+.lisa__nameplate-name {
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 30px;
+  color: var(--paper);
+}
+.lisa__nameplate-role {
+  display: block;
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-top: 4px;
+}
+
+.lisa__eyebrow {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: clamp(11px, 1.1vw, 13px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding: 8px 14px;
+  background: rgba(200,16,46,0.14);
+  border-left: 3px solid var(--red);
+  border-radius: 2px;
+}
+.lisa__eyebrow .dot {
+  width: 8px; height: 8px; border-radius: 99px;
+  background: var(--red);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(1.4); }
+}
+
+.lisa__quote {
+  font-family: var(--serif);
+  font-size: clamp(26px, 3.6vw, 42px);
+  line-height: 1.18;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+}
+.lisa__quote em { color: var(--red); font-style: italic; }
+
+.lisa__body { font-size: 16px; line-height: 1.7; color: rgba(246,246,242,0.85); }
+.lisa__body p { margin-bottom: 16px; }
+.lisa__body b { color: var(--paper); }
+
+.lisa__stats {
+  display: flex; gap: 32px; flex-wrap: wrap;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(246,246,242,0.18);
+}
+.lisa__stat b {
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--red);
+  letter-spacing: -0.02em;
+  font-variant-numeric: oldstyle-nums;
+}
+.lisa__stat span {
+  display: block;
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(246,246,242,0.6);
+  margin-top: 6px;
+}
+
+/* ========== MUST-SEE (Parallax overlay) ========== */
+.must-see {
+  position: relative;
+  padding: clamp(80px, 10vw, 120px) 0;
+  color: var(--bg);
+  isolation: isolate;
+  overflow: hidden;
+}
+.must-see .parallax-bg {
+  background-image: url("assets/melanie_main.jpg");
+  background-position: center 40%;
+}
+.must-see::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(25,25,26,0.85) 0%, rgba(25,25,26,0.7) 50%, rgba(25,25,26,0.92) 100%);
+}
+.must-see__head {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 48px;
+}
+.must-see__head h2 {
+  color: var(--bg);
+  font-size: clamp(32px, 4.5vw, 52px);
+  margin: 14px 0 0;
+}
+.must-see__head h2 em { color: var(--red); }
+.must-see__head .eyebrow { color: rgba(255,255,255,0.85); }
+
+.must-see__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.must-see__item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 18px;
+  align-items: flex-start;
+  background: rgba(246,246,242,0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(246,246,242,0.14);
+  border-radius: 4px;
+  padding: 20px 24px;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  color: var(--bg);
+}
+.must-see__item:hover {
+  border-color: var(--red);
+  transform: translateX(4px);
+  background: rgba(246,246,242,0.1);
+}
+.must-see__check {
+  width: 30px; height: 30px;
+  border-radius: 99px;
+  background: var(--red);
+  color: var(--bg);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.must-see__check svg { width: 14px; height: 14px; }
+.must-see__item p { margin: 0; font-size: 16px; line-height: 1.55; }
+.must-see__item b { color: var(--bg); }
+
+/* ========== FINAL CTA (Cinematic) ========== */
+.final {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  color: var(--bg);
+  padding: clamp(80px, 10vw, 120px) 0;
+  isolation: isolate;
+  overflow: hidden;
+}
+.final .parallax-bg {
+  background-image: url("assets/bg_08.jpg");
+  background-position: center top;
+}
+.final::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(120deg, rgba(25,25,26,0.92) 0%, rgba(25,25,26,0.5) 50%, rgba(25,25,26,0.35) 100%),
+    linear-gradient(180deg, rgba(25,25,26,0.4) 0%, transparent 30%, rgba(25,25,26,0.85) 100%);
+}
+.final__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(40px, 5vw, 72px);
+  align-items: center;
+  width: 100%;
+}
+@media (min-width: 980px) {
+  .final__grid { grid-template-columns: 1.3fr 1fr; gap: 80px; }
+}
+.final__copy h2 {
+  font-size: clamp(36px, 6vw, 72px);
+  line-height: 1.02;
+  color: var(--bg);
+  margin-bottom: 22px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.final__copy h2 em { color: var(--red); font-style: italic; }
+.final__copy .eyebrow { color: rgba(255,255,255,0.92); margin-bottom: 22px; display: inline-block; }
+.final__copy .eyebrow::before {
+  content: ""; display: inline-block;
+  width: 32px; height: 1px; background: var(--red);
+  vertical-align: middle; margin-right: 12px;
+  transform: translateY(-2px);
+}
+.final__copy p {
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.88);
+  max-width: 540px;
+}
+.final__copy p b { color: var(--bg); }
+.final__copy .scriptline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(20px, 2.4vw, 26px);
+  color: rgba(255,255,255,0.92);
+  margin-top: 24px;
+  padding-left: 18px;
+  border-left: 2px solid var(--red);
+}
+.final__copy .scriptline span { color: var(--bg); }
+
+/* ========== FOOTER ========== */
+footer {
+  padding: 36px var(--gutter) calc(36px + env(safe-area-inset-bottom));
+  background: var(--ink);
+  color: rgba(246,246,242,0.6);
+  text-align: center;
+  font-size: 13px;
+}
+footer .logo-mini {
+  height: 64px;
+  width: auto;
+  margin: 0 auto 16px;
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
+}
+footer .links {
+  display: flex; justify-content: center; gap: 18px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+footer .links a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,0.2); }
+footer .links a:hover { color: var(--bg); text-decoration-color: var(--red); }
+
+/* ========== STICKY MOBILE CTA ========== */
+.sticky-cta {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 80;
+  transform: translateY(110%);
+  transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.25);
+}
+.sticky-cta.is-visible { transform: translateY(0); }
+.sticky-cta__text { flex: 1; display: flex; flex-direction: column; }
+.sticky-cta__text b {
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.sticky-cta__text span {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+.sticky-cta a {
+  background: var(--red);
+  color: var(--bg);
+  font-family: var(--ui);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 14px 18px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  white-space: nowrap;
+}
+.sticky-cta a:hover { background: var(--red-deep); }
+@media (min-width: 860px) { .sticky-cta { display: none; } }
+
+@media (max-width: 859px) {
+  body.has-sticky { padding-bottom: 80px; }
+}
+
+/* ========== REVEAL ANIMATIONS ========== */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.reveal.is-visible { opacity: 1; transform: translateY(0); }
+.reveal.delay-1 { transition-delay: 0.08s; }
+.reveal.delay-2 { transition-delay: 0.16s; }
+.reveal.delay-3 { transition-delay: 0.24s; }
+
+::selection { background: var(--red); color: var(--bg); }
+</style>
+</head>
+
+<body>
+
+<!-- ============ TOP BAR (over hero) ============ -->
+<header class="topbar">
+  <a href="#hero" class="topbar__logo" aria-label="the World of Boudoir">
+    <img src="assets/wofb_logo_stamp.png" alt="the World of Boudoir" />
+  </a>
+  <nav class="topbar__nav" aria-label="Schnell-Anker">
+    <a href="#stations">Was du siehst</a>
+    <a href="#ueber-lisa">Über Lisa</a>
+    <a href="#eintragung">0 € Video</a>
+  </nav>
+</header>
+
+<!-- ============ HERO (Parallax) ============ -->
+<section class="hero" id="hero">
+  <div class="hero__bg parallax-bg" role="img" aria-label="Frau im Profil mit weißem Tuch im Boudoir-Studio"></div>
+
+  <div class="wrap">
+    <div class="hero__grid">
+
+      <div class="hero__copy reveal">
+        <div class="hero__eyebrow eyebrow">0 € · Behind closed doors</div>
+        <h1>
+          <span class="br">Was hinter</span>
+          <span class="br">den <em>geschlossenen</em></span>
+          <span class="br">Türen passiert.</span>
+        </h1>
+        <p class="hero__lede">
+          <b>15 ehrliche Minuten</b> aus einem echten Shooting. Aufgenommen mit Melanie, die genau dort
+          stand, wo du jetzt stehst. Damit du weißt, was dich erwartet, bevor du dich überhaupt entscheidest.
+        </p>
+        <div class="hero__cues">
+          <span><span class="dot"></span>0 €. Kein Spam.</span>
+          <span><span class="dot"></span>1 Mail. Direkt zum Video.</span>
+          <span><span class="dot"></span>Studio Bamberg.</span>
+        </div>
+      </div>
+
+      <aside class="form-card reveal delay-2" id="form-card">
+        <div class="form-card__eyebrow">
+          <span>Jetzt sichern</span>
+          <span class="badge">0 €</span>
+        </div>
+        <h2 class="form-card__title">Ich will <em>reinschauen</em>.</h2>
+        <p class="form-card__sub">Trag deine Mail ein. In den nächsten Minuten landet das Video bei dir im Postfach.</p>
+
+        <form class="form" id="form-hero" data-form
+              action="https://theworldofboudoir.activehosted.com/proc.php"
+              method="POST" novalidate>
+          <input type="hidden" name="u" value="6A0C41C5CFFF5">
+          <input type="hidden" name="f" value="31">
+          <input type="hidden" name="s" value="">
+          <input type="hidden" name="c" value="0">
+          <input type="hidden" name="m" value="0">
+          <input type="hidden" name="act" value="sub">
+          <input type="hidden" name="v" value="2">
+          <input type="hidden" name="or" value="74fddfb4-0516-4b94-86e2-6db52417b4b2">
+
+          <div class="form__field">
+            <input type="text" id="hero-fullname" name="fullname" required placeholder=" "
+                   autocomplete="given-name" autocapitalize="words" />
+            <label for="hero-fullname">Wie heißt du?</label>
+          </div>
+          <div class="form__field">
+            <input type="email" id="hero-email" name="email" required placeholder=" "
+                   autocomplete="email" inputmode="email" spellcheck="false" />
+            <label for="hero-email">Deine E-Mail-Adresse</label>
+          </div>
+
+          <button type="submit" class="form__submit">
+            <span class="label">Ja, schick mir das Video</span>
+            <span class="arrow" aria-hidden="true">→</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+
+          <div class="form__trust">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span><b>Kein Spam.</b> Nur diese eine Mail. Jederzeit abbestellbar.</span>
+          </div>
+
+          <div class="form__success" role="status" aria-live="polite">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <h4>Schau in dein Postfach.</h4>
+            <p>In den nächsten Minuten landet die Mail mit deinem Video bei dir.</p>
+          </div>
+        </form>
+      </aside>
+
+    </div>
+  </div>
+
+  <div class="hero__scrollcue" aria-hidden="true">Scroll</div>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span>
+      0 € Boudoir Video <span class="dot"></span>
+      Behind closed doors <span class="dot"></span>
+      Studio Bamberg <span class="dot"></span>
+      500+ Shootings <span class="dot"></span>
+      15 ehrliche Minuten <span class="dot"></span>
+      Du bist es wert <span class="dot"></span>
+      Kein Spam <span class="dot"></span>
+      1 Mail <span class="dot"></span>
+      0 € Boudoir Video <span class="dot"></span>
+      Behind closed doors <span class="dot"></span>
+      Studio Bamberg <span class="dot"></span>
+      500+ Shootings <span class="dot"></span>
+      15 ehrliche Minuten <span class="dot"></span>
+      Du bist es wert <span class="dot"></span>
+      Kein Spam <span class="dot"></span>
+      1 Mail <span class="dot"></span>
+    </span>
+  </div>
+</div>
+
+<!-- ============ STEPS ============ -->
+<section class="steps" id="schritte" aria-label="So funktioniert es">
+  <div class="wrap">
+    <div class="steps__head reveal">
+      <div class="eyebrow">So einfach geht's</div>
+      <h2>In drei Schritten zu <em>deinem Video</em></h2>
+      <p>Keine Wartezeit. Keine versteckten Kosten. Du entscheidest in 15 Minuten, ob es das Richtige für dich ist.</p>
+    </div>
+
+    <ol class="steps__list">
+      <li class="step reveal">
+        <div class="step__head">
+          <div class="step__num">i.</div>
+          <div class="step__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8l9 6 9-6"/>
+            </svg>
+          </div>
+        </div>
+        <h3>E-Mail eintragen</h3>
+        <p>Nur dein Name und deine Mail. Mehr brauche ich nicht von dir.</p>
+        <div class="step__meta">≈ 10 Sekunden</div>
+      </li>
+
+      <li class="step reveal delay-1">
+        <div class="step__head">
+          <div class="step__num">ii.</div>
+          <div class="step__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9.5"/>
+            </svg>
+          </div>
+        </div>
+        <h3>Mail bestätigen</h3>
+        <p>Ein Klick in der ersten Mail. Damit alles DSGVO-konform bleibt.</p>
+        <div class="step__meta">1 Klick</div>
+      </li>
+
+      <li class="step reveal delay-2">
+        <div class="step__head">
+          <div class="step__num">iii.</div>
+          <div class="step__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+        <h3>Video schauen</h3>
+        <p>15 ungeschönte Minuten. Direkt in deinem Postfach.</p>
+        <div class="step__meta">15 Min · Behind closed doors</div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ STATIONS (4 BTS) ============ -->
+<section class="stations" id="stations" aria-label="Was du im Video siehst">
+  <div class="wrap">
+
+    <div class="stations__head reveal">
+      <div class="eyebrow">Das siehst du</div>
+      <h2>Vier Räume. Eine <em>echte</em> Frau.</h2>
+      <p>Vom ersten Anprobieren bis zu dem Moment, in dem Melanie ihre eigenen Bilder sieht. Echt, persönlich, vom ersten Hereinkommen an.</p>
+    </div>
+
+    <div class="station reveal">
+      <div class="station__visual">
+        <img src="assets/bg_04.jpg" alt="Frau am Fenster, schwarz-weiß Boudoir-Aufnahme" loading="lazy" />
+        <div class="station__num">i.</div>
+      </div>
+      <div class="station__copy">
+        <div class="eyebrow">Station 01</div>
+        <h3>Das <em>Fitting</em>.</h3>
+        <p>Melanie und ich suchen ihre Outfits gemeinsam aus. Jedes Stück darf zu ihr, ihrem Körper und ihren Wünschen passen. Kein Druck. Kein „du solltest". Nur das, was sich für dich richtig anfühlt.</p>
+      </div>
+    </div>
+
+    <div class="station station--reverse reveal">
+      <div class="station__visual">
+        <img src="assets/bg_08.jpg" alt="Frau am Spiegel im Boudoir-Studio" loading="lazy" />
+        <div class="station__num">ii.</div>
+      </div>
+      <div class="station__copy">
+        <div class="eyebrow">Station 02</div>
+        <h3>Haare &amp; <em>Make-up</em>.</h3>
+        <p>Sieh dabei zu, wie aus Melanies Alltagsversion ihre sexy Königin erwacht. Inklusive der ausführlichen Beratung, bevor das Styling überhaupt beginnt. Denn dein Gesicht ist deins. Nicht das einer Schablone.</p>
+      </div>
+    </div>
+
+    <div class="station reveal">
+      <div class="station__visual">
+        <img src="assets/bg_07.jpg" alt="Boudoir Shooting in blauem Lichtsetting" loading="lazy" />
+        <div class="station__num">iii.</div>
+      </div>
+      <div class="station__copy">
+        <div class="eyebrow">Station 03</div>
+        <h3>Das <em>Shooting</em>.</h3>
+        <p>Der Teil, vor dem du wahrscheinlich am meisten Respekt hast. Und der so viel leichter ist, als du denkst. Du wirst sehen, wie ich dich Schritt für Schritt durch jede Pose führe. Ohne Vorerfahrung. Und mit erstaunlich viel Spaß.</p>
+      </div>
+    </div>
+
+    <div class="station station--reverse reveal">
+      <div class="station__visual">
+        <img src="assets/melanie_main.jpg" alt="Detail-Aufnahme aus einem Boudoir-Shooting" loading="lazy" />
+        <div class="station__num">iv.</div>
+      </div>
+      <div class="station__copy">
+        <div class="eyebrow">Station 04</div>
+        <h3>Die <em>Auswahl</em>.</h3>
+        <p>Du siehst, wie Melanie ihre Lieblingsbilder auswählt und ihre Erinnerungs-Produkte gestaltet. Vom luxuriösen Fotoalbum bis zum Wandbild an deiner Wand. Das, was am Ende deines Tages bleibt. Und was du immer wieder anschauen wirst.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ CINEMATIC QUOTE (Parallax) ============ -->
+<section class="cinematic-quote" aria-label="Lisas Versprechen">
+  <div class="parallax-bg" role="img" aria-label="Schwarz-weiß Boudoir-Aufnahme"></div>
+  <div class="wrap-narrow">
+    <div class="eyebrow light">Lisas Versprechen</div>
+    <blockquote>
+      Jede Frau kann das. Sie braucht nur <em>jemanden, der ihr zeigt wie</em>.
+    </blockquote>
+    <cite>
+      <span class="line" aria-hidden="true"></span>
+      <span class="name">Lisa</span>
+      <span class="role">Boudoir Photographer · Bamberg</span>
+    </cite>
+  </div>
+</section>
+
+<!-- ============ LISA ============ -->
+<section class="lisa" id="ueber-lisa">
+  <div class="wrap">
+    <div class="lisa__grid">
+
+      <figure class="lisa__photo-wrap reveal">
+        <div class="lisa__photo">
+          <img src="assets/lisa_portrait.jpg" alt="Lisa, Boudoir Fotografin in Bamberg" loading="lazy" />
+          <span class="lisa__signature" aria-hidden="true">Lisa</span>
+        </div>
+        <figcaption class="lisa__nameplate">
+          <span class="lisa__nameplate-name">Lisa</span>
+          <span class="lisa__nameplate-role">Boudoir Photographer · Bamberg</span>
+        </figcaption>
+      </figure>
+
+      <div class="reveal delay-1">
+        <div class="lisa__eyebrow">
+          <span class="dot" aria-hidden="true"></span>
+          Deine Fotografin
+        </div>
+        <div class="lisa__quote">
+          Wenn wir aufhören, unser Aussehen negativ zu bewerten, erlangen wir unser <em>wahres Selbstbewusstsein</em>.
+        </div>
+        <div class="lisa__body">
+          <p>
+            … das sagt eine Boudoir-Fotografin, bei der es <i>vermeintlich</i> NUR um das Aussehen geht. <i>Oder doch nicht?</i>
+          </p>
+          <p>
+            Deine Boudoir-Bilder zeigen dir <b>mehr als deinen Körper in schönen Dessous verpackt:</b> Sie zeigen dir
+            deine selbstbewussteste Ausstrahlung. Deine Sinnlichkeit als Verführungskraft. Genau das, was entsteht,
+            wenn du aufhörst, dich klein zu machen.
+          </p>
+          <p>
+            Ich habe dieses Video ins Leben gerufen, <b>damit du die Überzeugung verlierst, dass du dafür nicht gut
+            genug bist.</b> Es zeigt dir genau, wie solch ein Shooting abläuft. Und dass du keinen einzigen Schritt
+            allein gehst. Ich bin bei jedem Atemzug an deiner Seite.
+          </p>
+          <p style="font-style:italic; color: rgba(246,246,242,0.78); font-family: var(--serif); font-size: 18px; padding-left: 14px; border-left: 2px solid var(--red); margin-top: 18px;">
+            Meine Mission ist klar: Frauen wie dich und mich in unsere Selbstermächtigung bringen.
+            Denn die Macht lag Jahrhunderte zu lang bei Männern.
+          </p>
+        </div>
+        <div class="lisa__stats">
+          <div class="lisa__stat"><b>500+</b><span>Shootings</span></div>
+          <div class="lisa__stat"><b>15</b><span>Min Video</span></div>
+          <div class="lisa__stat"><b>0&nbsp;€</b><span>Für dich</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ MUST-SEE (Parallax overlay) ============ -->
+<section class="must-see" aria-label="Für wen das Video gemacht ist">
+  <div class="parallax-bg" role="img" aria-label="Detailaufnahme Boudoir"></div>
+  <div class="wrap">
+    <div class="must-see__head reveal">
+      <div class="eyebrow">Must-See</div>
+      <h2>Dieses Video ist <em>genau dann</em> für dich, wenn …</h2>
+    </div>
+
+    <div class="must-see__list">
+      <div class="must-see__item reveal">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du dich <b>schon länger mit einem Boudoir-Shooting beschäftigst</b> und jetzt richtig eintauchen willst, <i>ohne selbst vor der Kamera zu stehen.</i></p>
+      </div>
+      <div class="must-see__item reveal delay-1">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du <b>total neu im Thema Boudoir</b> bist und alles darüber erfahren möchtest, bevor du eine Entscheidung triffst.</p>
+      </div>
+      <div class="must-see__item reveal delay-2">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du einen <b>liebevolleren Blick auf dich selbst</b> bekommen willst. <i>Am besten auf Knopfdruck.</i></p>
+      </div>
+      <div class="must-see__item reveal delay-3">
+        <div class="must-see__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <p>… du <b>vor der Buchung absolut sicher sein willst,</b> was dich bei deinem Boudoir-Shooting erwartet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA (Cinematic Parallax) ============ -->
+<section class="final" id="eintragung">
+  <div class="parallax-bg" role="img" aria-label="Boudoir-Aufnahme an einem Spiegel"></div>
+
+  <div class="wrap">
+    <div class="final__grid">
+
+      <div class="final__copy reveal">
+        <div class="eyebrow">Letzte Tür</div>
+        <h2>Du verdienst <em>Bilder</em>, die dich so zeigen, wie du dich endlich fühlen willst.</h2>
+        <p>
+          Trag deine Mail ein, schau mir 15 Minuten lang zu, wie eine echte Frau durch genau das geht.
+          Und entscheide danach. <b>Kostet dich nichts außer deine Zeit.</b>
+        </p>
+        <p>
+          Egal ob du gerade lernst, dich selbst zu lieben, oder ob du längst weißt, wer du bist und es jetzt sichtbar
+          machen willst. <i>Der Moment vor der Kamera ist neu.</i> Genau dafür bin ich da.
+        </p>
+        <div class="scriptline">
+          Aus über 500 Shootings weiß ich: <span>jede Frau kann das.</span> Sie braucht nur jemanden, der ihr zeigt wie.
+        </div>
+      </div>
+
+      <aside class="form-card reveal delay-1">
+        <div class="form-card__eyebrow">
+          <span>Jetzt sichern</span>
+          <span class="badge">0 €</span>
+        </div>
+        <h2 class="form-card__title">Schau mir <em>15 Minuten</em> zu.</h2>
+        <p class="form-card__sub">Ich schicke dir das Video direkt in dein Postfach. Kein Umweg.</p>
+
+        <form class="form" id="form-final" data-form
+              action="https://theworldofboudoir.activehosted.com/proc.php"
+              method="POST" novalidate>
+          <input type="hidden" name="u" value="6A0C41C5CFFF5">
+          <input type="hidden" name="f" value="31">
+          <input type="hidden" name="s" value="">
+          <input type="hidden" name="c" value="0">
+          <input type="hidden" name="m" value="0">
+          <input type="hidden" name="act" value="sub">
+          <input type="hidden" name="v" value="2">
+          <input type="hidden" name="or" value="74fddfb4-0516-4b94-86e2-6db52417b4b2">
+
+          <div class="form__field">
+            <input type="text" id="final-fullname" name="fullname" required placeholder=" "
+                   autocomplete="given-name" autocapitalize="words" />
+            <label for="final-fullname">Wie heißt du?</label>
+          </div>
+          <div class="form__field">
+            <input type="email" id="final-email" name="email" required placeholder=" "
+                   autocomplete="email" inputmode="email" spellcheck="false" />
+            <label for="final-email">Deine E-Mail-Adresse</label>
+          </div>
+
+          <button type="submit" class="form__submit">
+            <span class="label">Ja, schick mir das Video</span>
+            <span class="arrow" aria-hidden="true">→</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+
+          <div class="form__trust">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span><b>Kein Spam.</b> Nur diese eine Mail mit dem Video. Abmeldung jederzeit per Klick.</span>
+          </div>
+
+          <div class="form__success" role="status" aria-live="polite">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <h4>Geschafft.</h4>
+            <p>Deine Mail ist unterwegs. In den nächsten Minuten findest du das Video in deinem Postfach.</p>
+          </div>
+        </form>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <img class="logo-mini" src="assets/wofb_logo_stamp.png" alt="the World of Boudoir" />
+  <p>the World of Boudoir · Boudoir-Fotografie · Bamberg</p>
+  <div class="links">
+    <a href="/impressum">Impressum</a>
+    <a href="/datenschutz">Datenschutz</a>
+    <a href="/agb">AGB</a>
+  </div>
+  <p style="margin-top:12px; font-size:12px;">© 2026 the World of Boudoir</p>
+</footer>
+
+<!-- ============ STICKY MOBILE CTA ============ -->
+<div class="sticky-cta" id="stickyCta" aria-hidden="true">
+  <div class="sticky-cta__text">
+    <b>0 € Video · 15 Min.</b>
+    <span>Behind closed doors</span>
+  </div>
+  <a href="#eintragung" data-sticky-cta>Jetzt sichern <span aria-hidden="true">→</span></a>
+</div>
+
+<script>
+(function () {
+  // -------- Reveal on scroll --------
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('is-visible'); });
+  }
+
+  // -------- Sticky CTA visibility --------
+  var sticky = document.getElementById('stickyCta');
+  var hero = document.querySelector('.hero');
+  var finalSection = document.getElementById('eintragung');
+  if (sticky && hero && finalSection) {
+    document.body.classList.add('has-sticky');
+    var lastShown = false;
+    var update = function () {
+      var heroBottom = hero.getBoundingClientRect().bottom;
+      var finalTop = finalSection.getBoundingClientRect().top;
+      var vh = window.innerHeight;
+      var shouldShow = heroBottom < 100 && finalTop > vh * 0.6;
+      if (shouldShow !== lastShown) {
+        sticky.classList.toggle('is-visible', shouldShow);
+        sticky.setAttribute('aria-hidden', String(!shouldShow));
+        lastShown = shouldShow;
+      }
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+  }
+
+  // -------- Form submission --------
+  document.querySelectorAll('[data-form]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var name = form.querySelector('input[name="fullname"]');
+      var email = form.querySelector('input[name="email"]');
+      if (!name || !email || !name.value.trim() || !email.value.trim()) return;
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value)) return;
+
+      e.preventDefault();
+      form.classList.add('is-loading');
+      var btn = form.querySelector('.form__submit');
+      if (btn) btn.disabled = true;
+
+      var data = new FormData(form);
+      fetch(form.action, { method: 'POST', mode: 'no-cors', body: data })
+        .catch(function () {})
+        .finally(function () {
+          form.classList.remove('is-loading');
+          form.classList.add('is-success');
+          if (btn) btn.disabled = false;
+          setTimeout(function () {
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 80);
+        });
+    });
+  });
+
+  // -------- Anchor smooth scroll with topbar offset --------
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var id = a.getAttribute('href');
+      if (id.length < 2) return;
+      var target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      var top = target.getBoundingClientRect().top + window.pageYOffset - 24;
+      window.scrollTo({ top: top, behavior: 'smooth' });
+    });
+  });
+
+  // -------- Subtle parallax on hero bg for non-touch screens --------
+  var heroBg = document.querySelector('.hero__bg');
+  if (heroBg && window.matchMedia('(min-width: 980px) and (pointer: fine)').matches) {
+    var raf = null;
+    var onScroll = function () {
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        var y = Math.max(0, window.pageYOffset);
+        var max = hero.offsetHeight;
+        var p = Math.min(1, y / max);
+        heroBg.style.transform = 'translate3d(0,' + (p * 60) + 'px, 0) scale(' + (1 + p * 0.05) + ')';
+        raf = null;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+})();
+</script>
+
+</body>
+</html>

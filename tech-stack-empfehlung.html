@@ -1,0 +1,2076 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tech-Stack-Empfehlung — Lisa CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Open+Sans:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&family=Ballet&family=Poppins:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5EDE2;
+    --cream-dark: #ECE0CF;
+    --mocha: #6B4F3F;
+    --mocha-dark: #4A3729;
+    --ink: #2A1F18;
+    --muted: #7A6A5C;
+    --line: #D9C9B5;
+    --good: #2F6B3A;
+    --warn: #B0741D;
+    --bad:  #9A2B1F;
+    --paper: #FBF7F1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  /* Type */
+  h1, h2, h3, h4 {
+    font-family: "Editor's Note", "Cormorant Garamond", Georgia, serif;
+    font-weight: 500;
+    color: var(--mocha-dark);
+    letter-spacing: -0.01em;
+    margin: 0 0 0.4em;
+  }
+  h1 { font-size: 44px; line-height: 1.1; }
+  h2 { font-size: 30px; line-height: 1.15; margin-top: 2.2em; padding-top: 0.6em; border-top: 1px solid var(--line); }
+  h3 { font-size: 21px; margin-top: 1.8em; color: var(--mocha); }
+  h4 { font-size: 16px; margin-top: 1.4em; color: var(--mocha); font-weight: 600; font-family: "Inter", sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
+  p { margin: 0 0 1em; }
+  small, .small { font-size: 12.5px; color: var(--muted); }
+  a { color: var(--mocha); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+  a:hover { color: var(--mocha-dark); }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.92em; background: var(--cream); padding: 1px 5px; border-radius: 3px; }
+
+  /* Header */
+  header.cover {
+    background: linear-gradient(180deg, var(--cream) 0%, var(--paper) 100%);
+    border-bottom: 1px solid var(--line);
+    padding: 72px 32px 48px;
+    margin-bottom: 8px;
+  }
+  header.cover .inner { max-width: 1080px; margin: 0 auto; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; color: var(--mocha); margin-bottom: 14px; font-weight: 600; }
+  header.cover h1 { font-size: 56px; margin-bottom: 8px; }
+  header.cover .lede { font-size: 18px; color: var(--muted); max-width: 720px; margin-top: 16px; }
+  .meta { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 28px; font-size: 13px; color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  /* Callouts */
+  .callout {
+    background: var(--cream);
+    border-left: 3px solid var(--mocha);
+    padding: 18px 22px;
+    margin: 24px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout.warn { border-left-color: var(--warn); background: #FBF1DE; }
+  .callout.bad  { border-left-color: var(--bad);  background: #F8E3DF; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout h4 { margin-top: 0; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 24px;
+    font-size: 14px;
+    background: white;
+    border: 1px solid var(--line);
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    background: var(--cream);
+    font-weight: 600;
+    color: var(--mocha-dark);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.center, th.center { text-align: center; }
+  tbody tr:hover { background: #FCF8F2; }
+
+  /* Badges */
+  .b { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; vertical-align: middle; }
+  .b-de  { background: #E5F0E5; color: var(--good); }
+  .b-eu  { background: #E8F1F8; color: #2A557A; }
+  .b-us  { background: #F8E3DF; color: var(--bad); }
+  .b-ch  { background: #F0EBE2; color: var(--mocha-dark); }
+  .b-rec { background: var(--mocha); color: var(--cream); }
+  .b-alt { background: var(--cream-dark); color: var(--mocha-dark); }
+
+  .risk-good { color: var(--good); font-weight: 600; }
+  .risk-warn { color: var(--warn); font-weight: 600; }
+  .risk-bad  { color: var(--bad);  font-weight: 600; }
+
+  /* Service cards */
+  .service {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px 24px;
+    margin: 18px 0;
+  }
+  .service.recommended { border: 2px solid var(--mocha); position: relative; }
+  .service.recommended::before {
+    content: "EMPFEHLUNG";
+    position: absolute; top: -10px; left: 18px;
+    background: var(--mocha); color: var(--cream);
+    font-size: 10px; padding: 3px 10px; border-radius: 99px;
+    letter-spacing: 0.12em; font-weight: 600;
+  }
+  .service h3 { margin-top: 0; }
+  .service .row { display: flex; gap: 32px; flex-wrap: wrap; margin-top: 10px; }
+  .service .row > div { flex: 1; min-width: 180px; }
+  .service .label { text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+  .service .val { font-size: 15px; color: var(--ink); }
+  .service .price { font-size: 22px; font-family: "Editor's Note", Georgia, serif; color: var(--mocha-dark); font-weight: 500; }
+
+  /* Cost summary */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media (max-width: 720px) { .summary-grid { grid-template-columns: 1fr; } }
+  .scenario { background: white; border: 1px solid var(--line); border-radius: 6px; padding: 22px; }
+  .scenario.preferred { border-color: var(--mocha); border-width: 2px; }
+  .scenario h4 { margin-top: 0; }
+  .scenario .total { font-family: "Editor's Note", Georgia, serif; font-size: 32px; color: var(--mocha-dark); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .scenario .total small { display: block; font-family: "Inter", sans-serif; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .scenario ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
+  .scenario li { margin-bottom: 4px; }
+
+  /* TOC */
+  nav.toc { background: var(--cream); padding: 18px 22px; border-radius: 6px; margin-bottom: 32px; }
+  nav.toc ol { columns: 2; column-gap: 24px; margin: 0; padding-left: 20px; font-size: 14px; }
+  @media (max-width: 720px) { nav.toc ol { columns: 1; } }
+  nav.toc li { margin-bottom: 4px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+
+  /* Footer */
+  footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+  @media print {
+    body { background: white; }
+    header.cover { background: white; }
+    .service.recommended { border-width: 1px; }
+    a { color: var(--ink); }
+    nav.toc { display: none; }
+  }
+
+  /* =========================================================
+     STYLEGUIDE & DASHBOARD — Live-Brand "the World of Boudoir"
+     Farben + Typo aus theworldofboudoir.com extrahiert
+  ========================================================= */
+  :root {
+    --brand-bg:    #F6F6F2;
+    --brand-card:  #FFFFFF;
+    --brand-linen: #ECEBE8;
+    --brand-stone: #DFDEDA;
+    --brand-ink:   #19191A;
+    --brand-black: #000000;
+    --brand-smoke: #7D7878;
+    --brand-taupe: #9F877F;
+    --brand-red:   #C8102E;
+    --brand-red-soft: #F4DDE0;
+    --serif: "Cormorant Garamond", "Editor's Note", Georgia, serif;
+    --script: "Ballet", "Allura", cursive;
+    --ui:    "Montserrat", "Inter", sans-serif;
+    --body:  "Open Sans", "Inter", sans-serif;
+    --light: "Poppins", "Open Sans", sans-serif;
+  }
+
+  /* Brand section frame */
+  #styleguide {
+    background: var(--brand-bg);
+    margin: 56px -32px;
+    padding: 56px 32px;
+    border-top: 1px solid var(--brand-stone);
+    border-bottom: 1px solid var(--brand-stone);
+  }
+  /* Dashboard breaks out of .wrap to use full viewport width */
+  #dashboard {
+    background: var(--brand-bg);
+    border-top: 1px solid var(--brand-stone);
+    border-bottom: 1px solid var(--brand-stone);
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    width: 100vw;
+    margin-top: 56px;
+    margin-bottom: 56px;
+    padding: 56px 32px 64px;
+    box-sizing: border-box;
+  }
+  /* Headline / supporting prose stays narrow & readable, centered */
+  #dashboard > h2,
+  #dashboard > h3,
+  #dashboard > p,
+  #dashboard > ul,
+  #dashboard > table {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* The dashboard prototype itself stretches wider for breathing room */
+  #dashboard .dashboard-frame {
+    max-width: 1680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #styleguide h2, #dashboard h2 {
+    font-family: var(--serif);
+    color: var(--brand-ink);
+    border-top: none;
+    padding-top: 0;
+    font-size: 36px;
+    font-weight: 500;
+    margin-top: 0;
+  }
+  #styleguide h3, #dashboard h3 {
+    font-family: var(--serif);
+    color: var(--brand-ink);
+    font-size: 24px;
+    font-weight: 500;
+  }
+  #styleguide h4 {
+    font-family: var(--ui);
+    color: var(--brand-smoke);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+  }
+  #styleguide p, #dashboard p { color: var(--brand-ink); font-family: var(--body); }
+
+  /* Logo + Brand intro card */
+  .brand-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 32px;
+    align-items: center;
+    background: var(--brand-card);
+    border: 1px solid var(--brand-stone);
+    border-radius: 4px;
+    padding: 40px;
+    margin: 28px 0 40px;
+  }
+  @media (max-width: 720px) { .brand-grid { grid-template-columns: 1fr; } }
+  .logo-frame {
+    background: var(--brand-bg);
+    border: 1px solid var(--brand-stone);
+    aspect-ratio: 1/1;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+  }
+  .logo-frame img { width: 80%; max-width: 260px; height: auto; }
+  .logo-meta .eyebrow {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 11px; letter-spacing: 0.2em;
+    color: var(--brand-red); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .logo-meta p { font-size: 15.5px; line-height: 1.65; }
+  .logo-meta .script-tag {
+    font-family: var(--script);
+    font-size: 28px;
+    color: var(--brand-red);
+    display: block;
+    margin-top: 16px;
+  }
+
+  /* Color palette */
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 18px 0 28px;
+  }
+  @media (max-width: 900px) { .palette-grid { grid-template-columns: repeat(2, 1fr); } }
+  .swatch {
+    background: var(--brand-card);
+    border: 1px solid var(--brand-stone);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .swatch .bar { height: 100px; background: var(--c); border-bottom: 1px solid var(--brand-stone); }
+  .swatch b {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 18px;
+    margin: 12px 14px 2px;
+    color: var(--brand-ink);
+  }
+  .swatch code {
+    margin: 0 14px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    background: transparent;
+    color: var(--brand-smoke);
+    padding: 0;
+  }
+  .swatch span {
+    font-family: var(--ui);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand-smoke);
+    margin: 6px 14px 14px;
+    font-weight: 600;
+  }
+
+  /* Typography samples */
+  .type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 18px 0 28px;
+  }
+  @media (max-width: 720px) { .type-grid { grid-template-columns: 1fr; } }
+  .type-sample {
+    background: var(--brand-card);
+    border: 1px solid var(--brand-stone);
+    border-radius: 4px;
+    padding: 24px 28px;
+  }
+  .type-sample .eyebrow {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 10.5px; letter-spacing: 0.16em;
+    color: var(--brand-smoke); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .type-sample p {
+    font-family: var(--body);
+    color: var(--brand-smoke);
+    font-size: 13px;
+    margin: 14px 0 0;
+  }
+  .sample-h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: 48px; line-height: 1.05;
+    color: var(--brand-ink); letter-spacing: -0.01em;
+  }
+  .sample-h1 em { font-style: italic; color: var(--brand-red); font-family: var(--serif); }
+  .sample-script {
+    font-family: var(--script);
+    font-size: 44px; line-height: 1;
+    color: var(--brand-red);
+  }
+  .sample-ui {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 13px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--brand-ink);
+  }
+  .sample-body {
+    font-family: var(--body); font-weight: 400;
+    font-size: 16px; line-height: 1.6;
+    color: var(--brand-ink);
+  }
+  .sample-light {
+    font-family: var(--light); font-weight: 300;
+    font-size: 22px; color: var(--brand-ink);
+  }
+
+  /* Quote list */
+  .quote-list {
+    list-style: none; padding: 0; margin: 14px 0 0;
+    display: grid; gap: 10px;
+  }
+  .quote-list li {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 20px;
+    color: var(--brand-ink);
+    padding-left: 18px;
+    border-left: 2px solid var(--brand-red);
+  }
+
+  /* =========================================================
+     DASHBOARD-PROTOTYPE
+  ========================================================= */
+  .dashboard-frame {
+    margin: 28px 0 0;
+  }
+  .dashboard-app {
+    background: var(--brand-bg);
+    border: 1px solid var(--brand-stone);
+    border-radius: 8px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    box-shadow: 0 24px 56px rgba(25,25,26,0.10), 0 4px 12px rgba(25,25,26,0.05);
+    font-family: var(--body);
+    color: var(--brand-ink);
+    min-height: 760px;
+    position: relative;
+  }
+  .dashboard-app::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--brand-ink) 0%, var(--brand-ink) 248px, var(--brand-red) 248px, var(--brand-red) calc(248px + 64px), var(--brand-stone) calc(248px + 64px), var(--brand-stone) 100%);
+    z-index: 2;
+  }
+  @media (max-width: 900px) {
+    .dashboard-app { grid-template-columns: 1fr; }
+    .db-sidebar { display: none; }
+    .dashboard-app::before { display: none; }
+  }
+
+  /* Sidebar */
+  .db-sidebar {
+    background: var(--brand-ink);
+    color: var(--brand-bg);
+    padding: 28px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    position: relative;
+  }
+  .db-logo-block {
+    text-align: left;
+    padding: 6px 4px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .db-logo-block img {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    display: block;
+    margin: 0;
+    filter: brightness(1.08);
+  }
+  .db-nav { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .db-nav-section {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 9px; letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--brand-smoke);
+    margin: 18px 14px 8px;
+  }
+  .db-nav-section:first-child { margin-top: 0; }
+  .db-nav-item {
+    font-family: var(--ui); font-weight: 600;
+    font-size: 12.5px; letter-spacing: 0.06em;
+    color: var(--brand-bg);
+    padding: 10px 14px;
+    border-radius: 3px;
+    text-decoration: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    opacity: 0.72;
+    transition: all .15s ease;
+    position: relative;
+  }
+  .db-nav-item:hover { opacity: 1; background: rgba(255,255,255,0.05); padding-left: 18px; }
+  .db-nav-item.active {
+    background: rgba(255,255,255,0.06);
+    color: var(--brand-bg);
+    opacity: 1;
+    font-weight: 700;
+  }
+  .db-nav-item.active::before {
+    content: ""; position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 2px; background: var(--brand-red);
+    border-radius: 2px;
+  }
+  .db-badge {
+    background: var(--brand-red);
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+  }
+  .db-user {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 6px 4px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .db-avatar {
+    width: 40px; height: 40px; border-radius: 99px;
+    background: var(--brand-red);
+    color: white;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 20px; font-weight: 500;
+    flex-shrink: 0;
+    font-style: italic;
+  }
+  .db-user > div:last-child { line-height: 1.3; }
+  .db-user b {
+    display: block;
+    font-family: var(--serif); font-size: 18px; font-weight: 500;
+    color: var(--brand-bg);
+    letter-spacing: -0.01em;
+  }
+  .db-user span {
+    display: block;
+    font-family: var(--ui); font-weight: 600;
+    font-size: 9.5px; color: var(--brand-smoke);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* Main */
+  .db-main {
+    padding: 32px 36px 40px;
+    background: var(--brand-bg);
+    position: relative;
+    min-width: 0;
+  }
+  .db-topbar {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
+    margin-bottom: 32px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--brand-stone);
+    position: relative;
+    z-index: 1;
+  }
+  .db-topbar > div:first-child { position: relative; }
+  .db-topbar > div:first-child::after {
+    content: ""; display: block;
+    width: 36px; height: 2px;
+    background: var(--brand-red);
+    margin-top: 14px;
+  }
+  .db-day {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brand-smoke);
+    margin-bottom: 8px;
+  }
+  .db-greet {
+    font-family: var(--serif); font-weight: 500;
+    font-size: 42px; line-height: 1.02;
+    color: var(--brand-ink); letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .db-greet em {
+    font-style: italic;
+    color: var(--brand-red);
+    font-weight: 500;
+  }
+  .db-actions { display: flex; gap: 12px; align-items: center; }
+  .db-search {
+    background: var(--brand-card);
+    border: 1px solid var(--brand-stone);
+    padding: 11px 16px 11px 38px;
+    width: 320px;
+    border-radius: 3px;
+    font-family: var(--body);
+    font-size: 13px;
+    color: var(--brand-ink);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237D7878' stroke-width='2'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>");
+    background-repeat: no-repeat;
+    background-position: 12px center;
+    background-size: 14px;
+    transition: border-color .15s ease;
+  }
+  .db-search:focus { outline: none; border-color: var(--brand-ink); }
+  .db-search::placeholder { color: var(--brand-smoke); font-style: italic; }
+  .db-btn-primary {
+    background: var(--brand-ink);
+    color: var(--brand-bg);
+    border: none;
+    padding: 12px 20px;
+    font-family: var(--ui); font-weight: 700;
+    font-size: 11px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .db-btn-primary:hover { background: var(--brand-red); }
+
+  /* KPIs */
+  .db-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+    position: relative; z-index: 1;
+  }
+  @media (max-width: 980px) { .db-kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi {
+    background: var(--brand-card);
+    border: 1px solid var(--brand-stone);
+    border-radius: 4px;
+    padding: 20px 22px 18px;
+    position: relative;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .kpi::before {
+    content: ""; position: absolute; top: 0; left: 0;
+    width: 32px; height: 2px;
+    background: var(--brand-ink);
+    opacity: 0.6;
+  }
+  .kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(25,25,26,0.06);
+  }
+  .kpi.alert::before { background: var(--brand-red); opacity: 1; width: 48px; }
+  .kpi .eyebrow {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--brand-smoke); text-transform: uppercase;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .kpi-num {
+    font-family: var(--serif); font-weight: 500;
+    font-size: 52px; line-height: 1;
+    color: var(--brand-ink);
+    letter-spacing: -0.025em;
+    margin-bottom: 10px;
+    font-variant-numeric: oldstyle-nums;
+  }
+  .kpi-num em {
+    font-family: var(--serif);
+    font-style: normal; font-weight: 400;
+    font-size: 22px;
+    color: var(--brand-smoke);
+    margin-left: 4px;
+    vertical-align: 0.2em;
+  }
+  .kpi small {
+    font-family: var(--body);
+    font-size: 11.5px;
+    color: var(--brand-smoke);
+    letter-spacing: 0.02em;
+    display: block;
+  }
+  .kpi-trend.up   { color: #2F6B3A; }
+  .kpi-trend.warn { color: var(--brand-red); font-weight: 600; }
+
+  /* Rows */
+  .db-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+    position: relative; z-index: 1;
+  }
+  @media (max-width: 980px) { .db-row { grid-template-columns: 1fr; } }
+  .db-card {
+    background: var(--brand-card);
+    border: 1px solid var(--brand-stone);
+    border-radius: 4px;
+    padding: 24px 28px;
+  }
+  .db-card header {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--brand-linen);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .db-card .eyebrow {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--brand-smoke); text-transform: uppercase;
+    display: block;
+  }
+  .db-card h3 {
+    font-family: var(--serif); font-weight: 500;
+    color: var(--brand-ink);
+    font-size: 24px;
+    margin: 2px 0 0;
+    letter-spacing: -0.01em;
+  }
+  .db-card header > div:last-child {
+    font-family: var(--ui); font-weight: 600;
+    font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--brand-red);
+    cursor: pointer;
+  }
+  .db-card header > div:last-child:hover { color: var(--brand-ink); }
+
+  /* Pipeline */
+  .pipeline-stages {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .stage {
+    background: var(--brand-bg);
+    border: 1px solid var(--brand-stone);
+    border-radius: 3px;
+    padding: 16px 8px 14px;
+    text-align: center;
+    position: relative;
+    transition: transform .15s ease;
+  }
+  .stage::before {
+    content: ""; position: absolute; top: -1px; left: -1px; right: -1px;
+    height: 2px; background: transparent;
+  }
+  .stage:hover { transform: translateY(-2px); }
+  .stage.active {
+    background: var(--brand-ink);
+    border-color: var(--brand-ink);
+    box-shadow: 0 6px 14px rgba(25,25,26,0.18);
+  }
+  .stage.active::before { background: var(--brand-red); }
+  .stage.active .stage-num { color: var(--brand-bg); }
+  .stage.active .stage-label { color: var(--brand-stone); }
+  .stage-num {
+    font-family: var(--serif); font-weight: 500;
+    font-size: 32px; line-height: 1;
+    color: var(--brand-ink);
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .stage-label {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 9px; letter-spacing: 0.14em;
+    color: var(--brand-smoke); text-transform: uppercase;
+  }
+  .pipeline-spotlight {
+    display: grid; gap: 4px;
+  }
+  .pipeline-spotlight .spot-eyebrow {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--brand-smoke); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .spot-item {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    font-size: 13px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--brand-linen);
+    position: relative;
+    padding-left: 18px;
+  }
+  .spot-item::before {
+    content: ""; position: absolute;
+    left: 0; top: 18px; width: 6px; height: 6px;
+    border-radius: 99px; background: var(--brand-red);
+  }
+  .spot-item:last-child { border-bottom: none; }
+  .spot-item-top {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  }
+  .spot-item b {
+    font-family: var(--serif); font-weight: 500; font-size: 19px; color: var(--brand-ink);
+    letter-spacing: -0.01em;
+  }
+  .spot-item i {
+    font-style: italic; color: var(--brand-red);
+    font-family: var(--serif); font-size: 14px;
+    font-weight: 500;
+  }
+  .spot-item span {
+    color: var(--brand-smoke);
+    font-size: 13px;
+  }
+
+  /* Today */
+  .agenda { list-style: none; padding: 0; margin: 0; }
+  .agenda li {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 16px; align-items: baseline;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--brand-linen);
+    transition: padding-left .15s ease;
+  }
+  .agenda li:hover { padding-left: 6px; }
+  .agenda li:last-child { border-bottom: none; }
+  .agenda time {
+    font-family: var(--serif); font-weight: 500;
+    font-size: 22px; color: var(--brand-red);
+    letter-spacing: -0.02em;
+    font-variant-numeric: oldstyle-nums;
+  }
+  .agenda b {
+    display: block;
+    font-family: var(--ui); font-weight: 700;
+    font-size: 11.5px; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand-ink);
+  }
+  .agenda span {
+    display: block;
+    font-size: 13px;
+    color: var(--brand-smoke);
+    margin-top: 4px;
+  }
+
+  /* Activity feed */
+  .feed { list-style: none; padding: 0; margin: 0; }
+  .feed li {
+    display: grid;
+    grid-template-columns: 12px 96px 1fr;
+    gap: 14px;
+    align-items: baseline;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--brand-linen);
+    font-size: 13.5px;
+    color: var(--brand-smoke);
+  }
+  .feed li:last-child { border-bottom: none; }
+  .feed .dot {
+    width: 8px; height: 8px; border-radius: 99px;
+    background: var(--brand-taupe);
+    transform: translateY(2px);
+  }
+  .feed .dot.accent { background: var(--brand-red); box-shadow: 0 0 0 3px var(--brand-red-soft); }
+  .feed time {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--brand-smoke);
+  }
+  .feed b {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: -0.005em;
+    color: var(--brand-ink);
+  }
+
+  /* Tasks */
+  .tasks { list-style: none; padding: 0; margin: 0; }
+  .tasks li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--brand-linen);
+    font-size: 14px;
+    gap: 12px;
+  }
+  .tasks li:last-child { border-bottom: none; }
+  .tasks label {
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    font-family: var(--body);
+    color: var(--brand-ink);
+    flex: 1;
+  }
+  .tasks input[type=checkbox] {
+    accent-color: var(--brand-red);
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+  }
+  .tasks small {
+    font-family: var(--ui); font-weight: 700;
+    font-size: 9.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--brand-smoke);
+    white-space: nowrap;
+  }
+  .tasks li.overdue small {
+    color: var(--brand-red);
+    background: var(--brand-red-soft);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .dashboard-caption { margin-top: 14px; text-align: center; }
+  .dashboard-caption small { color: var(--brand-smoke); font-style: italic; font-family: var(--serif); font-size: 14px; }
+
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="inner">
+    <div class="eyebrow">Tech-Stack-Empfehlung · Lisa CRM</div>
+    <h1>Souveräner CRM-Stack für Boudoir-Workflow</h1>
+    <p class="lede">
+      Konsolidierter Vorschlag für Infrastruktur, APIs und SaaS-Dienste —
+      mit Fokus auf Datenstandort Deutschland (sonst EU), DSGVO Art. 9
+      und CLOUD-Act-Vermeidung. Alle Preise verifiziert, Stand Mai 2026.
+    </p>
+    <div class="meta">
+      <div><b>Erstellt für</b><br/>Lisa Boudoir, Bamberg</div>
+      <div><b>Stand</b><br/>10. Mai 2026</div>
+      <div><b>Währung</b><br/>EUR netto, USD-Tarife mit 1,08 USD/EUR umgerechnet</div>
+      <div><b>Geltung</b><br/>Hetzner-Preise post 1.4.2026 · M365 vor 1.7.2026</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <div class="eyebrow" style="margin-bottom:8px">Inhalt</div>
+  <ol>
+    <li><a href="#kontext">Kontext &amp; Compliance</a></li>
+    <li><a href="#stack">Empfohlener Stack im Überblick</a></li>
+    <li><a href="#hosting">1. Hosting &amp; Infrastruktur</a></li>
+    <li><a href="#db">2. Datenbank</a></li>
+    <li><a href="#auth">3. Auth</a></li>
+    <li><a href="#mail">4. Transaktionale E-Mail</a></li>
+    <li><a href="#marketing">5. E-Mail-Marketing &amp; Automation</a></li>
+    <li><a href="#sms">6. SMS</a></li>
+    <li><a href="#pay">7. Payments</a></li>
+    <li><a href="#sign">8. E-Signatur</a></li>
+    <li><a href="#analytics">9. Analytics</a></li>
+    <li><a href="#monitoring">10. Monitoring</a></li>
+    <li><a href="#m365">11. Microsoft 365 / Outlook</a></li>
+    <li><a href="#cost">Kostenrechnung &amp; Szenarien</a></li>
+    <li><a href="#risk">CLOUD-Act-Risikomatrix</a></li>
+    <li><a href="#quellen">Quellen</a></li>
+    <li><a href="#styleguide">Styleguide &amp; Brand</a></li>
+    <li><a href="#dashboard">Dashboard-Prototyp</a></li>
+  </ol>
+</nav>
+
+<!-- KONTEXT -->
+<section id="kontext">
+<h2>Kontext &amp; Compliance</h2>
+
+<p>
+  Boudoir- und Aktaufnahmen fallen unter
+  <b>Art. 9 DSGVO (besondere Kategorien personenbezogener Daten)</b>.
+  Eine Auftragsverarbeitung mit US-Anbietern ist nur über
+  Standardvertragsklauseln plus Transfer-Impact-Assessment möglich
+  und seit Schrems&nbsp;II angreifbar. Selbst US-Anbieter mit
+  „EU-Region" sind dem
+  <b>CLOUD&nbsp;Act</b> unterworfen, d.&nbsp;h. die US-Mutter ist verpflichtet,
+  Daten auf Anordnung herauszugeben — unabhängig vom Server-Standort.
+</p>
+
+<div class="callout">
+  <h4>Konsequenz für die Stack-Auswahl</h4>
+  <p>
+    Daten mit hoher Sensitivität (Bilddateien, Notizen, Anschriften, Telefonnummern)
+    werden ausschließlich bei Anbietern <b>ohne US-Mutterfirma</b> verarbeitet.
+    Wo kein gleichwertiger EU-Dienst existiert (z.&nbsp;B. Microsoft Graph für Outlook),
+    bleibt der US-Anbieter — wird aber bewusst auf Metadaten beschränkt.
+  </p>
+</div>
+
+<p>
+  Die folgende Liste benennt für jede Komponente den
+  empfohlenen Anbieter, dessen Tarife, ab welcher Stufe die <b>API</b>
+  freigegeben ist, sowie den <b>Server-Standort</b>. Direkt darunter
+  stehen die jeweils relevanten Alternativen mit Preisvergleich.
+</p>
+</section>
+
+<!-- STACK ÜBERBLICK -->
+<section id="stack">
+<h2>Empfohlener Stack im Überblick</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Schicht</th>
+      <th>Empfohlen</th>
+      <th>Standort</th>
+      <th class="num">ab €/Monat</th>
+      <th>API ab</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>App-Hosting</td>           <td>Hetzner Cloud CPX31 + Coolify</td><td><span class="b b-de">DE</span> Falkenstein/Nürnberg</td><td class="num">15,99</td><td>Free</td></tr>
+    <tr><td>Datei-/Bildspeicher</td>   <td>Hetzner Object Storage</td>       <td><span class="b b-de">DE</span> Falkenstein</td>          <td class="num">5,99</td> <td>Free</td></tr>
+    <tr><td>Backup-Speicher</td>       <td>Hetzner Storage Box BX11</td>     <td><span class="b b-de">DE</span> Falkenstein/Nürnberg</td> <td class="num">3,20</td> <td>SFTP/S3</td></tr>
+    <tr><td>Datenbank</td>             <td>Postgres self-hosted (Hetzner)</td><td><span class="b b-de">DE</span></td>                      <td class="num">0</td>    <td>Native</td></tr>
+    <tr><td>Auth</td>                  <td>Auth.js v5 self-hosted</td>       <td><span class="b b-de">DE</span> (im App-Server)</td>      <td class="num">0</td>    <td>Native</td></tr>
+    <tr><td>Transaktional-Mail</td>    <td>Brevo</td>                        <td><span class="b b-eu">EU</span> Frankreich</td>           <td class="num">0–8,30</td><td>Free</td></tr>
+    <tr><td>E-Mail-Marketing</td>      <td>CleverReach Basic</td>            <td><span class="b b-de">DE</span> Rastede</td>              <td class="num">15,00</td><td>Free/Lite</td></tr>
+    <tr><td>SMS</td>                   <td>seven.io Pay-per-use</td>         <td><span class="b b-de">DE</span> Kiel</td>                 <td class="num">0,075/SMS</td><td>Free</td></tr>
+    <tr><td>Payments</td>              <td>Mollie Pay-per-use</td>           <td><span class="b b-eu">EU</span> Niederlande</td>          <td class="num">1,80&nbsp;%+0,25</td><td>Free</td></tr>
+    <tr><td>E-Signatur</td>            <td>skribble Team</td>                <td><span class="b b-eu">EU</span> Frankfurt + <span class="b b-ch">CH</span></td><td class="num">23,00</td><td>Team</td></tr>
+    <tr><td>Analytics</td>             <td>Pirsch Standard</td>              <td><span class="b b-de">DE</span> Stuttgart</td>            <td class="num">5,50</td> <td>Free</td></tr>
+    <tr><td>Error-Monitoring</td>      <td>GlitchTip self-hosted</td>        <td><span class="b b-de">DE</span> (im App-Server)</td>      <td class="num">0</td>    <td>Native</td></tr>
+    <tr><td>Outlook/Kalender</td>      <td>MS 365 Business Basic</td>        <td><span class="b b-us">US-Mutter</span> EU-Boundary</td>   <td class="num">5,20/User</td><td>Basic</td></tr>
+  </tbody>
+</table>
+
+<p class="small">Ausführliche Begründungen, Alternativen und Tarifvergleiche pro Zeile in den folgenden Abschnitten.</p>
+</section>
+
+<!-- 1. HOSTING -->
+<section id="hosting">
+<h2>1. Hosting &amp; Infrastruktur</h2>
+
+<div class="service recommended">
+  <h3>Hetzner Cloud — Server &amp; Object Storage <span class="b b-de">DE</span></h3>
+  <p>
+    Hetzner Online GmbH (Gunzenhausen) — deutsche AG, ISO&nbsp;27001-zertifiziert,
+    keine US-Bezüge. Standorte Falkenstein und Nürnberg, S3-kompatibler Object
+    Storage. Eigene Vercel-Alternative (<b>Coolify</b> oder <b>Dokploy</b>) läuft
+    direkt darauf — Git-Push-Deploy, Preview-Branches, kein Lock-In.
+  </p>
+
+  <h4>Server-Tarife (Stand 1.4.2026)</h4>
+  <table>
+    <thead><tr><th>Tarif</th><th>vCPU</th><th>RAM</th><th>NVMe</th><th>Traffic</th><th class="num">€/Monat netto</th></tr></thead>
+    <tbody>
+      <tr><td>CX22</td><td>2 shared</td><td>4 GB</td><td>40 GB</td><td>20 TB</td><td class="num">7,99</td></tr>
+      <tr><td>CX32</td><td>4 shared</td><td>8 GB</td><td>80 GB</td><td>20 TB</td><td class="num">13,99</td></tr>
+      <tr><td><b>CPX31</b> (empfohlen)</td><td><b>4 dedicated AMD</b></td><td><b>8 GB</b></td><td><b>160 GB</b></td><td>20 TB</td><td class="num"><b>15,99</b></td></tr>
+      <tr><td>CX42</td><td>8 shared</td><td>16 GB</td><td>160 GB</td><td>20 TB</td><td class="num">25,49</td></tr>
+    </tbody>
+  </table>
+  <p class="small">
+    + IPv4-Adresse 0,50 €/Monat · Auto-Backups +20 % vom Server-Preis (~3,20 € auf CPX31)
+    · Snapshots 0,011 €/GB·Monat · API in jedem Tarif inklusive (REST + Terraform).
+  </p>
+
+  <h4>Object Storage (S3-kompatibel)</h4>
+  <table>
+    <thead><tr><th>Position</th><th>Inkludiert</th><th class="num">Preis</th></tr></thead>
+    <tbody>
+      <tr><td>Grundpreis</td><td>1 TB Speicher + 1 TB Egress</td><td class="num">5,99 €/Monat</td></tr>
+      <tr><td>Zusatzspeicher</td><td>—</td><td class="num">~5,99 €/TB·Monat</td></tr>
+      <tr><td>Zusätzlicher Egress</td><td>—</td><td class="num">1,00 €/TB</td></tr>
+      <tr><td>Ingress + interner Traffic + S3-API-Calls</td><td>—</td><td class="num">kostenlos</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Backup-Speicher (Storage Box)</h4>
+  <table>
+    <thead><tr><th>Tarif</th><th>Speicher</th><th>Protokolle</th><th class="num">€/Monat</th></tr></thead>
+    <tbody>
+      <tr><td><b>BX11</b></td><td>1 TB</td><td>SFTP/FTPS/Borg/rsync/WebDAV</td><td class="num"><b>3,20</b></td></tr>
+      <tr><td>BX21</td><td>5 TB</td><td>+ SMB + S3</td><td class="num">10,90</td></tr>
+      <tr><td>BX31</td><td>10 TB</td><td>idem</td><td class="num">~21,90</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>IONOS VPS <span class="b b-de">DE</span></h3>
+  <div class="row">
+    <div><div class="label">VPS L+ vergleichbar zu CPX31</div><div class="price">8,00 €/Mo</div><div class="small">8 GB RAM, 6 vCores, 240 GB NVMe</div></div>
+    <div><div class="label">Standorte</div><div class="val">Karlsruhe, Berlin (DE)</div></div>
+    <div><div class="label">Setup-Gebühr</div><div class="val">10 € einmalig</div></div>
+    <div><div class="label">API</div><div class="val">Cloud Compute Engine, separat abgerechnet</div></div>
+  </div>
+  <p class="small">Listen-Preis günstiger als Hetzner, Performance schlechter (shared CPU). Preisanpassungen seltener und transparenter.</p>
+</div>
+
+<div class="service">
+  <h3>STACKIT (Schwarz Digits) — souveränes Object Storage <span class="b b-de">DE</span></h3>
+  <div class="row">
+    <div><div class="label">Preis</div><div class="price">~27 €/TB·Monat</div></div>
+    <div><div class="label">Standort</div><div class="val">Heilbronn (DE), Wien (AT)</div></div>
+    <div><div class="label">API</div><div class="val">S3-kompatibel</div></div>
+    <div><div class="label">Compliance</div><div class="val">BSI C5, voll souverän</div></div>
+  </div>
+  <p class="small">~5× teurer als Hetzner, aber maximale Souveränität (Schwarz-Gruppe, Eigentümer einer der größten EU-Cloud-Initiativen). Sinnvoll wenn maximaler Compliance-Standard verlangt wird.</p>
+</div>
+
+<div class="service">
+  <h3>Scalingo (PaaS, FR) <span class="b b-eu">EU</span></h3>
+  <div class="row">
+    <div><div class="label">Hobby-Container</div><div class="price">ab 7 €/Mo</div></div>
+    <div><div class="label">Standort</div><div class="val">Strasbourg, FR (3DS Outscale, SecNumCloud 3.2)</div></div>
+    <div><div class="label">API</div><div class="val">in jedem Plan</div></div>
+  </div>
+  <p class="small">Für Teams, die kein eigenes Coolify betreiben wollen. ANSSI-zertifiziert, kein US-Bezug. Skaliert teurer als Hetzner.</p>
+</div>
+
+<div class="callout warn">
+  <h4>⚠ Hetzner-Preisanpassung</h4>
+  <p>Zum 1.&nbsp;April 2026 hat Hetzner die Preise teilweise spürbar erhöht (CX22 von 3,79 € auf 7,99 € — über 100 %). Die hier genannten Preise sind die <b>aktuellen Post-April-Preise</b>. Bei Vertragsabschluss diese als Basis nehmen.</p>
+</div>
+</section>
+
+<!-- 2. DATENBANK -->
+<section id="db">
+<h2>2. Datenbank</h2>
+
+<div class="service recommended">
+  <h3>PostgreSQL self-hosted auf Hetzner <span class="b b-de">DE</span></h3>
+  <div class="row">
+    <div><div class="label">Lizenzkosten</div><div class="price">0 €</div></div>
+    <div><div class="label">Hosting</div><div class="val">auf vorhandenem Hetzner-Server (CPX31)</div></div>
+    <div><div class="label">Backup</div><div class="val">pgBackRest → Hetzner Object Storage / Storage Box</div></div>
+    <div><div class="label">CLOUD-Act</div><div class="val risk-good">kein Risiko</div></div>
+  </div>
+  <p>
+    Postgres + Drizzle-ORM auf demselben Hetzner-Server, der die Anwendung
+    hostet. Backups laufen verschlüsselt (age) auf Storage Box.
+    Feldweise Verschlüsselung sensibler Spalten (Adresse, Telefonnummer,
+    Notizen) per <code>pgcrypto</code>.
+  </p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>Supabase Cloud (Managed) <span class="b b-us">US-Mutter</span> EU-Region</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Inkl.</th><th class="num">€/Monat</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Free</td><td>500 MB DB, 50.000 MAU</td><td class="num">0</td><td>ja</td></tr>
+      <tr><td>Pro</td><td>8 GB DB, 100.000 MAU</td><td class="num">~23 (25 USD)</td><td>ja</td></tr>
+      <tr><td>Team</td><td>SOC2, SSO</td><td class="num">~555 (599 USD)</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Server in Frankfurt (AWS) — gute DX, aber CLOUD-Act-Risiko durch AWS-Infrastruktur. <b>Supabase als Self-Host-Variante</b> auf Hetzner ist die saubere Lösung: gleiche DX, volle Datenhoheit, Lizenz Apache-2.0 / Postgres.</p>
+</div>
+
+<div class="service">
+  <h3>Neon Postgres <span class="b b-us">US-Mutter</span> EU-Region (AWS Frankfurt seit Feb 2026)</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Inkl.</th><th class="num">€/Monat</th></tr></thead>
+    <tbody>
+      <tr><td>Free</td><td>0,5 GB Storage, 100 CU-h</td><td class="num">0</td></tr>
+      <tr><td>Launch</td><td>Mindestumsatz, Pay-per-use</td><td class="num">ab ~4,60 (5 USD)</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Im Februar 2026 wurde Neon von Databricks übernommen. Frankfurt-Region neu, aber Backbone bleibt AWS — CLOUD-Act-Risiko bleibt bestehen. Für Boudoir-Daten ungeeignet.</p>
+</div>
+</section>
+
+<!-- 3. AUTH -->
+<section id="auth">
+<h2>3. Auth</h2>
+
+<div class="service recommended">
+  <h3>Auth.js (NextAuth) v5 — self-hosted <span class="b b-de">DE</span></h3>
+  <div class="row">
+    <div><div class="label">Lizenzkosten</div><div class="price">0 €</div></div>
+    <div><div class="label">Hosting</div><div class="val">im selben Next.js-App-Server</div></div>
+    <div><div class="label">Datenhaltung</div><div class="val">eigene Postgres</div></div>
+    <div><div class="label">CLOUD-Act</div><div class="val risk-good">kein Risiko</div></div>
+  </div>
+  <p>
+    Für ein Single-Operator-Tool (Lisa als einziger Editor + ggf. ein Team-Mitglied)
+    völlig ausreichend. Magic-Link-Login + WebAuthn (Passkey) deckt den Bedarf,
+    ohne dass eine externe Auth-Plattform nötig wird. Eingebaut: TOTP-2FA über
+    Open-Source-Adapter.
+  </p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>Ory Network (München) <span class="b b-de">DE</span></h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Inkl.</th><th class="num">Preis</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Developer</td><td>2 Dev-Environments</td><td class="num">0 €</td><td>ja</td></tr>
+      <tr><td>Production</td><td>1 Prod + 3 Staging + 5 Dev</td><td class="num">~60 €/Mo (770 USD/Jahr)</td><td>ja</td></tr>
+      <tr><td>Growth</td><td>2 Prod, B2B-SSO</td><td class="num">~720 €/Mo</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Deutsche GmbH, EU-Hosting (Frankfurt). Beste kommerzielle Alternative wenn IAM-Plattform gewünscht.</p>
+</div>
+
+<div class="service">
+  <h3>Logto Cloud (Singapur) <span class="b b-eu">EU-Region</span></h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Inkl.</th><th class="num">€/Monat</th></tr></thead>
+    <tbody>
+      <tr><td>Free</td><td>50.000 MAU</td><td class="num">0</td></tr>
+      <tr><td>Pro</td><td>unlimited MAU, 50K Token frei</td><td class="num">~22 (24 USD)</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Singapurische Mutter, EU-Region (Frankfurt) verfügbar. Add-ons: SAML 96 USD/App, Enterprise-SSO 48 USD/Connector, MFA 48 USD.</p>
+</div>
+
+<div class="callout bad">
+  <h4>✕ Clerk — nicht empfohlen</h4>
+  <p>
+    US-Mutter, kein dediziertes EU-Hosting (US/Cloudflare-Edge). Free bis 50K MRU,
+    Pro 25 USD/Mo, Business 300 USD/Mo. Bei DSGVO Art. 9 ausgeschlossen.
+  </p>
+</div>
+</section>
+
+<!-- 4. MAIL -->
+<section id="mail">
+<h2>4. Transaktionale E-Mail</h2>
+
+<div class="service recommended">
+  <h3>Brevo (ehem. Sendinblue) <span class="b b-eu">EU</span> Frankreich</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Mails/Monat</th><th class="num">€/Monat</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td><b>Free</b></td><td>300/Tag (~9.000/Mo)</td><td class="num"><b>0</b></td><td><b>ja</b></td></tr>
+      <tr><td>Starter</td><td>5.000</td><td class="num">~8,30 (9 USD)</td><td>ja</td></tr>
+      <tr><td>Starter</td><td>20.000</td><td class="num">~27 (29 USD)</td><td>ja</td></tr>
+      <tr><td>Starter</td><td>100.000</td><td class="num">~64 (69 USD)</td><td>ja</td></tr>
+      <tr><td>Business</td><td>5.000 + Marketing-Plattform</td><td class="num">~16,70 (18 USD)</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small"><b>API in jedem Plan inklusive</b> (REST + SMTP + Webhooks). Server in Frankreich/EU. Französische SAS, kein US-Bezug. Realistisch reicht der Free-Tier für den ersten Monat.</p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>Mailjet <span class="b b-eu">EU</span> Frankreich (Mutter Sinch, SE)</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Mails/Mo</th><th class="num">€/Monat</th></tr></thead>
+    <tbody>
+      <tr><td>Free</td><td>6.000 (200/Tag)</td><td class="num">0</td></tr>
+      <tr><td>Starter</td><td>8.000</td><td class="num">~8,30</td></tr>
+      <tr><td>Essential</td><td>15.000</td><td class="num">~15,70</td></tr>
+      <tr><td>Premium</td><td>15.000 + Marketing</td><td class="num">~25</td></tr>
+    </tbody>
+  </table>
+  <p class="small">API ab Free. Server Paris. Schwedische Mutter (Sinch börsennotiert) — kein US-Bezug.</p>
+</div>
+
+<div class="callout bad">
+  <h4>✕ Resend — nicht empfohlen</h4>
+  <p>US-Anbieter, AWS US-East primär, kein EU-Hosting für CLOUD-Act-Vermeidung. Free 3.000/Mo, Pro 18,50 €/Mo (20 USD). Für Art. 9 ungeeignet.</p>
+</div>
+</section>
+
+<!-- 5. MARKETING -->
+<section id="marketing">
+<h2>5. E-Mail-Marketing &amp; Automation</h2>
+
+<p>
+  Lisa nutzt aktuell <b>ActiveCampaign</b>. Da der Anbieter in den USA sitzt
+  (Chicago) und Listendaten inkl. Verhaltens-Tracking dort gespeichert
+  werden, empfehle ich eine Migration zu <b>CleverReach</b> (DE) oder
+  <b>Brevo Marketing</b> (FR).
+</p>
+
+<div class="service recommended">
+  <h3>CleverReach <span class="b b-de">DE</span> Rastede</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Empfänger</th><th>Mails</th><th class="num">€/Monat (jährl.)</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Lite (Free)</td><td>250</td><td>1.000/Mo</td><td class="num">0</td><td>ja</td></tr>
+      <tr><td>Flex</td><td>variabel</td><td>1.000+ Prepaid</td><td class="num">ab ~24</td><td>ja</td></tr>
+      <tr><td><b>Basic</b></td><td>5.000</td><td>unlimited</td><td class="num"><b>13,50</b> (15 monatl.)</td><td>ja</td></tr>
+      <tr><td>Pro</td><td>150.000</td><td>unlimited + A/B + Automation</td><td class="num">16,20 (18 monatl.)</td><td>ja</td></tr>
+      <tr><td>Enterprise</td><td>—</td><td>+dedizierte IP, Premium-Support</td><td class="num">ab 499</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Eigene Server in Deutschland. <b>API in allen Tarifen</b> einschließlich Lite. Voller DSGVO-Stack.</p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>Brevo Marketing-Plattform <span class="b b-eu">EU</span> Frankreich</h3>
+  <p class="small">Tarife siehe <a href="#mail">Sektion 4</a>. Business-Tarife enthalten Lead-Scoring, A/B-Tests, Landing-Pages, Marketing-Automation. Drop-in-Ersatz für ActiveCampaign mit voller API.</p>
+</div>
+
+<div class="service">
+  <h3>ActiveCampaign (aktueller Stack) <span class="b b-us">US-Mutter</span></h3>
+  <table>
+    <thead><tr><th>Plan (1.000 Kontakte, jährl.)</th><th class="num">€/Monat</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Starter</td><td class="num">~13,90 (15 USD)</td><td>ja</td></tr>
+      <tr><td>Plus (CRM, Lead-Scoring)</td><td class="num">~45,40 (49 USD)</td><td>ja</td></tr>
+      <tr><td>Professional</td><td class="num">~73 (79 USD)</td><td>ja</td></tr>
+      <tr><td>Enterprise</td><td class="num">ab ~134 (145 USD)</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Skaliert stark mit Kontaktzahl: Plus 95 USD bei 2.500, 145 USD bei 5.000, 329 USD bei 20.000 Kontakten. Server AWS US, kein nativer EU-Tenant. CLOUD-Act-relevant.</p>
+</div>
+</section>
+
+<!-- 6. SMS -->
+<section id="sms">
+<h2>6. SMS</h2>
+
+<div class="service recommended">
+  <h3>seven.io <span class="b b-de">DE</span> Kiel</h3>
+  <div class="row">
+    <div><div class="label">Preis pro SMS DE (Standardroute)</div><div class="price">0,075 €</div></div>
+    <div><div class="label">Modell</div><div class="val">Pay-per-use, kein Abo, keine Mindestlaufzeit</div></div>
+    <div><div class="label">API</div><div class="val">in jedem Account kostenlos (REST + SMPP)</div></div>
+    <div><div class="label">Standort</div><div class="val">Server in Deutschland</div></div>
+  </div>
+  <p class="small">
+    Beispielrechnung: 200 Termin-Erinnerungen pro Monat → ~15 €.
+  </p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>sipgate.io <span class="b b-de">DE</span> Düsseldorf</h3>
+  <div class="row">
+    <div><div class="label">Preis pro SMS DE</div><div class="price">0,0588 €</div></div>
+    <div><div class="label">API-Plan S</div><div class="val">0 €/Mo</div></div>
+    <div><div class="label">API-Plan M</div><div class="val">4,95 €/Mo</div></div>
+    <div><div class="label">Voraussetzung</div><div class="val">sipgate-Telefonie-Account</div></div>
+  </div>
+  <p class="small">Günstigster Pro-SMS-Preis im Vergleich, aber sipgate.io ist ein Add-on zur Telefonie-Plattform — das ist nur sinnvoll, wenn ohnehin ein sipgate-Festnetz/Mobilfunk-Tarif gebraucht wird.</p>
+</div>
+
+<div class="callout warn">
+  <h4>Vergleich: Twilio</h4>
+  <p>SMS DE outbound 0,1120 USD ≈ 0,104 € pro Segment, Mobile-Nummer 30 USD/Mo Miete. Faktor ~1,4× teurer als seven.io, US-Mutter, nicht empfohlen.</p>
+</div>
+</section>
+
+<!-- 7. PAYMENTS -->
+<section id="pay">
+<h2>7. Payments</h2>
+
+<div class="service recommended">
+  <h3>Mollie <span class="b b-eu">EU</span> Niederlande</h3>
+  <table>
+    <thead><tr><th>Methode</th><th class="num">Gebühr pro Transaktion</th></tr></thead>
+    <tbody>
+      <tr><td>Kreditkarte EEA-Konsumenten (Visa/MC)</td><td class="num">1,80 % + 0,25 €</td></tr>
+      <tr><td>Kreditkarte Premium</td><td class="num">2,90 % + 0,25 €</td></tr>
+      <tr><td>SEPA Direct Debit</td><td class="num">0,35 €</td></tr>
+      <tr><td>PayPal</td><td class="num">PayPal-Gebühr + 0,10 €</td></tr>
+      <tr><td>Klarna Pay Later (DACH)</td><td class="num">2,99 % + 0,35 €</td></tr>
+      <tr><td>iDEAL/Wero</td><td class="num">0,32 €</td></tr>
+    </tbody>
+  </table>
+  <p class="small">
+    Setup- &amp; Monatsgebühr: <b>0 €</b>. API in jedem Account inklusive. PSD2-lizenziert in den
+    Niederlanden. DACH-Standard, kein US-Bezug.
+  </p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>Stripe <span class="b b-us">US-Mutter</span> EU-Tochter Dublin (IE)</h3>
+  <table>
+    <thead><tr><th>Methode</th><th class="num">Gebühr pro Transaktion</th></tr></thead>
+    <tbody>
+      <tr><td>EU-Kreditkarten Standard</td><td class="num">1,5 % + 0,25 €</td></tr>
+      <tr><td>EU-Premium-Karten</td><td class="num">1,9 % + 0,25 €</td></tr>
+      <tr><td>UK-Karten</td><td class="num">2,5 % + 0,25 € + 2 % FX</td></tr>
+      <tr><td>SEPA Direct Debit</td><td class="num">0,35 €</td></tr>
+      <tr><td>Klarna</td><td class="num">ab 2,99 % + 0,35 €</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Günstiger bei Standard-EU-Karten als Mollie (1,5 % vs. 1,8 %), aber CLOUD-Act-Risiko durch US-Mutter. Vertretbar bei reiner Zahlungsabwicklung ohne PII jenseits der Pflichtfelder.</p>
+</div>
+</section>
+
+<!-- 8. SIGN -->
+<section id="sign">
+<h2>8. E-Signatur</h2>
+
+<div class="service recommended">
+  <h3>skribble <span class="b b-eu">EU</span>/<span class="b b-ch">CH</span> — Frankfurt + Zürich</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Inkl.</th><th class="num">€/Monat (jährl.)</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Individual</td><td>120 SES/Jahr, 1 User</td><td class="num">9</td><td>—</td></tr>
+      <tr><td><b>Team</b></td><td>unlimited SES, 72 AES/QES p. User/Jahr, bis 20 User</td><td class="num"><b>23</b></td><td><b>ja</b></td></tr>
+      <tr><td>Pro</td><td>unlimited SES, 120 AES/QES p. User/Jahr</td><td class="num">36</td><td>ja</td></tr>
+      <tr><td>Scale</td><td>Custom</td><td class="num">auf Anfrage</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <h4>Per-Signatur Overage</h4>
+  <table>
+    <thead><tr><th>Stufe</th><th>Team</th><th>Pro</th></tr></thead>
+    <tbody>
+      <tr><td>AES (fortgeschritten)</td><td>2,50 €</td><td>2,00 €</td></tr>
+      <tr><td>QES (qualifiziert, eIDAS)</td><td>4,50 €</td><td>4,00 €</td></tr>
+      <tr><td>QES-Identifikation einmalig</td><td colspan="2">ab 10,78 € (Video-Ident / SwissID / eID)</td></tr>
+    </tbody>
+  </table>
+  <p class="small">eIDAS-konforme QES für DE/AT/EU. Server Frankfurt + Schweiz. Für Modellverträge ist <b>SES</b> meist ausreichend, AES/QES nur wenn Beweiskraft im Streitfall gefordert.</p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>inSign (iS2 AG, Stutensee) <span class="b b-de">DE</span></h3>
+  <div class="row">
+    <div><div class="label">inSign 365 (Web-Tool)</div><div class="price">24,90 €/User·Mo</div></div>
+    <div><div class="label">inSign connect (API)</div><div class="val">auf Anfrage, transaktionsbasiert</div></div>
+    <div><div class="label">Standort</div><div class="val">Server in Deutschland (eIDAS, BSI)</div></div>
+  </div>
+  <p class="small"><b>API nur im connect-Tarif</b>, nicht im 365er. Für API-Integration daher teurer als skribble Team.</p>
+</div>
+
+<div class="service">
+  <h3>FP Sign (Francotyp-Postalia, Berlin) <span class="b b-de">DE</span></h3>
+  <table>
+    <thead><tr><th>Plan</th><th class="num">€</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Business</td><td class="num">24,90 €/User·Mo</td><td>als Add-on</td></tr>
+      <tr><td>Enterprise Light</td><td class="num">2.900 €/Jahr (≤20 User, 2.000 Tx)</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small">DE-Anbieter mit eIDAS, BSI C5, ISO 27001. API als Zusatzfeature buchbar — Preis auf Anfrage.</p>
+</div>
+</section>
+
+<!-- 9. ANALYTICS -->
+<section id="analytics">
+<h2>9. Analytics</h2>
+
+<div class="service recommended">
+  <h3>Pirsch (Emvi Software, Stuttgart) <span class="b b-de">DE</span></h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Pageviews</th><th class="num">€/Monat</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td><b>Standard</b></td><td>10.000, 1 Site</td><td class="num"><b>~5,50 (6 USD)</b></td><td>ja</td></tr>
+      <tr><td>Plus</td><td>unbegrenzt, unbegrenzte Sites + Funnels</td><td class="num">~11 (12 USD)</td><td>ja</td></tr>
+      <tr><td>Enterprise</td><td>—</td><td class="num">auf Anfrage</td><td>ja</td></tr>
+    </tbody>
+  </table>
+  <p class="small">"Made and hosted in Germany". Eigene Infrastruktur in Deutschland. API in allen Tarifen.</p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>Plausible Analytics <span class="b b-eu">EU</span> Estland (Server DE bei Hetzner)</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Pageviews/Mo</th><th class="num">€/Monat</th><th>API</th></tr></thead>
+    <tbody>
+      <tr><td>Growth</td><td>10.000 (3 Sites)</td><td class="num">9 (jährl.)</td><td>Tracking ja</td></tr>
+      <tr><td>Business</td><td>10.000 (10 Sites)</td><td class="num">~17,60 (19 USD)</td><td>+ Stats-API</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Stats-API erst ab Business-Tarif. Server Hetzner DE. Estnische OÜ, kein US-Bezug.</p>
+</div>
+</section>
+
+<!-- 10. MONITORING -->
+<section id="monitoring">
+<h2>10. Error- &amp; Performance-Monitoring</h2>
+
+<div class="service recommended">
+  <h3>GlitchTip self-hosted <span class="b b-de">DE</span></h3>
+  <div class="row">
+    <div><div class="label">Lizenzkosten</div><div class="price">0 €</div></div>
+    <div><div class="label">Hosting</div><div class="val">Docker auf Hetzner-Server</div></div>
+    <div><div class="label">SDK-Kompatibilität</div><div class="val">Sentry-SDK (drop-in)</div></div>
+  </div>
+  <p>
+    GlitchTip ist Open Source (MIT) und Sentry-SDK-kompatibel — d.&nbsp;h. die
+    bekannten Sentry-Libraries für Next.js, Node, etc. funktionieren ohne
+    Code-Änderung. Self-hosted auf demselben Hetzner-Server: keine zusätzlichen
+    Kosten, volle Datenhoheit.
+  </p>
+</div>
+
+<h4>Alternativen</h4>
+<div class="service">
+  <h3>GlitchTip Hosted EU <span class="b b-eu">EU-Instanz</span></h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Events/Monat</th><th class="num">€/Monat</th></tr></thead>
+    <tbody>
+      <tr><td>Free</td><td>1.000</td><td class="num">0</td></tr>
+      <tr><td>Small</td><td>100.000</td><td class="num">~14 (15 USD)</td></tr>
+      <tr><td>Medium</td><td>500.000</td><td class="num">~46 (50 USD)</td></tr>
+    </tbody>
+  </table>
+  <p class="small">EU-Instanz <code>eu.glitchtip.com</code> in Frankfurt — kein Aufpreis. US-LLC als Mutter, EU-Hosting reduziert Risiko.</p>
+</div>
+
+<div class="service">
+  <h3>Sentry <span class="b b-us">US-Mutter</span> EU-Region</h3>
+  <table>
+    <thead><tr><th>Plan</th><th>Events/Monat</th><th class="num">€/Monat (jährl.)</th></tr></thead>
+    <tbody>
+      <tr><td>Developer (Free)</td><td>—</td><td class="num">0</td></tr>
+      <tr><td>Team</td><td>50.000</td><td class="num">~24 (26 USD)</td></tr>
+      <tr><td>Business</td><td>100.000 + Anomalie-Erkennung</td><td class="num">~74 (80 USD)</td></tr>
+    </tbody>
+  </table>
+  <p class="small">EU-Datenresidenz wählbar, aber US-Mutter bleibt — CLOUD-Act-Risiko trotz EU-Server.</p>
+</div>
+</section>
+
+<!-- 11. M365 -->
+<section id="m365">
+<h2>11. Microsoft 365 / Outlook (für Graph-API)</h2>
+
+<div class="service">
+  <h3>Microsoft 365 Business Basic <span class="b b-us">US-Mutter</span> EU Data Boundary</h3>
+  <table>
+    <thead><tr><th>Bezug</th><th class="num">€/User·Monat</th></tr></thead>
+    <tbody>
+      <tr><td>Microsoft direkt — Jahresabo</td><td class="num">5,20</td></tr>
+      <tr><td>Microsoft direkt — Monatsabo</td><td class="num">6,24</td></tr>
+      <tr><td>Reseller (m365.de) — Jahresabo</td><td class="num">ab 4,67</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Inklusive Exchange Online (50 GB Mailbox), Teams, OneDrive, Graph-API-Zugriff.
+    <b>Graph-API in allen Business-Tarifen freigeschaltet</b> (App-Registrierung über
+    Entra ID kostenfrei).
+  </p>
+  <p class="small">
+    Server in EU-Datentreuhänder-Region wählbar; mit „EU Data Boundary" (seit 2024)
+    bleibt Kommunikation, Daten und Logs innerhalb der EU. CLOUD-Act-Risiko durch
+    US-Mutter dennoch vorhanden — wird akzeptiert, da Lisa Outlook produktiv nutzt
+    und Graph-API für Kalender-/Mail-Sync alternativlos ist.
+  </p>
+</div>
+
+<div class="callout warn">
+  <h4>⚠ Microsoft-Preisanpassung 1. Juli 2026</h4>
+  <p>Microsoft hat eine Preiserhöhung von ca. 16 % angekündigt (USD-Listenpreis 6 → 7 USD pro Business-Basic-User). Die EUR-Anpassung wird ca. einen Monat vorher publiziert. <b>Bei Vertragsabschluss vor dem 1.7.2026</b> gilt der niedrigere Preis für die Vertragslaufzeit.</p>
+</div>
+</section>
+
+<!-- KOSTEN -->
+<section id="cost">
+<h2>Kostenrechnung &amp; Szenarien</h2>
+
+<p>
+  Drei Kostenszenarien, gerechnet pro Monat netto, basierend auf einem
+  Single-Operator-Setup (1 Lisa + 1 Backup-User für M365).
+</p>
+
+<div class="summary-grid">
+
+  <div class="scenario preferred">
+    <h4>Szenario A — Maximal souverän (Empfehlung)</h4>
+    <ul>
+      <li>Hetzner CPX31 + Backups + IPv4: <b>19,69 €</b></li>
+      <li>Hetzner Object Storage 1 TB: <b>5,99 €</b></li>
+      <li>Hetzner Storage Box BX11 (Backup): <b>3,20 €</b></li>
+      <li>Postgres self-hosted: <b>0 €</b></li>
+      <li>Auth.js self-hosted: <b>0 €</b></li>
+      <li>Brevo Free (Transaktional): <b>0 €</b></li>
+      <li>CleverReach Basic (Marketing): <b>13,50 €</b></li>
+      <li>seven.io ~200 SMS: <b>~15,00 €</b></li>
+      <li>Mollie: <i>Pay-per-Transaction</i></li>
+      <li>skribble Team (E-Signatur): <b>23,00 €</b></li>
+      <li>Pirsch Standard: <b>5,50 €</b></li>
+      <li>GlitchTip self-hosted: <b>0 €</b></li>
+      <li>MS 365 Business Basic × 2: <b>10,40 €</b></li>
+    </ul>
+    <div class="total">
+      ~96,28 €/Monat
+      <small>+ Mollie-Transaktionsgebühren (1,8 % + 0,25 € pro Karte)</small>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4>Szenario B — Minimaler Start (Phase 1 / MVP)</h4>
+    <ul>
+      <li>Hetzner CX22 + Backups + IPv4: <b>10,09 €</b></li>
+      <li>Hetzner Object Storage 1 TB: <b>5,99 €</b></li>
+      <li>Hetzner Storage Box BX11: <b>3,20 €</b></li>
+      <li>Brevo Free: <b>0 €</b></li>
+      <li>CleverReach Lite (Free): <b>0 €</b></li>
+      <li>seven.io ~50 SMS: <b>~3,75 €</b></li>
+      <li>Mollie: <i>Pay-per-Transaction</i></li>
+      <li>skribble Individual: <b>9,00 €</b></li>
+      <li>Pirsch Standard: <b>5,50 €</b></li>
+      <li>GlitchTip self-hosted: <b>0 €</b></li>
+      <li>MS 365 Business Basic × 1: <b>5,20 €</b></li>
+    </ul>
+    <div class="total">
+      ~42,73 €/Monat
+      <small>Reicht für die ersten 2–3 Monate Pilot</small>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4>Szenario C — Maximale Compliance (Schwarz-Gruppe)</h4>
+    <ul>
+      <li>Hetzner CPX31 + Backups + IPv4: <b>19,69 €</b></li>
+      <li>STACKIT Object Storage 1 TB: <b>~27,00 €</b></li>
+      <li>Hetzner Storage Box BX11: <b>3,20 €</b></li>
+      <li>Postgres self-hosted: <b>0 €</b></li>
+      <li>Ory Network Production: <b>~60,00 €</b></li>
+      <li>Brevo Starter (5k Mails): <b>~8,30 €</b></li>
+      <li>CleverReach Basic: <b>13,50 €</b></li>
+      <li>seven.io ~200 SMS: <b>~15,00 €</b></li>
+      <li>Mollie: <i>Pay-per-Transaction</i></li>
+      <li>FP Sign Business × 1: <b>24,90 €</b></li>
+      <li>Pirsch Standard: <b>5,50 €</b></li>
+      <li>Sentry-Alternative selfhosted: <b>0 €</b></li>
+      <li>MS 365 Business Basic × 2: <b>10,40 €</b></li>
+    </ul>
+    <div class="total">
+      ~187,49 €/Monat
+      <small>Für sehr hohe Compliance-Anforderungen / Audit</small>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4>Vergleich — typischer "modern stack" (Vercel + Supabase + Clerk + Twilio + ActiveCampaign)</h4>
+    <ul>
+      <li>Vercel Pro: <b>~18,50 € (20 USD)</b></li>
+      <li>Supabase Pro: <b>~23 € (25 USD)</b></li>
+      <li>Cloudflare R2 1 TB: <b>~14 € (15 USD)</b></li>
+      <li>Clerk Pro: <b>~18,50 € (20 USD)</b></li>
+      <li>Resend Pro: <b>~18,50 € (20 USD)</b></li>
+      <li>Twilio ~200 SMS: <b>~21 €</b></li>
+      <li>ActiveCampaign Plus: <b>~45,40 €</b></li>
+      <li>Sentry Team: <b>~24 €</b></li>
+      <li>MS 365 × 2: <b>10,40 €</b></li>
+    </ul>
+    <div class="total">
+      ~193,30 €/Monat
+      <small style="color:var(--bad)">+ CLOUD-Act-Risiko an 6 Stellen</small>
+    </div>
+  </div>
+
+</div>
+
+<p class="small">
+  Hinweis: Die Mollie-Transaktionsgebühren skalieren mit dem Umsatz und sind in
+  beiden Szenarien identisch — daher nicht in der Monatssumme enthalten.
+  Bei 10 Buchungen/Monat à 500 € via Kreditkarte fallen ca.
+  10 × (1,80 % × 500 € + 0,25 €) = <b>~92,50 €</b> Transaktionskosten an.
+</p>
+</section>
+
+<!-- RISK -->
+<section id="risk">
+<h2>CLOUD-Act-Risikomatrix</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Anbieter</th>
+      <th>Mutter</th>
+      <th>EU-Hosting</th>
+      <th>CLOUD-Act-Risiko</th>
+      <th>Eignung Art. 9</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Hetzner Cloud / Storage Box / Object Storage</td><td>DE</td><td>nativ DE</td><td class="risk-good">kein</td><td class="risk-good">exzellent</td></tr>
+    <tr><td>IONOS VPS / Cloud</td>          <td>DE</td><td>nativ DE</td>      <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>STACKIT</td>                    <td>DE (Schwarz)</td><td>nativ DE/AT</td><td class="risk-good">kein</td><td class="risk-good">exzellent</td></tr>
+    <tr><td>Scalingo</td>                   <td>FR</td><td>nativ FR</td>      <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Supabase Self-Host</td>         <td>OSS</td><td>DE (Hetzner)</td> <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Supabase Managed</td>           <td>US</td><td>EU-Region</td>     <td class="risk-warn">mittel</td>   <td class="risk-warn">bedingt</td></tr>
+    <tr><td>Neon Managed</td>               <td>US (Databricks)</td><td>AWS Frankfurt</td><td class="risk-bad">hoch</td><td class="risk-bad">nein</td></tr>
+    <tr><td>Clerk</td>                      <td>US</td><td>nein</td>          <td class="risk-bad">hoch</td>      <td class="risk-bad">ungeeignet</td></tr>
+    <tr><td>Ory Network</td>                <td>DE</td><td>DE/EU</td>         <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Logto Cloud</td>                <td>SG</td><td>EU-Region</td>     <td class="risk-warn">gering</td>   <td class="risk-warn">gut</td></tr>
+    <tr><td>Brevo</td>                      <td>FR</td><td>FR/DE</td>         <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Mailjet</td>                    <td>SE (Sinch)</td><td>FR</td>    <td class="risk-good">kein</td>     <td class="risk-good">gut</td></tr>
+    <tr><td>CleverReach</td>                <td>DE (Rastede)</td><td>DE</td>  <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Resend</td>                     <td>US</td><td>nur US</td>        <td class="risk-bad">hoch</td>      <td class="risk-bad">ungeeignet</td></tr>
+    <tr><td>ActiveCampaign</td>             <td>US</td><td>AWS US/EU</td>     <td class="risk-bad">hoch</td>      <td class="risk-bad">ungeeignet</td></tr>
+    <tr><td>seven.io</td>                   <td>DE (Kiel)</td><td>DE</td>     <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>sipgate.io</td>                 <td>DE (Düsseldorf)</td><td>DE</td><td class="risk-good">kein</td>    <td class="risk-good">exzellent</td></tr>
+    <tr><td>Twilio</td>                     <td>US</td><td>EU optional</td>   <td class="risk-bad">hoch</td>      <td class="risk-bad">ungeeignet</td></tr>
+    <tr><td>Mollie</td>                     <td>NL</td><td>EU</td>            <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Stripe</td>                     <td>US (EU-Tochter IE)</td><td>IE</td><td class="risk-warn">mittel</td><td class="risk-warn">bedingt</td></tr>
+    <tr><td>inSign</td>                     <td>DE (Stutensee)</td><td>DE</td><td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>skribble</td>                   <td>CH</td><td>CH/EU (FRA)</td>   <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>FP Sign</td>                    <td>DE (Berlin)</td><td>DE</td>   <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Plausible</td>                  <td>EE</td><td>DE (Hetzner)</td>  <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Pirsch</td>                     <td>DE (Stuttgart)</td><td>DE</td><td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>Sentry Hosted</td>              <td>US</td><td>EU-Region</td>     <td class="risk-bad">hoch</td>      <td class="risk-warn">bedingt</td></tr>
+    <tr><td>GlitchTip Self-Host</td>        <td>OSS</td><td>DE</td>           <td class="risk-good">kein</td>     <td class="risk-good">exzellent</td></tr>
+    <tr><td>GlitchTip Hosted EU</td>        <td>US-LLC</td><td>DE-Instanz</td><td class="risk-warn">mittel</td>   <td class="risk-warn">bedingt</td></tr>
+    <tr><td>Microsoft 365</td>              <td>US</td><td>DE-WestEurope</td> <td class="risk-warn">mittel-hoch</td><td class="risk-warn">bedingt (mit Data Boundary)</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- QUELLEN -->
+<section id="quellen">
+<h2>Quellen</h2>
+
+<p class="small">Alle Preise und Standortangaben verifiziert am 10. Mai 2026.</p>
+
+<ul class="small">
+  <li>Hetzner Cloud — <a href="https://www.hetzner.com/cloud">hetzner.com/cloud</a></li>
+  <li>Hetzner Preisanpassung 2026 — <a href="https://docs.hetzner.com/general/infrastructure-and-availability/price-adjustment/">docs.hetzner.com/.../price-adjustment</a></li>
+  <li>Hetzner Object Storage — <a href="https://www.hetzner.com/storage/object-storage/">hetzner.com/storage/object-storage</a></li>
+  <li>Hetzner Storage Box — <a href="https://www.hetzner.com/storage/storage-box/">hetzner.com/storage/storage-box</a></li>
+  <li>IONOS VPS — <a href="https://www.ionos.de/server/vps">ionos.de/server/vps</a></li>
+  <li>STACKIT Object Storage — <a href="https://stackit.com/en/products/storage/stackit-object-storage">stackit.com/.../object-storage</a></li>
+  <li>Scalingo Pricing — <a href="https://scalingo.com/pricing">scalingo.com/pricing</a></li>
+  <li>Supabase Pricing — <a href="https://supabase.com/pricing">supabase.com/pricing</a></li>
+  <li>Neon Pricing — <a href="https://neon.com/pricing">neon.com/pricing</a></li>
+  <li>Clerk Pricing — <a href="https://clerk.com/pricing">clerk.com/pricing</a></li>
+  <li>Ory Pricing — <a href="https://www.ory.com/pricing">ory.com/pricing</a></li>
+  <li>Logto Pricing — <a href="https://logto.io/pricing">logto.io/pricing</a></li>
+  <li>Brevo Pricing — <a href="https://www.brevo.com/pricing/">brevo.com/pricing</a></li>
+  <li>Mailjet Pricing — <a href="https://www.mailjet.com/pricing/">mailjet.com/pricing</a></li>
+  <li>CleverReach Pricing — <a href="https://www.cleverreach.com/en/plans-and-pricing/">cleverreach.com/plans-and-pricing</a></li>
+  <li>Resend Pricing — <a href="https://resend.com/pricing">resend.com/pricing</a></li>
+  <li>ActiveCampaign Pricing — <a href="https://www.activecampaign.com/pricing">activecampaign.com/pricing</a></li>
+  <li>seven.io Preise — <a href="https://www.seven.io/en/prices/">seven.io/en/prices</a></li>
+  <li>sipgate.io Preise — <a href="https://en.sipgate.io/pricing">en.sipgate.io/pricing</a></li>
+  <li>Twilio SMS DE — <a href="https://www.twilio.com/en-us/sms/pricing/de">twilio.com/sms/pricing/de</a></li>
+  <li>Mollie Pricing — <a href="https://www.mollie.com/pricing">mollie.com/pricing</a></li>
+  <li>Stripe Pricing DE — <a href="https://stripe.com/de/pricing">stripe.com/de/pricing</a></li>
+  <li>inSign Pricing — <a href="https://www.getinsign.com/pricing/">getinsign.com/pricing</a></li>
+  <li>skribble Pricing — <a href="https://www.skribble.com/en-eu/pricing/">skribble.com/en-eu/pricing</a></li>
+  <li>FP Sign Pricing — <a href="https://www.fp-sign.com/en/signature-solution/pricing-smb">fp-sign.com/.../pricing-smb</a></li>
+  <li>Plausible Pricing — <a href="https://plausible.io/#pricing">plausible.io</a></li>
+  <li>Pirsch Pricing — <a href="https://pirsch.io/pricing">pirsch.io/pricing</a></li>
+  <li>Sentry Pricing — <a href="https://sentry.io/pricing/">sentry.io/pricing</a></li>
+  <li>GlitchTip Pricing — <a href="https://glitchtip.com/pricing/">glitchtip.com/pricing</a></li>
+  <li>Microsoft 365 Business Basic — <a href="https://www.microsoft.com/de-de/microsoft-365/business/microsoft-365-business-basic">microsoft.com/.../business-basic</a></li>
+</ul>
+</section>
+
+<!-- ============ STYLEGUIDE ============ -->
+<section id="styleguide">
+
+<h2>Styleguide &amp; Brand</h2>
+
+<p style="max-width:680px">
+  Brand-Gerüst aus Logo, Farbe und Typografie der Marke „the World of Boudoir".
+  Die Spec definiert eine reduzierte Cream/Mocha-Palette — die Live-Marke
+  (<a href="https://theworldofboudoir.com" style="color:var(--brand-red)">theworldofboudoir.com</a>) verwendet
+  weichere, warme Neutraltöne mit kontrastreichem Schwarz und einem editorialen
+  Rot-Akzent im Logo. Das CRM übernimmt das Live-Vokabular.
+</p>
+
+<div class="brand-grid">
+  <div class="logo-frame">
+    <img src="assets/wofb_stempel.png" alt="the World of Boudoir Logo">
+  </div>
+  <div class="logo-meta">
+    <div class="eyebrow">Logo · WOFB Stempel</div>
+    <h3 style="margin-top:0">„the W of B" — editorial Monogram</h3>
+    <p>
+      Markante Editor's-Note-Serif für „W" und „B" in Schwarz, dazwischen
+      Ballet-Cursive „of" in editorialem Rot. Klein-„the" als Cursive-Lockup
+      links unten. Wirkt magazinhaft, hochwertig, weiblich-direkt.
+    </p>
+    <p>
+      Verwendung: kompakt im UI-Sidebar, in größerem Format auf Cover-Headern,
+      Vertragsdokumenten und versendeten Galerien. Mindestabstand: ½ × Logohöhe
+      auf allen Seiten. Niemals farbig hinterlegen außer auf Brand-Off-White.
+    </p>
+    <span class="script-tag">Boudoir Fotografie · Bamberg</span>
+  </div>
+</div>
+
+<h3>Farbpalette</h3>
+<p style="font-size:14px; color:var(--brand-smoke); max-width:680px">
+  Aus dem Live-Site-CSS extrahiert (rgba-Tokens). Einsatz: Off-White als
+  durchgehender Background, Ink für Body und Headlines, Rot ausschließlich für
+  Logo, Akzent-Buchstaben und kritische CTAs / Status-Indikatoren.
+</p>
+
+<div class="palette-grid">
+  <div class="swatch" style="--c:#F6F6F2"><div class="bar"></div><b>Off-White</b><code>#F6F6F2</code><span>Background</span></div>
+  <div class="swatch" style="--c:#19191A"><div class="bar"></div><b>Ink</b><code>#19191A</code><span>Body · Headlines</span></div>
+  <div class="swatch" style="--c:#000000"><div class="bar"></div><b>Pure Black</b><code>#000000</code><span>Logo · Display</span></div>
+  <div class="swatch" style="--c:#C8102E"><div class="bar"></div><b>Editorial Red</b><code>#C8102E</code><span>Akzent · CTA</span></div>
+  <div class="swatch" style="--c:#9F877F"><div class="bar"></div><b>Taupe-Rose</b><code>#9F877F</code><span>Hover · Soft Accent</span></div>
+  <div class="swatch" style="--c:#DFDEDA"><div class="bar"></div><b>Stone</b><code>#DFDEDA</code><span>Border · Divider</span></div>
+  <div class="swatch" style="--c:#ECEBE8"><div class="bar"></div><b>Linen</b><code>#ECEBE8</code><span>Card · Subtle BG</span></div>
+  <div class="swatch" style="--c:#7D7878"><div class="bar"></div><b>Smoke</b><code>#7D7878</code><span>Caption · Muted</span></div>
+</div>
+
+<h4>Spec-Token vs. Live-Brand</h4>
+<table>
+  <thead><tr><th>Token</th><th>Spec (Doc)</th><th>Live (Webseite)</th><th>Empfehlung CRM</th></tr></thead>
+  <tbody>
+    <tr><td>Background</td><td>Cream <code>#F5EDE2</code></td><td>Off-White <code>#F6F6F2</code></td><td>Live übernehmen</td></tr>
+    <tr><td>Primary Text</td><td>Mocha <code>#6B4F3F</code></td><td>Ink <code>#19191A</code></td><td>Live übernehmen</td></tr>
+    <tr><td>Akzent</td><td>—</td><td>Editorial Red <code>#C8102E</code></td><td>Live, sehr sparsam einsetzen</td></tr>
+    <tr><td>Border</td><td>—</td><td>Stone <code>#DFDEDA</code></td><td>Live übernehmen</td></tr>
+  </tbody>
+</table>
+
+<h3>Typografie</h3>
+<p style="font-size:14px; color:var(--brand-smoke); max-width:680px">
+  5 aktive Schnitte. Editor's Note ist Showit-spezifisch — als Web-Substitut
+  Cormorant Garamond (Google Fonts), nahezu identische Anmutung.
+</p>
+
+<div class="type-grid">
+  <div class="type-sample">
+    <div class="eyebrow">Display · Editor's Note → Cormorant Garamond</div>
+    <div class="sample-h1">Du bist es <em>wert</em>.</div>
+    <p>Magazin-Stil. Headlines, KPI-Zahlen, Cover-Texte. 24–72 px, Tracking −1 %.</p>
+  </div>
+  <div class="type-sample">
+    <div class="eyebrow">Script · Ballet</div>
+    <div class="sample-script">the World of Boudoir</div>
+    <p>Sehr sparsam. Logo-Lockup, Tagline-Akzent, einzelne Highlight-Wörter.</p>
+  </div>
+  <div class="type-sample">
+    <div class="eyebrow">UI Bold · Montserrat 700</div>
+    <div class="sample-ui">NAVIGATION · LABELS · BUTTONS</div>
+    <p>Versalien. Eyebrow-Labels, Buttons, Nav-Items. 9,5–13 px, Tracking +14–22 %.</p>
+  </div>
+  <div class="type-sample">
+    <div class="eyebrow">Body · Open Sans 400/600</div>
+    <div class="sample-body">Lisa, hier ist dein heutiger Überblick. Drei Shoots stehen an, zwei Anfragen warten auf Antwort.</div>
+    <p>Fließtext, Listen. 13–16 px, line-height 1.55–1.65.</p>
+  </div>
+  <div class="type-sample">
+    <div class="eyebrow">Light · Poppins 300</div>
+    <div class="sample-light">Anfragen · Buchungen · Galerien</div>
+    <p>Subheadlines, Stat-Untertitel, atmosphärische Auszeichnungen. 18–24 px.</p>
+  </div>
+</div>
+
+<h3>Tone of Voice</h3>
+<p style="max-width:680px">
+  Editorial, einfühlsam, ermächtigend. Du-Anrede in Kommunikation an Kundinnen,
+  warme Klarheit in der UI selbst. Vermeidet Branchen-Jargon und Tech-Sprache.
+  Inspiration aus Lisas Live-Texten:
+</p>
+<ul class="quote-list">
+  <li>You are worthy of feeling confident in your skin.</li>
+  <li>Beauty knows no size.</li>
+  <li>Ein Boudoir Shooting enthüllt deine sexy Seite.</li>
+</ul>
+
+</section>
+
+<!-- ============ DASHBOARD-PROTOTYP ============ -->
+<section id="dashboard">
+
+<h2>Dashboard-Prototyp</h2>
+<p style="max-width:680px">
+  Skizze für die CRM-Startseite. Lisa öffnet morgens das Tool und sieht in einem Blick:
+  was heute ansteht, wo Kundinnen in ihrer Journey stehen, was zuletzt passiert ist,
+  und welche Aufgaben offen sind. Layout im Editorial-Look — große Serif-Zahlen,
+  warme Neutraltöne, roter Akzent nur an Hot-Spots.
+</p>
+
+<div class="dashboard-frame">
+
+  <div class="dashboard-app">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="db-sidebar">
+      <div class="db-logo-block">
+        <img src="assets/wofb_logo.png" alt="the World of Boudoir">
+      </div>
+      <nav class="db-nav">
+        <div class="db-nav-section">Heute</div>
+        <a class="db-nav-item active">Dashboard</a>
+        <a class="db-nav-item">Anfragen <span class="db-badge">3</span></a>
+        <a class="db-nav-item">Kalender</a>
+
+        <div class="db-nav-section">Verwaltung</div>
+        <a class="db-nav-item">Kundinnen</a>
+        <a class="db-nav-item">Buchungen</a>
+        <a class="db-nav-item">Galerien</a>
+        <a class="db-nav-item">Verträge</a>
+        <a class="db-nav-item">Zahlungen</a>
+
+        <div class="db-nav-section">Marketing</div>
+        <a class="db-nav-item">Workflows</a>
+        <a class="db-nav-item">E-Mail-Templates</a>
+        <a class="db-nav-item">Statistik</a>
+
+        <div class="db-nav-section">System</div>
+        <a class="db-nav-item">Einstellungen</a>
+      </nav>
+      <div class="db-user">
+        <div class="db-avatar">L</div>
+        <div>
+          <b>Lisa</b>
+          <span>Studio Admin</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="db-main">
+
+      <header class="db-topbar">
+        <div>
+          <div class="db-day">Sonntag · 10. Mai 2026</div>
+          <h1 class="db-greet">Guten Morgen, <em>Lisa</em>.</h1>
+        </div>
+        <div class="db-actions">
+          <input class="db-search" placeholder="Suchen — Kundin, Buchung, Galerie …">
+          <button class="db-btn-primary">+ Neue Buchung</button>
+        </div>
+      </header>
+
+      <!-- KPIs -->
+      <section class="db-kpis">
+        <div class="kpi">
+          <span class="eyebrow">Offene Anfragen</span>
+          <div class="kpi-num">7</div>
+          <small class="kpi-trend up">+2 seit gestern</small>
+        </div>
+        <div class="kpi">
+          <span class="eyebrow">Shoots diese Woche</span>
+          <div class="kpi-num">3</div>
+          <small>Mi · Fr · Sa</small>
+        </div>
+        <div class="kpi alert">
+          <span class="eyebrow">Ausstehende Zahlungen</span>
+          <div class="kpi-num">1.240<em>€</em></div>
+          <small class="kpi-trend warn">2 überfällig</small>
+        </div>
+        <div class="kpi">
+          <span class="eyebrow">Conversion · 30 Tage</span>
+          <div class="kpi-num">32<em>%</em></div>
+          <small class="kpi-trend up">+4 % vs. Vormonat</small>
+        </div>
+      </section>
+
+      <!-- Pipeline + Today -->
+      <section class="db-row">
+        <article class="db-card db-pipeline">
+          <header>
+            <div>
+              <span class="eyebrow">Kundinnen-Journey</span>
+              <h3>Pipeline · Mai 2026</h3>
+            </div>
+            <div>Alle ansehen →</div>
+          </header>
+          <div class="pipeline-stages">
+            <div class="stage"><div class="stage-num">7</div><div class="stage-label">Anfrage</div></div>
+            <div class="stage"><div class="stage-num">4</div><div class="stage-label">Erstgespräch</div></div>
+            <div class="stage"><div class="stage-num">3</div><div class="stage-label">Gebucht</div></div>
+            <div class="stage active"><div class="stage-num">2</div><div class="stage-label">Vorbereitung</div></div>
+            <div class="stage"><div class="stage-num">1</div><div class="stage-label">Shoot</div></div>
+            <div class="stage"><div class="stage-num">2</div><div class="stage-label">Auswahl</div></div>
+            <div class="stage"><div class="stage-num">3</div><div class="stage-label">Lieferung</div></div>
+            <div class="stage"><div class="stage-num">4</div><div class="stage-label">Upsell</div></div>
+          </div>
+
+          <div class="pipeline-spotlight">
+            <div class="spot-eyebrow">Spotlight · Heute zu erledigen</div>
+            <div class="spot-item">
+              <div class="spot-item-top">
+                <b>Sarah B.</b>
+                <i>fehlt: Outfit-Auswahl</i>
+              </div>
+              <span>Vorbereitung · Shoot Mi&nbsp;13. Mai · Studio Bamberg</span>
+            </div>
+            <div class="spot-item">
+              <div class="spot-item-top">
+                <b>Maria K.</b>
+                <i>Erinnerung gesendet</i>
+              </div>
+              <span>Erstgespräch heute 10:00 · Zoom</span>
+            </div>
+            <div class="spot-item">
+              <div class="spot-item-top">
+                <b>Anna L.</b>
+                <i>Follow-Up fällig</i>
+              </div>
+              <span>Auswahl · Galerie offen seit 2 Tagen</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="db-card db-today">
+          <header>
+            <div>
+              <span class="eyebrow">Heute</span>
+              <h3>Tagesplan</h3>
+            </div>
+            <div>Kalender →</div>
+          </header>
+          <ul class="agenda">
+            <li><time>10:00</time><div><b>Erstgespräch</b><span>Maria K. · Zoom</span></div></li>
+            <li><time>14:00</time><div><b>Shoot-Vorbereitung</b><span>Sarah B. · Studio</span></div></li>
+            <li><time>17:30</time><div><b>Galerie-Versand</b><span>Anna L. · Auswahl</span></div></li>
+            <li><time>19:00</time><div><b>Follow-Up Mail</b><span>Lisa H. · Upsell-Sequenz</span></div></li>
+          </ul>
+        </article>
+      </section>
+
+      <!-- Activity + Tasks -->
+      <section class="db-row">
+        <article class="db-card db-activity">
+          <header>
+            <div>
+              <span class="eyebrow">Aktivität</span>
+              <h3>Letzte Ereignisse</h3>
+            </div>
+            <div>Audit-Log →</div>
+          </header>
+          <ul class="feed">
+            <li><span class="dot"></span><time>Vor 12 Min</time><span><b>Neue Anfrage</b> · Julia M. · Quelle: Instagram</span></li>
+            <li><span class="dot accent"></span><time>Vor 1 Std</time><span><b>Vertrag unterschrieben</b> · Sarah B. · skribble AES</span></li>
+            <li><span class="dot"></span><time>Vor 3 Std</time><span><b>Zahlung eingegangen</b> · 750 € · Anna L. · Mollie</span></li>
+            <li><span class="dot"></span><time>Heute 09:14</time><span><b>Workflow gestartet</b> · „Welcome Package" · Maria K.</span></li>
+            <li><span class="dot"></span><time>Gestern 17:32</time><span><b>Galerie geliefert</b> · Christina R. · 84 Bilder</span></li>
+            <li><span class="dot"></span><time>Gestern 11:08</time><span><b>SMS-Erinnerung</b> · seven.io · 4 Empfängerinnen</span></li>
+          </ul>
+        </article>
+
+        <article class="db-card db-tasks">
+          <header>
+            <div>
+              <span class="eyebrow">Offene Aufgaben</span>
+              <h3>To-Do</h3>
+            </div>
+            <div>+ Neu</div>
+          </header>
+          <ul class="tasks">
+            <li class="overdue"><label><input type="checkbox"> Vorbereitungsbogen an Sarah B.</label><small>Überfällig · 1 Tag</small></li>
+            <li><label><input type="checkbox"> Outfit-Empfehlung für Maria K.</label><small>Heute</small></li>
+            <li><label><input type="checkbox"> Auswahl von Anna L. nachfassen</label><small>Morgen</small></li>
+            <li><label><input type="checkbox"> Rechnung Christina R. erstellen</label><small>Diese Woche</small></li>
+            <li><label><input type="checkbox"> Workshop-Funnel prüfen</label><small>Phase 3</small></li>
+          </ul>
+        </article>
+      </section>
+
+    </main>
+
+  </div>
+
+  <div class="dashboard-caption">
+    <small>Klickdummy · Daten beispielhaft · Editorial-Layout, 1080 px Breite. Mobile: Pipeline scrollt horizontal, KPIs stapeln 2×2.</small>
+  </div>
+
+</div>
+
+<h3 style="margin-top:48px">Was zeigt das Dashboard konkret?</h3>
+<table>
+  <thead><tr><th>Bereich</th><th>Funktion</th><th>Datenquelle</th></tr></thead>
+  <tbody>
+    <tr><td>KPI-Zeile</td><td>Tagesaktuelle Metriken auf einen Blick</td><td>DB-Aggregation (Postgres-Views)</td></tr>
+    <tr><td>Pipeline</td><td>Status jeder Kundin in der 8-Stufen-Journey</td><td>Workflow-Engine + Status-Spalte je Booking</td></tr>
+    <tr><td>Spotlight</td><td>Top 3 „brennende" Fälle (überfällig, heute, blockiert)</td><td>Regel-Engine: Tasks mit Priorität</td></tr>
+    <tr><td>Tagesplan</td><td>Termine + automatisch erzeugte Workflow-Schritte</td><td>Outlook (Graph-API) + interne Workflow-Tasks</td></tr>
+    <tr><td>Aktivitätsfeed</td><td>Audit-Log aller Customer-Events</td><td>Event-Tabelle, append-only</td></tr>
+    <tr><td>To-Do</td><td>Manuelle und automatisch erzeugte Aufgaben mit Fälligkeit</td><td>Tasks-Tabelle</td></tr>
+  </tbody>
+</table>
+
+<h3>Anschluss-Screens (Phase 1 vorgesehen)</h3>
+<ul>
+  <li><b>Kundin-Detail</b> — Stammdaten, Journey-Verlauf, Notizen, Verträge, Galerien-Links, Aktivität</li>
+  <li><b>Anfragen-Inbox</b> — eingehende Leads, Quelle, Auto-Reply-Status, Schnellantwort-Templates</li>
+  <li><b>Buchungs-Editor</b> — Termin, Paket, Preis, Anzahlung, Vertragsversand, Pre-Shoot-Workflow</li>
+  <li><b>Workflow-Builder</b> — visueller Editor für E-Mail-/SMS-Sequenzen mit Triggern und Wartezeiten</li>
+  <li><b>Galerie-Bereich</b> — Upload (verschlüsselt zu Hetzner Object Storage), Auswahl-Link, Auswahl-Tracking</li>
+</ul>
+
+</section>
+
+<footer>
+  <p>
+    Dokument-Stand: 10. Mai 2026. Preise verstehen sich, sofern nicht anders
+    vermerkt, netto in EUR. USD-Preise mit Wechselkurs 1,08 USD/EUR umgerechnet.
+    Tarife und Konditionen können sich kurzfristig ändern — vor Vertragsabschluss
+    bitte erneut prüfen, insbesondere Microsoft 365 (Anpassung 1.7.2026) und
+    Hetzner (Anpassung erfolgt 1.4.2026).
+  </p>
+</footer>
+
+</div>
+</body>
+</html>

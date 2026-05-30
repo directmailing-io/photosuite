@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>photosuite · E-Mail-Stack Konzept</title>
+  <style>
+    :root {
+      --bg: #f6f6f2;
+      --paper: #ffffff;
+      --linen: #ecebe8;
+      --stone: #dfdeda;
+      --smoke: #7d7878;
+      --taupe: #9f877f;
+      --ink: #19191a;
+      --accent: #c8102e;
+      --accent-soft: #fbe9ec;
+      --accent-deep: #9c0822;
+      --success: #2f6b4a;
+      --success-soft: #e6efe9;
+      --warn: #b87200;
+      --warn-soft: #fcf3e1;
+    }
+    * { box-sizing: border-box; }
+    html, body { background: var(--bg); color: var(--ink); margin: 0; padding: 0; font-family: "Open Sans", -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.65; }
+    h1, h2, h3, h4 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; letter-spacing: -0.01em; line-height: 1.15; margin: 0; }
+    h1 { font-size: clamp(40px, 5.5vw, 64px); }
+    h2 { font-size: clamp(28px, 3vw, 38px); margin-top: 1em; }
+    h3 { font-size: 22px; margin-top: 1.6em; }
+    h4 { font-size: 17px; margin-top: 1.4em; }
+    p { margin: 0.7em 0; }
+    a { color: var(--accent-deep); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--accent); }
+    code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; background: var(--linen); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--stone); }
+    pre { background: var(--linen); border: 1px solid var(--stone); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.22em; font-size: 11px; font-weight: 600; color: var(--accent); }
+    .wordmark { font-family: "Cormorant Garamond", Georgia, serif; font-size: inherit; line-height: 1; }
+    .wordmark .photo { font-weight: 500; }
+    .wordmark .suite { font-style: italic; color: var(--accent); font-weight: 500; }
+    .container { max-width: 1240px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 250px 1fr; gap: 56px; }
+    @media (max-width: 980px) {
+      .container { grid-template-columns: 1fr; padding: 0 22px; gap: 24px; }
+      nav.toc { position: static !important; max-height: none !important; }
+    }
+    header.hero {
+      padding: 80px 0 56px;
+      border-bottom: 1px solid var(--stone);
+      margin-bottom: 48px;
+    }
+    header.hero .container { display: block; max-width: 880px; }
+    header.hero .wordmark { font-size: 28px; margin-bottom: 18px; display: inline-block; }
+    header.hero h1 { margin-top: 8px; }
+    header.hero p.lede { font-size: 19px; color: var(--smoke); margin-top: 20px; max-width: 720px; line-height: 1.6; }
+    nav.toc {
+      position: sticky;
+      top: 28px;
+      align-self: start;
+      font-size: 13px;
+      padding: 14px 0;
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+    nav.toc h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--smoke); margin: 0 0 14px; font-family: inherit; font-weight: 600; }
+    nav.toc ol { list-style: none; padding: 0; margin: 0; counter-reset: tocitem; }
+    nav.toc ol > li { counter-increment: tocitem; margin: 9px 0; }
+    nav.toc ol > li::before { content: counter(tocitem) "."; color: var(--smoke); margin-right: 8px; font-variant-numeric: tabular-nums; font-weight: 600; }
+    nav.toc a { color: var(--ink); text-decoration: none; }
+    nav.toc a:hover { color: var(--accent); }
+    main { max-width: 820px; padding-bottom: 120px; }
+    section { padding-top: 24px; }
+    section + section { border-top: 1px solid var(--stone); margin-top: 64px; padding-top: 60px; }
+    section > .eyebrow { display: block; margin-bottom: 8px; }
+
+    .callout {
+      border-left: 3px solid var(--accent);
+      padding: 16px 20px;
+      background: var(--accent-soft);
+      border-radius: 0 10px 10px 0;
+      margin: 22px 0;
+      font-size: 14.5px;
+    }
+    .callout.info { border-color: var(--ink); background: var(--linen); }
+    .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+    .callout.success { border-color: var(--success); background: var(--success-soft); }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    .pill {
+      display: inline-block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      background: var(--linen);
+      color: var(--smoke);
+    }
+    .pill.recommended { background: var(--success-soft); color: var(--success); }
+    .pill.warn { background: var(--warn-soft); color: var(--warn); }
+    .pill.accent { background: var(--accent-soft); color: var(--accent-deep); }
+
+    /* Architektur-Diagramm */
+    .arch {
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      border-radius: 16px;
+      padding: 32px;
+      margin: 28px 0;
+    }
+    .arch-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 20px;
+      align-items: stretch;
+      padding: 16px 0;
+    }
+    .arch-row + .arch-row { border-top: 1px dashed var(--stone); }
+    .arch-row .arch-label {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-size: 16px;
+      color: var(--taupe);
+      align-self: center;
+    }
+    .arch-row .arch-cells {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .arch-cell {
+      background: var(--bg);
+      border: 1px solid var(--stone);
+      border-radius: 10px;
+      padding: 14px 14px;
+      font-size: 13px;
+    }
+    .arch-cell.accent { background: var(--accent-soft); border-color: var(--accent); }
+    .arch-cell.success { background: var(--success-soft); border-color: var(--success); }
+    .arch-cell h5 { margin: 0 0 4px; font-family: "Open Sans"; font-size: 13.5px; font-weight: 600; }
+    .arch-cell p { margin: 0; font-size: 12px; color: var(--smoke); line-height: 1.45; }
+
+    /* Tables */
+    table.providers {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 22px 0;
+      font-size: 13px;
+    }
+    table.providers th, table.providers td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--stone);
+      vertical-align: top;
+    }
+    table.providers th {
+      font-weight: 600;
+      background: var(--linen);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--smoke);
+    }
+    table.providers tr.highlight { background: var(--success-soft); }
+    table.providers tr.highlight td:first-child { font-weight: 600; }
+    table.providers .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.providers .check { color: var(--success); font-weight: 600; }
+    table.providers .cross { color: var(--smoke); }
+
+    /* UX-Sketch */
+    .ux-mockup {
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 22px 0;
+    }
+    .ux-mockup .ux-titlebar {
+      background: var(--linen);
+      border-bottom: 1px solid var(--stone);
+      padding: 8px 14px;
+      font-size: 11px;
+      color: var(--smoke);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ux-mockup .ux-titlebar::before {
+      content: "•••";
+      color: var(--smoke);
+      letter-spacing: 2px;
+    }
+    .ux-mockup .ux-body {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      min-height: 200px;
+    }
+    .ux-mockup .ux-side {
+      background: var(--bg);
+      padding: 12px 10px;
+      font-size: 11px;
+      border-right: 1px solid var(--stone);
+    }
+    .ux-mockup .ux-side ul { list-style: none; padding: 0; margin: 0; }
+    .ux-mockup .ux-side li { padding: 4px 8px; border-radius: 4px; color: var(--smoke); }
+    .ux-mockup .ux-side li.active { background: var(--ink); color: var(--bg); }
+    .ux-mockup .ux-main {
+      padding: 14px 16px;
+      font-size: 12.5px;
+    }
+    .ux-mockup .ux-main .h { font-family: "Cormorant Garamond", serif; font-size: 18px; margin-bottom: 6px; }
+    .ux-mockup .ux-main .sub { color: var(--smoke); font-size: 11px; margin-bottom: 12px; }
+    .ux-mockup .ux-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .ux-mockup .ux-card { background: var(--linen); border-radius: 6px; padding: 8px; font-size: 10.5px; line-height: 1.4; }
+    .ux-mockup .ux-card-title { font-weight: 600; margin-bottom: 2px; }
+    .ux-mockup .ux-card-stat { font-family: "Cormorant Garamond", serif; font-size: 18px; color: var(--ink); }
+    .ux-mockup .ux-list { background: var(--linen); border-radius: 6px; padding: 8px; }
+    .ux-mockup .ux-list .row { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 10.5px; border-bottom: 1px solid var(--stone); }
+    .ux-mockup .ux-list .row:last-child { border: none; }
+    .ux-mockup .ux-list .row .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* Phase cards */
+    .phase {
+      background: var(--paper);
+      border: 1px solid var(--stone);
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin: 14px 0;
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 22px;
+    }
+    .phase .phase-num {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-size: 56px;
+      line-height: 0.9;
+      color: var(--accent);
+    }
+    .phase h3 { margin: 0 0 2px; font-size: 22px; }
+    .phase .effort { display: inline-block; font-size: 12px; color: var(--smoke); margin-top: 4px; }
+    .phase ul { padding-left: 22px; margin: 10px 0 0; font-size: 14px; }
+    .phase ul li { margin: 4px 0; }
+
+    /* Cost table */
+    table.cost {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 14px;
+    }
+    table.cost td { padding: 10px 12px; border-bottom: 1px solid var(--stone); }
+    table.cost td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+    table.cost tr.sum td { background: var(--linen); font-weight: 600; }
+    table.cost tr.sum td:last-child { font-family: "Cormorant Garamond", serif; font-size: 18px; }
+
+    footer.app-footer {
+      border-top: 1px solid var(--stone);
+      padding: 40px 0;
+      margin-top: 60px;
+      font-size: 12px;
+      color: var(--smoke);
+    }
+    footer.app-footer .container { display: block; max-width: 820px; }
+
+    @media print {
+      nav.toc { display: none; }
+      .container { display: block; max-width: 100%; padding: 0; }
+      header.hero { padding: 32px 0 24px; }
+      section + section { page-break-before: auto; margin-top: 32px; padding-top: 32px; }
+      .arch, .phase, .ux-mockup { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="container">
+    <div class="wordmark"><span class="photo">photo</span><span class="suite">suite</span></div>
+    <span class="eyebrow">Konzept · E-Mail-Stack</span>
+    <h1>E-Mails, die ankommen.<br/>Workflows, die laufen.</h1>
+    <p class="lede">
+      Konzept für eine vollständige E-Mail-Plattform in photosuite — Transactional + Marketing + Automation,
+      EU-konform, mit visuellem Editor und No-Code-Workflows. Skaliert von 1 auf 500+ User.
+    </p>
+  </div>
+</header>
+
+<div class="container">
+
+<nav class="toc" aria-label="Inhaltsverzeichnis">
+  <h4>Inhalt</h4>
+  <ol>
+    <li><a href="#summary">Executive Summary</a></li>
+    <li><a href="#architektur">Architektur</a></li>
+    <li><a href="#provider">Versand-Provider: Brevo</a></li>
+    <li><a href="#editor">Template-Editor: Unlayer</a></li>
+    <li><a href="#workflows">Workflows: Activepieces</a></li>
+    <li><a href="#compliance">Compliance: DSGVO + UWG</a></li>
+    <li><a href="#ux">UX-Konzept</a></li>
+    <li><a href="#phasen">Roadmap in vier Phasen</a></li>
+    <li><a href="#kosten">Kosten-Modell</a></li>
+    <li><a href="#nextsteps">Was ich jetzt von dir brauche</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================================================================= -->
+<section id="summary">
+  <span class="eyebrow">01 · Überblick</span>
+  <h2>Executive Summary</h2>
+  <p>
+    Ein E-Mail-System für eine Boudoir-CRM-Plattform muss vier Dinge gleichzeitig leisten:
+    transaktionale Bestätigungen zuverlässig zustellen, marketing-rechtlich sauberes Newsletter-Versenden ermöglichen,
+    nicht-technische User Vorlagen designen lassen, und Workflows automatisieren — alles DSGVO-konform
+    und mit hoher Zustellrate.
+  </p>
+  <p>
+    <strong>Empfehlung kurz:</strong> Drei spezialisierte, jeweils in ihrem Bereich beste Tools — ein EU-konformer
+    Versand-Provider (Brevo), ein Open-Source Drag-and-Drop-Editor (Unlayer) und eine
+    embed-fähige Workflow-Engine (Activepieces). Zusammen <strong>~55&nbsp;€/Monat Infrastruktur</strong>
+    zur Plattform-Skalierung, weniger als 200 €/Monat selbst bei mehreren tausend aktiven Usern.
+  </p>
+
+  <div class="callout">
+    <strong>Bewusst nicht gewählt:</strong>
+    Postmark (US, CLOUD&nbsp;Act), Resend (US-Firma), SendGrid (US, Twilio), AWS&nbsp;SES (US-Konzern trotz EU-Region),
+    n8n (Embed-Lizenz 5-stellig/Jahr), BeeFree/Stripo (lock-in via iframe, monatlich teuer).
+    Die Recherche zeigt: Marketing-Buzz und Realität klaffen hier weit auseinander.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="architektur">
+  <span class="eyebrow">02 · Architektur</span>
+  <h2>Drei Layer, klar getrennt</h2>
+  <p>
+    Statt einer monolithischen All-in-One-Lösung kombinieren wir spezialisierte Tools.
+    Jede Komponente macht eine Sache hervorragend, alle sind miteinander austauschbar (kein Lock-in).
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-label">User-Layer<br/>(in unserer App)</div>
+      <div class="arch-cells">
+        <div class="arch-cell">
+          <h5>Template-Editor</h5>
+          <p>Drag-and-Drop Vorlagen mit Variablen und Markenelementen</p>
+        </div>
+        <div class="arch-cell">
+          <h5>Workflow-Designer</h5>
+          <p>Visuelle Automationen: Trigger → Bedingung → Aktion</p>
+        </div>
+        <div class="arch-cell">
+          <h5>Empfänger-Auswahl</h5>
+          <p>CRM-Kunden, Tags, Status, Segmente</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-row">
+      <div class="arch-label">Service-Layer<br/>(unser Code)</div>
+      <div class="arch-cells">
+        <div class="arch-cell">
+          <h5>Mail-Service</h5>
+          <p>Rendering, Variablen, Tracking-Links, Suppression-Check</p>
+        </div>
+        <div class="arch-cell">
+          <h5>Workflow-Runner</h5>
+          <p>Activepieces Self-Host für End-User-Logik</p>
+        </div>
+        <div class="arch-cell">
+          <h5>Job-Queue</h5>
+          <p>BullMQ für interne Cron-Jobs (Bounce-Cleanup, etc.)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-row">
+      <div class="arch-label">Send-Layer<br/>(extern, EU)</div>
+      <div class="arch-cells">
+        <div class="arch-cell accent">
+          <h5>Brevo · Primary</h5>
+          <p>Trans + Marketing API, EU-Server (FR), Webhooks für Events</p>
+        </div>
+        <div class="arch-cell">
+          <h5>Scaleway TEM · Backup</h5>
+          <p>EU-souverän, Failover bei Brevo-Ausfall</p>
+        </div>
+        <div class="arch-cell">
+          <h5>DNS pro User-Domain</h5>
+          <p>SPF · DKIM · DMARC via CNAME-Auth</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>Datenfluss bei einer Marketing-Mail</strong>
+    User klickt „Senden" → Mail-Service rendert das Unlayer-Template mit Kundinnen-Daten →
+    fügt Tracking-Links und List-Unsubscribe-Header ein → schickt via Brevo-API →
+    Brevo stellt zu, sendet Webhook (geöffnet/geklickt/gebounct) →
+    unser System speichert Event, aktualisiert Statistik im UI.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="provider">
+  <span class="eyebrow">03 · Versand-Provider</span>
+  <h2>Brevo als Single-Provider</h2>
+  <p>
+    Brevo (ehemals Sendinblue) ist eine französische SAS mit EU-Servern in Paris und Niederlassungen in Berlin und München.
+    Das CLOUD-Act-Risiko ist deutlich niedriger als bei US-Anbietern, der AVV ist standardisiert. Trans- und
+    Marketing-Versand laufen über eine einzige API — ein DPA, ein Webhook-Hub, ein Abo.
+  </p>
+
+  <table class="providers">
+    <thead>
+      <tr>
+        <th>Anbieter</th>
+        <th>Standort</th>
+        <th>Trans</th>
+        <th>Marketing</th>
+        <th>Workflows</th>
+        <th>EU-Server</th>
+        <th>CLOUD&nbsp;Act</th>
+        <th>10k&nbsp;Mails/Mo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight">
+        <td>Brevo <span class="pill recommended">empfohlen</span></td>
+        <td>Paris (FR)</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+        <td class="check">Visual</td>
+        <td class="check">FR</td>
+        <td>niedrig</td>
+        <td class="num">~25 €</td>
+      </tr>
+      <tr>
+        <td>Mailjet (Sinch)</td>
+        <td>Paris (FR)</td>
+        <td class="check">✓</td>
+        <td>mittel</td>
+        <td>mittel</td>
+        <td class="check">FR</td>
+        <td>niedrig</td>
+        <td class="num">~15 €</td>
+      </tr>
+      <tr>
+        <td>Scaleway TEM <span class="pill">Backup</span></td>
+        <td>Paris (FR)</td>
+        <td class="check">✓</td>
+        <td class="cross">—</td>
+        <td class="cross">—</td>
+        <td class="check">FR</td>
+        <td>sehr niedrig</td>
+        <td class="num">~3 €</td>
+      </tr>
+      <tr>
+        <td>Maileroo</td>
+        <td>DE/NL</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+        <td>einfach</td>
+        <td class="check">DE/NL</td>
+        <td>niedrig</td>
+        <td class="num">~8 €</td>
+      </tr>
+      <tr>
+        <td>MailerSend</td>
+        <td>Litauen</td>
+        <td class="check">✓</td>
+        <td>extern</td>
+        <td>limitiert</td>
+        <td class="check">LT/NL</td>
+        <td>niedrig</td>
+        <td class="num">~10 €</td>
+      </tr>
+      <tr style="opacity:0.6">
+        <td>Postmark</td>
+        <td>USA</td>
+        <td class="check">✓</td>
+        <td class="cross">—</td>
+        <td class="cross">—</td>
+        <td class="cross">—</td>
+        <td>HOCH</td>
+        <td class="num">—</td>
+      </tr>
+      <tr style="opacity:0.6">
+        <td>SendGrid (Twilio)</td>
+        <td>USA</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+        <td class="cross">—</td>
+        <td>HOCH</td>
+        <td class="num">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Multi-Tenant: 500 User über einen Account</h3>
+  <p>
+    Statt 500 Brevo-Sub-Accounts zu pflegen (UI-Overhead, Admin-Hell), arbeiten wir mit einem zentralen Account
+    und der <code>/senders</code>- und <code>/domains</code>-API. Jeder Lisa-User bekommt seine eigene authentifizierte
+    Absender-Domain, technisch verwaltet über CNAME-Auth — der User legt zwei DNS-Einträge an, photosuite verifiziert
+    den Status automatisch per Polling.
+  </p>
+
+  <div class="callout success">
+    <strong>Zustellrate-Strategie</strong>
+    Shared IPs in Phase 1 (Brevo verwaltet Reputation für uns). Ab ~100k Mails/Monat pro Power-User Premium-Add-on
+    mit dedizierter IP, dann eigenes IP-Warmup. DMARC startet auf <code>p=none</code> (Monitoring), schärft nach 2-3 Monaten
+    auf <code>p=quarantine</code>, dann <code>p=reject</code> für Phishing-Schutz.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="editor">
+  <span class="eyebrow">04 · Template-Editor</span>
+  <h2>Unlayer — Drag-and-Drop für Nicht-Techies</h2>
+  <p>
+    Open-Source-React-Component, embed-fähig direkt in unsere Next.js-App (kein iframe).
+    Output ist responsives HTML, das in Outlook, Gmail und Apple Mail zuverlässig rendert.
+    Eigene Brand-Farben und Blöcke (Header, Footer mit Studio-Daten, Anfahrt-Block) sind
+    konfigurierbar und gehen automatisch in jede neue Vorlage ein.
+  </p>
+
+  <table class="providers">
+    <thead>
+      <tr><th>Tool</th><th>Lizenz</th><th>Embed</th><th>Reife</th><th>Geeignet?</th></tr>
+    </thead>
+    <tbody>
+      <tr class="highlight">
+        <td>Unlayer <span class="pill recommended">empfohlen</span></td>
+        <td>MIT</td>
+        <td>React-Component</td>
+        <td>4.5k Stars · Production</td>
+        <td class="check">Ja</td>
+      </tr>
+      <tr>
+        <td>Maily (tiptap)</td>
+        <td>MIT</td>
+        <td>React + Tiptap</td>
+        <td>5k Stars · jung</td>
+        <td>Plan B (in 12 Mt neu bewerten)</td>
+      </tr>
+      <tr>
+        <td>GrapesJS + MJML</td>
+        <td>BSD-3</td>
+        <td>Vanilla JS</td>
+        <td>22k Stars · DIY-Aufwand</td>
+        <td>Zu komplex für Endkund:innen</td>
+      </tr>
+      <tr>
+        <td>BeeFree Plugin</td>
+        <td>kommerziell</td>
+        <td>iframe</td>
+        <td>Marktführer</td>
+        <td>~250 €/Mo · lock-in</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Variablen-System</h3>
+  <p>
+    Der Editor unterstützt Platzhalter wie <code>{{customer.firstName}}</code>, <code>{{shooting.date}}</code>,
+    <code>{{invoice.amountDue}}</code>. Bei Sendversand setzt unser Mail-Service diese aus den CRM-Daten ein.
+    User wählen die Variablen aus einem Dropdown — kein Tippen, kein Syntax-Fehler.
+  </p>
+
+  <h3>Wiederverwendbare Blöcke pro Studio</h3>
+  <p>
+    Header mit Logo, Footer mit Impressum + Abmelde-Link, Studio-Adresse, Social-Icons — alles
+    in einer „Block-Library" pro User gespeichert. Wer einmal sein Logo, seine Adresse und seinen
+    Footer-Text einrichtet, hat sie für alle künftigen Vorlagen verfügbar.
+  </p>
+</section>
+
+<!-- ================================================================= -->
+<section id="workflows">
+  <span class="eyebrow">05 · Workflow-Engine</span>
+  <h2>Activepieces — eingebettetes No-Code-Automation</h2>
+  <p>
+    Activepieces ist eine MIT-lizenzierte, Open-Source-Workflow-Plattform mit einem expliziten
+    Embedding-SDK für SaaS-Anwendungen. Im Gegensatz zu n8n (das eine 5-stellige jährliche Lizenz
+    für SaaS-Embedding verlangt) ist Activepieces frei nutzbar — und der visuelle Editor steht
+    der Konkurrenz in nichts nach.
+  </p>
+
+  <div class="callout info">
+    <strong>Beispiel-Workflows für ein Boudoir-Studio</strong>
+    <ul style="margin: 6px 0 0 22px;">
+      <li><em>14 Tage vor Shooting:</em> automatisch „Vorbereitungs-Guide" an Kundin senden</li>
+      <li><em>3 Tage nach Shooting:</em> Dankes-Mail mit Galerie-Vorab-Link</li>
+      <li><em>2 Wochen nach Bezahlung:</em> Bewertungs-Anfrage</li>
+      <li><em>Geburtstag der Kundin:</em> persönliche Glückwunsch-Mail mit Rabatt-Code</li>
+      <li><em>12 Monate nach letztem Shooting:</em> Reaktivierungs-Kampagne</li>
+      <li><em>Bei Tag-Zuweisung "Stammkundin":</em> exklusiver Premium-Newsletter aktivieren</li>
+    </ul>
+  </div>
+
+  <h3>Trigger · Bedingung · Aktion</h3>
+  <p>
+    Jeder Workflow folgt diesem Muster. Trigger sind in unserer App-Welt:
+    Kundin angelegt, Shooting gebucht, Rechnung versendet, Rechnung bezahlt,
+    Tag hinzugefügt, Datum erreicht. Aktionen: E-Mail senden, Tag setzen, Aufgabe anlegen,
+    interne Notiz, externer Webhook.
+  </p>
+
+  <h3>Interne Jobs: BullMQ separat</h3>
+  <p>
+    Activepieces läuft für die User-sichtbaren Workflows. Für interne Background-Jobs
+    (Bounce-Cleanup, DSGVO-Löschläufe, DMARC-Report-Import, Rechnungs-Cron) nutzen wir
+    BullMQ mit Redis — robust, code-definiert, kein UI nötig.
+  </p>
+</section>
+
+<!-- ================================================================= -->
+<section id="compliance">
+  <span class="eyebrow">06 · Compliance</span>
+  <h2>DSGVO, UWG und der Boudoir-Kontext</h2>
+  <p>
+    Marketing-Mails an Endkund:innen in DACH sind hochreguliert. Mit Boudoir-Daten kommt
+    Art. 9 DSGVO hinzu (sensible Daten, da potenziell Sexualleben). Hier die nicht-verhandelbaren
+    Eckpunkte:
+  </p>
+
+  <h3>Pflicht-Punkte</h3>
+  <ul>
+    <li><strong>Double-Opt-In</strong> für jede Marketing-Mail. Single Opt-In ist in DE faktisch
+      nicht beweissicher. Die Bestätigungsmail darf <em>keine</em> Werbung enthalten (OLG München-Urteil).</li>
+    <li><strong>Einwilligung beweissicher dokumentieren</strong>: Timestamp, IP, User-Agent, Snapshot des
+      Formulars, exakter Einwilligungstext (versioniert). Aufbewahrung mindestens 3 Jahre nach letztem Kontakt.</li>
+    <li><strong>List-Unsubscribe-Header</strong> mit One-Click (RFC 8058) — seit Gmail/Yahoo/Microsoft
+      Bulk-Sender-Anforderungen 2024/25 zwingend für jeden Versender mit >5.000 Mails/Tag.</li>
+    <li><strong>Suppression-Liste</strong>: Hard-Bounce nach 1 Eintrag, Spam-Complaint sofort,
+      Soft-Bounce nach 3-5 Versuchen.</li>
+    <li><strong>SPF/DKIM/DMARC</strong> pro User-Domain. Mindestens eine Authentifizierung muss
+      gegenüber der Absender-Domain aligned sein, DKIM 2048-bit.</li>
+  </ul>
+
+  <h3>Tracking — kniffliger als gedacht</h3>
+  <p>
+    Open-Tracking-Pixel und Click-Redirects fallen unter § 25 TDDDG (vormals TTDSG) und brauchen
+    eine separate Einwilligung. Apple Mail Privacy Protection (aktiviert auf ~64 % der iOS-Mailbox-Devices)
+    macht Open-Rate als Metrik ohnehin unzuverlässig — der Pixel wird vom Apple-Server vorab geladen,
+    nicht vom Empfänger.
+  </p>
+  <div class="callout warn">
+    <strong>Konsequenz für unsere Analytics:</strong>
+    Klick-Rate als Primärmetrik, nicht Open-Rate. A/B-Tests messen wir auf CTR und Conversion.
+    „Re-Send an Nicht-Öffner" deaktivieren oder auf „Nicht-Klicker" umstellen.
+    Opens unter 2 Sekunden nach Versand als MPP-Prefetch herausfiltern.
+  </div>
+
+  <h3>Boudoir-spezifisch</h3>
+  <p>
+    Sensible Inhalte verlangen besondere Versandhygiene — Sperrbildschirme zeigen
+    Absender und Subject:
+  </p>
+  <ul>
+    <li><strong>Neutraler Absender</strong>: „Studio Müller" statt „Boudoir-Newsletter Studio Müller"</li>
+    <li><strong>Neutrale Subjects</strong>: „Deine Bilder sind fertig" statt „Deine Boudoir-Ergebnisse"</li>
+    <li><strong>Keine Bilder im Mail-Body</strong>, nur Login-Link zur passwortgeschützten Galerie</li>
+    <li><strong>Reply-To</strong> auf persönliche Fotograf:innen-Adresse, nicht auf gemeinsames Postfach</li>
+    <li><strong>Magic-Link mit kurzer TTL</strong> (15 Min) für Galerie-Vorschau-Mails</li>
+  </ul>
+</section>
+
+<!-- ================================================================= -->
+<section id="ux">
+  <span class="eyebrow">07 · UX-Konzept</span>
+  <h2>Wie es sich für unsere User anfühlt</h2>
+  <p>
+    Neuer Menüpunkt <strong>„Kommunikation"</strong> in der Sidebar — schließt eine logische Lücke
+    zwischen <em>Kunden</em> (wer) und <em>Buchhaltung</em> (was). Drei Hauptansichten + zwei Setup-Bereiche.
+  </p>
+
+  <h3>Hauptansicht: Übersicht / Inbox</h3>
+  <div class="ux-mockup">
+    <div class="ux-titlebar">photosuite — Kommunikation · Übersicht</div>
+    <div class="ux-body">
+      <div class="ux-side">
+        <ul>
+          <li class="active">Übersicht</li>
+          <li>Vorlagen</li>
+          <li>Kampagnen</li>
+          <li>Automationen</li>
+          <li>Empfänger</li>
+          <li>Versand-Historie</li>
+        </ul>
+      </div>
+      <div class="ux-main">
+        <div class="h">Kommunikation</div>
+        <div class="sub">Alles, was raus geht — und was zurück kommt.</div>
+        <div class="ux-cards">
+          <div class="ux-card">
+            <div class="ux-card-title">Versendet · 30 Tage</div>
+            <div class="ux-card-stat">847</div>
+          </div>
+          <div class="ux-card">
+            <div class="ux-card-title">Klick-Rate</div>
+            <div class="ux-card-stat" style="color: var(--success)">21,3 %</div>
+          </div>
+          <div class="ux-card">
+            <div class="ux-card-title">Abmeldungen</div>
+            <div class="ux-card-stat">3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Vorlagen-Editor</h3>
+  <div class="ux-mockup">
+    <div class="ux-titlebar">photosuite — Vorlagen · „Dankes-Mail nach Shooting"</div>
+    <div class="ux-body">
+      <div class="ux-side">
+        <ul>
+          <li>Übersicht</li>
+          <li class="active">Vorlagen</li>
+          <li>Kampagnen</li>
+          <li>Automationen</li>
+          <li>Empfänger</li>
+          <li>Versand-Historie</li>
+        </ul>
+      </div>
+      <div class="ux-main" style="background: var(--linen);">
+        <div class="h">Drag-and-Drop-Editor</div>
+        <div class="sub">Block-Library links · Live-Vorschau rechts · Variablen-Menü oben</div>
+        <div class="ux-list">
+          <div class="row"><span class="dot" style="background:var(--taupe)"></span> Logo-Header (auto aus Studio-Profil)</div>
+          <div class="row"><span class="dot" style="background:var(--taupe)"></span> Begrüßung mit <code>{{customer.firstName}}</code></div>
+          <div class="row"><span class="dot" style="background:var(--taupe)"></span> Fließtext-Block: persönlicher Dank</div>
+          <div class="row"><span class="dot" style="background:var(--accent)"></span> CTA-Button: „Zur Galerie" (Magic-Link)</div>
+          <div class="row"><span class="dot" style="background:var(--taupe)"></span> Footer: Impressum + Abmelde-Link</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Automation-Designer</h3>
+  <div class="ux-mockup">
+    <div class="ux-titlebar">photosuite — Automationen · „14-Tage-Vorab-Mail"</div>
+    <div class="ux-body">
+      <div class="ux-side">
+        <ul>
+          <li>Übersicht</li>
+          <li>Vorlagen</li>
+          <li>Kampagnen</li>
+          <li class="active">Automationen</li>
+          <li>Empfänger</li>
+          <li>Versand-Historie</li>
+        </ul>
+      </div>
+      <div class="ux-main">
+        <div class="h">Wenn → Wenn → Dann</div>
+        <div class="sub">Visueller Node-Editor: Trigger oben, Bedingungen links, Aktionen unten</div>
+        <div class="ux-list">
+          <div class="row"><strong style="font-size:11px;">TRIGGER</strong>&nbsp;&nbsp;Shooting-Datum erreicht in <em>14 Tagen</em></div>
+          <div class="row"><strong style="font-size:11px;">BEDINGUNG</strong>&nbsp;&nbsp;Wenn Kundin-Tag enthält „Bestätigt"</div>
+          <div class="row"><strong style="font-size:11px;">AKTION</strong>&nbsp;&nbsp;Sende Vorlage „Vorbereitungs-Guide"</div>
+          <div class="row"><strong style="font-size:11px;">AKTION</strong>&nbsp;&nbsp;Setze Tag „Reminder gesendet"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Visuelle Sprache</h3>
+  <p>
+    Konsequent im photosuite-Stil: Cormorant Garamond für Überschriften, Open Sans für Body, Akzentrot nur für
+    Status (versendet, geöffnet, geklickt) und Primary-Buttons. Tabellen mit klarer Hierarchie, Charts dezent
+    (Mini-Spark-Lines statt großer Dashboards).
+  </p>
+</section>
+
+<!-- ================================================================= -->
+<section id="phasen">
+  <span class="eyebrow">08 · Roadmap</span>
+  <h2>Vier Phasen statt Big Bang</h2>
+  <p>
+    Statt drei Monate stillzustehen, liefern wir in jeder Phase echten Nutzen.
+    Phase 1 deckt schon 60 % aller alltäglichen Use-Cases ab.
+  </p>
+
+  <div class="phase">
+    <div class="phase-num">01</div>
+    <div>
+      <h3>Transaktional</h3>
+      <span class="effort">~1 Woche Entwicklung</span>
+      <ul>
+        <li>Brevo-Account einrichten, API anbinden</li>
+        <li>Mail-Service: Render-Engine mit Variablen, Suppression-Check</li>
+        <li>Erste fest-codierte Mail-Vorlagen: Bezahllink-Mail, Rechnung versendet, Mahnung</li>
+        <li>Webhook-Empfang: Delivered, Bounce, Complaint → in DB persistieren</li>
+        <li>Versand-Historie pro Kundin sichtbar</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">02</div>
+    <div>
+      <h3>Vorlagen-Editor + manuelle Mails</h3>
+      <span class="effort">~2 Wochen Entwicklung</span>
+      <ul>
+        <li>Unlayer-Editor in Settings einbetten</li>
+        <li>Block-Library (Header, Footer, Studio-Daten) auto-generiert pro User</li>
+        <li>Variablen-Menü mit allen CRM-Feldern</li>
+        <li>Aus der Kunden-Detail-Ansicht: „Mail schreiben" → Editor mit voreingestellter Vorlage</li>
+        <li>Test-Versand an eigene Adresse vor Live-Versand</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">03</div>
+    <div>
+      <h3>Marketing-Kampagnen + Compliance-Foundation</h3>
+      <span class="effort">~2-3 Wochen Entwicklung</span>
+      <ul>
+        <li>Double-Opt-In-Flow mit Bestätigungs-Mail (ohne Werbung!)</li>
+        <li>Empfänger-Segmente: Tag-basiert, Status-basiert, Smart-Filter</li>
+        <li>Kampagnen-Versand: One-Shot Marketing-Mail an Segment, mit A/B-Test</li>
+        <li>List-Unsubscribe-Header, Suppression-Liste pro User-Account</li>
+        <li>Einwilligungs-Doku (Timestamp + IP + Snapshot) automatisch protokolliert</li>
+        <li>Domain-Verification-Wizard mit DNS-Polling</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">04</div>
+    <div>
+      <h3>Automationen + Analytics</h3>
+      <span class="effort">~3-4 Wochen Entwicklung</span>
+      <ul>
+        <li>Activepieces selbst-gehostet (Hetzner CX42)</li>
+        <li>Embed-SDK in photosuite mit Brand-Theming</li>
+        <li>Trigger-Library: Shooting-Datum, Kunden-Anlage, Status-Wechsel, Tag</li>
+        <li>Action-Library: E-Mail, Tag, Aufgabe, interne Notiz, Webhook</li>
+        <li>Analytics-Dashboard: Klick-Rate als Primärmetrik, A/B-Vergleiche</li>
+        <li>DMARC-Report-Import + Cockpit (welche Subdomain hat welche Reputation)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="kosten">
+  <span class="eyebrow">09 · Kosten</span>
+  <h2>Infrastruktur-Modell</h2>
+  <p>
+    Pro Lisa-CRM-Plattform-Betrieb. Pro-User-Kosten skaliert nur mit dem tatsächlichen Mail-Volumen,
+    nicht mit der User-Zahl an sich.
+  </p>
+
+  <h3>Phase 1+2 (bis ~500 User, ~50k Mails/Monat)</h3>
+  <table class="cost">
+    <tr><td>Brevo Starter (5k Mails) + Volume-Add-on (45k)</td><td>~70 €/Monat</td></tr>
+    <tr><td>Hetzner CX42 für Activepieces (ab Phase 4)</td><td>~30 €/Monat</td></tr>
+    <tr><td>Unlayer Embed</td><td>0 €</td></tr>
+    <tr><td>Redis (BullMQ-Storage)</td><td>~10 €/Monat (gemeinsam mit App)</td></tr>
+    <tr class="sum"><td>Summe (laufend)</td><td>~110 €/Monat</td></tr>
+  </table>
+
+  <h3>Phase 3+ (Scale, ~5k User, ~500k Mails/Monat)</h3>
+  <table class="cost">
+    <tr><td>Brevo Business (500k Mails, dedizierte IP, Sub-Accounts)</td><td>~450 €/Monat</td></tr>
+    <tr><td>Hetzner-Cluster für Activepieces + Redis</td><td>~80 €/Monat</td></tr>
+    <tr><td>Scaleway TEM Standby</td><td>~10 €/Monat</td></tr>
+    <tr><td>DMARC-Report-Service (URIports EU)</td><td>~50 €/Monat</td></tr>
+    <tr class="sum"><td>Summe (laufend)</td><td>~590 €/Monat</td></tr>
+  </table>
+
+  <div class="callout">
+    <strong>Cost-per-User</strong>
+    Bei 5.000 zahlenden Usern und 590 €/Monat Infrastruktur sind das ~12&nbsp;Cent pro User pro Monat
+    für die komplette E-Mail-Plattform. Bei Preisen von 20-50 €/User/Monat für ein CRM auf SaaS-Niveau
+    ist das eine sehr gute Marge.
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="nextsteps">
+  <span class="eyebrow">10 · Nächste Schritte</span>
+  <h2>Was ich von dir brauche</h2>
+
+  <ol style="padding-left: 22px; margin: 18px 0;">
+    <li style="margin: 10px 0;">
+      <strong>Go für die Architektur</strong> — bestätigst du den Brevo + Unlayer + Activepieces-Stack?
+      Oder möchtest du Alternativen abwägen?
+    </li>
+    <li style="margin: 10px 0;">
+      <strong>Brevo-Account anlegen</strong> (analog zur Google-Cloud-Anleitung). Dauer ~10 Minuten,
+      ich schreibe dir den Schritt-für-Schritt-Guide als HTML wenn das Go steht.
+    </li>
+    <li style="margin: 10px 0;">
+      <strong>Domain-Strategie entscheiden</strong> — sollen User mit ihrer eigenen Domain
+      versenden (CNAME-Setup nötig) oder reicht in Phase 1 eine photosuite-Subdomain wie
+      <code>mail.photosuite.io</code> mit „Reply-To" auf User-Adresse?
+    </li>
+    <li style="margin: 10px 0;">
+      <strong>Phasen-Priorisierung</strong> — anfangen mit Phase 1 (Transaktional) oder
+      gleich Phase 2 mitnehmen (User können sofort Vorlagen designen)?
+    </li>
+    <li style="margin: 10px 0;">
+      <strong>Compliance-Klärung</strong> — gibt es bereits eine Datenschutzerklärung, die
+      photosuite + Brevo als Sub-Processor benennt? Falls nein, brauchst du das vor dem ersten
+      Live-Versand (ich kann den Textbaustein liefern).
+    </li>
+  </ol>
+
+  <div class="callout success">
+    <strong>Sobald du grünes Licht gibst:</strong>
+    Ich starte mit Phase 1 — Brevo-Integration + erste transaktionale Vorlagen (Bezahllink-Mail,
+    Rechnung-Versendet, Mahnung-Reminder). In ~1 Woche läuft der erste echte Mail-Versand aus
+    photosuite raus, mit voller Tracking-Sichtbarkeit im UI.
+  </div>
+</section>
+
+</main>
+
+</div>
+
+<footer class="app-footer">
+  <div class="container">
+    <p>
+      <span class="wordmark"><span class="photo">photo</span><span class="suite">suite</span></span>
+      &nbsp;·&nbsp; E-Mail-Stack Konzept &nbsp;·&nbsp; Stand Mai 2026
+    </p>
+    <p>
+      Basis-Recherche: aktuelle Provider-Daten (Brevo, Mailjet, Scaleway, MailerSend),
+      Compliance-Quellen (IT-Recht-Kanzlei, BfDI-Leitfäden, RFC 8058),
+      Tool-Vergleich (Unlayer, Activepieces, n8n). Quellen verfügbar auf Anfrage.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

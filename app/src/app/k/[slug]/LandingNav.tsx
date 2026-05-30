@@ -88,8 +88,8 @@ export function LandingNav({
               fontSize: "24px",
             }}
           >
-            <span style={{ fontStyle: "italic", fontWeight: 400 }}>photo</span>
-            <span style={{ fontWeight: 600, color: "var(--accent)" }}>suite</span>
+            <span style={{ fontWeight: 500 }}>photo</span>
+            <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
           </div>
         )}
         <ul className="flex items-center gap-1 ml-auto flex-wrap justify-end">

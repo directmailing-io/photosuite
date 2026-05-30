@@ -64,8 +64,8 @@ export function Sidebar({
           fontSize: "32px",
           letterSpacing: "-0.01em",
         }}>
-          <span style={{ fontStyle: "italic", fontWeight: 400, color: "var(--ink)" }}>photo</span>
-          <span style={{ fontWeight: 600, color: "var(--accent)" }}>suite</span>
+          <span style={{ fontWeight: 500, color: "var(--ink)" }}>photo</span>
+          <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
         </Link>
       </div>
 

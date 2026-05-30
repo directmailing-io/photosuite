@@ -45,8 +45,8 @@ export default function LoginPage() {
               letterSpacing: "-0.01em",
             }}
           >
-            <span style={{ fontStyle: "italic", fontWeight: 400, color: "rgba(255,255,255,0.95)" }}>photo</span>
-            <span style={{ fontWeight: 600, color: "var(--accent)" }}>suite</span>
+            <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.95)" }}>photo</span>
+            <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
           </div>
           <div className="font-serif text-5xl mt-3 leading-tight">Schön, dich<br/>wiederzusehen.</div>
         </div>

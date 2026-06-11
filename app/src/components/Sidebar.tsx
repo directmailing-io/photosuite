@@ -15,6 +15,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "./authActions";
 
 type NavItem = {
   href: string;
@@ -88,7 +89,7 @@ export function Sidebar({
             <div className="text-sm font-medium text-ink truncate">{userName ?? "User"}</div>
             <div className="text-[11px] text-smoke">Eingeloggt</div>
           </div>
-          <form action="/api/auth/signout" method="POST">
+          <form action={signOutAction}>
             <button type="submit" className="btn-icon" title="Abmelden">
               <LogOut size={16} strokeWidth={1.75} />
             </button>

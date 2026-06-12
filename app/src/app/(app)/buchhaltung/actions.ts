@@ -242,8 +242,13 @@ export async function updateDraftInvoice(id: string, formData: FormData) {
   if (inv.status !== "DRAFT") throw new Error("Nur Entwürfe können bearbeitet werden");
 
   const user = await getUserOrThrow();
-  const vatRate = num(formData.get("vatRate")) ?? inv.vatRate;
   const isSmallBusiness = formData.get("isSmallBusiness") === "on";
+  // Wenn KU aktiv: vatRate=0 erzwingen (sonst wäre Snapshot inkonsistent).
+  // Wenn KU aus: vom Form gesendeten Wert nehmen, mindestens defaultVatRate, fallback 19.
+  const formVatRate = num(formData.get("vatRate"));
+  const vatRate = isSmallBusiness
+    ? 0
+    : (formVatRate && formVatRate > 0 ? formVatRate : (user.defaultVatRate || 19));
 
   // Items aus Form (Arrays per Index)
   const titles = formData.getAll("item.title").map(String);

@@ -322,7 +322,17 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
                   type="checkbox"
                   name="isSmallBusiness"
                   checked={isSmallBusiness}
-                  onChange={(e) => setIsSmallBusiness(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsSmallBusiness(checked);
+                    // Wenn KU aus → vatRate auf Default zurücksetzen (sonst bleibt er auf 0).
+                    // Wenn KU ein → vatRate auf 0 (sonst bleibt evtl. ein alter 19-Wert stehen).
+                    if (checked) {
+                      setVatRate(0);
+                    } else if (vatRate === 0) {
+                      setVatRate(19);
+                    }
+                  }}
                   disabled={!isDraft}
                   className="w-4 h-4"
                 />

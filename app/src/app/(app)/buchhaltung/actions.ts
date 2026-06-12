@@ -92,7 +92,7 @@ export async function createDraftInvoice(opts: CreateOptions) {
   if (!customer) throw new Error("Kunde nicht gefunden");
   const shooting = resolvedShootingId ? await prisma.shooting.findUnique({
     where: { id: resolvedShootingId },
-    include: { package: true },
+    include: { package: true, addons: { orderBy: { position: "asc" } } },
   }) : null;
 
   const issuer = snapshotFromUser(user);
@@ -117,6 +117,8 @@ export async function createDraftInvoice(opts: CreateOptions) {
   let installmentToLink: string | null = opts.installmentId ?? null;
 
   if (opts.preset === "fullFromShooting" && shooting) {
+    // Paket-Preis ohne Add-Ons (ShootingForm rechnet Add-Ons bewusst NICHT in shooting.price ein,
+    // damit beide Posten getrennt in der Rechnung erscheinen).
     items = [{
       title: shooting.package?.name ?? shooting.title,
       description: shooting.package?.description ?? null,
@@ -126,6 +128,17 @@ export async function createDraftInvoice(opts: CreateOptions) {
       totalCents: Math.round((shooting.price ?? 0) * 100),
       position: 0,
     }];
+    for (const addon of shooting.addons ?? []) {
+      items.push({
+        title: addon.name,
+        description: addon.description,
+        quantity: 1,
+        unit: "Pauschal",
+        unitPriceCents: Math.round(addon.price * 100),
+        totalCents: Math.round(addon.price * 100),
+        position: items.length,
+      });
+    }
     kind = "FINAL";
   } else if (opts.preset === "depositFromShooting" && shooting && shooting.depositAmount) {
     items = [{

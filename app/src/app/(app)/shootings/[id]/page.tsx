@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ShootingDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [shooting, customers, packages, statuses, team, qTemplates] = await Promise.all([
+  const [shooting, customers, packages, statuses, team, qTemplates, allAddons] = await Promise.all([
     prisma.shooting.findUnique({
       where: { id },
       include: {
@@ -30,6 +30,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         status: true,
         team: true,
         primaryContact: true,
+        addons: true,
         dates: { orderBy: [{ startAt: "asc" }] },
         notes: { orderBy: { createdAt: "desc" } },
         checklists: {
@@ -50,13 +51,14 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
       },
     }),
     prisma.customer.findMany({ orderBy: [{ firstName: "asc" }] }),
-    prisma.package.findMany({ orderBy: { position: "asc" } }),
+    prisma.package.findMany({ orderBy: { position: "asc" }, include: { addons: true } }),
     prisma.shootingStatus.findMany({ orderBy: { position: "asc" } }),
     prisma.teamMember.findMany({ orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
     prisma.questionnaireTemplate.findMany({
       orderBy: [{ position: "asc" }],
       include: { _count: { select: { fields: true } } },
     }),
+    prisma.addon.findMany({ where: { isActive: true }, orderBy: { position: "asc" } }),
   ]);
   if (!shooting) return notFound();
 
@@ -157,13 +159,20 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
                 paymentTerms: shooting.paymentTerms,
                 primaryContactId: shooting.primaryContactId,
                 teamIds: shooting.team.map((m) => m.id),
+                addonIds: shooting.addons.map((a) => a.id),
               }}
               customers={customers}
-              packages={packages}
+              packages={packages.map((p) => ({
+                id: p.id, name: p.name, price: p.price, description: p.description,
+                depositAmount: p.depositAmount, paymentTerms: p.paymentTerms, durationMin: p.durationMin,
+                isActive: p.isActive, primaryContactId: p.primaryContactId,
+                availableAddonIds: p.addons.map((a) => a.id),
+              }))}
               statuses={statuses}
               team={team.map((m) => ({
                 id: m.id, firstName: m.firstName, lastName: m.lastName, role: m.role, avatarUrl: m.avatarUrl, isOwner: m.isOwner,
               }))}
+              addons={allAddons.map((a) => ({ id: a.id, name: a.name, price: a.price, imageUrl: a.imageUrl, description: a.description }))}
               action={updateShooting.bind(null, id)}
               deleteAction={deleteShooting.bind(null, id)}
             />

@@ -82,6 +82,10 @@ export async function createShooting(formData: FormData) {
       paymentTerms: s(formData.get("paymentTerms")),
       primaryContactId: primaryId,
       team: teamIds.length ? { connect: teamIds.map((id) => ({ id })) } : undefined,
+      addons: (() => {
+        const addonIds = formData.getAll("addonIds").map(String).filter(Boolean);
+        return addonIds.length ? { connect: addonIds.map((id) => ({ id })) } : undefined;
+      })(),
       // Checklisten aus Paket-Templates kopieren (mit Audience)
       checklists: pkg && pkg.checklistTemplates.length > 0 ? {
         create: pkg.checklistTemplates.map((tpl) => ({
@@ -152,6 +156,7 @@ export async function updateShooting(id: string, formData: FormData) {
 
   const newStatusId = s(formData.get("statusId"));
   const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
+  const addonIds = formData.getAll("addonIds").map(String).filter(Boolean);
   const primaryId = s(formData.get("primaryContactId"));
 
   const updated = await prisma.shooting.update({
@@ -171,6 +176,7 @@ export async function updateShooting(id: string, formData: FormData) {
       paymentTerms: s(formData.get("paymentTerms")) ?? null,
       primaryContactId: primaryId ?? null,
       team: { set: teamIds.map((id) => ({ id })) },
+      addons: { set: addonIds.map((id) => ({ id })) },
     },
   });
 

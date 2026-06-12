@@ -4,12 +4,13 @@ import { PackageForm } from "../PackageForm";
 import { createPackage } from "../actions";
 
 export default async function NeuPaketPage() {
-  const [team, questionnaires] = await Promise.all([
+  const [team, questionnaires, addons] = await Promise.all([
     prisma.teamMember.findMany({ orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
     prisma.questionnaireTemplate.findMany({
       orderBy: [{ position: "asc" }],
       include: { _count: { select: { fields: true } } },
     }),
+    prisma.addon.findMany({ where: { isActive: true }, orderBy: { position: "asc" } }),
   ]);
   return (
     <>
@@ -20,6 +21,7 @@ export default async function NeuPaketPage() {
           id: m.id, firstName: m.firstName, lastName: m.lastName, role: m.role, avatarUrl: m.avatarUrl, isOwner: m.isOwner,
         }))}
         questionnaires={questionnaires.map((q) => ({ id: q.id, title: q.title, fieldCount: q._count.fields }))}
+        addons={addons.map((a) => ({ id: a.id, name: a.name, price: a.price, imageUrl: a.imageUrl }))}
       />
     </>
   );

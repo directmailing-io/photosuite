@@ -21,6 +21,7 @@ export type PackageInitial = {
   primaryContactId?: string | null;
   defaultTeamIds?: string[];
   defaultQuestionnaireIds?: string[];
+  availableAddonIds?: string[];
 };
 
 type QuestionnaireOption = {
@@ -29,30 +30,44 @@ type QuestionnaireOption = {
   fieldCount: number;
 };
 
+export type AddonOption = {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl: string | null;
+};
+
 type Props = {
   initial?: PackageInitial;
   team: TeamPickerMember[];
   questionnaires: QuestionnaireOption[];
+  addons?: AddonOption[];
   action: (formData: FormData) => Promise<void>;
   deleteAction?: () => Promise<void>;
 };
 
-export function PackageForm({ initial, team, questionnaires, action, deleteAction }: Props) {
+export function PackageForm({ initial, team, questionnaires, addons = [], action, deleteAction }: Props) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(initial?.coverUrl ?? null);
   const [busy, setBusy] = useState(false);
   const [selectedQ, setSelectedQ] = useState<string[]>(initial?.defaultQuestionnaireIds ?? []);
+  const [selectedAddons, setSelectedAddons] = useState<string[]>(initial?.availableAddonIds ?? []);
 
   function toggleQ(id: string) {
     setSelectedQ((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+  function toggleAddon(id: string) {
+    setSelectedAddons((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     try {
-      await action(new FormData(e.currentTarget));
+      const fd = new FormData(e.currentTarget);
+      selectedAddons.forEach((id) => fd.append("availableAddonIds", id));
+      await action(fd);
       toast.success(initial?.id ? "Gespeichert" : "Paket angelegt");
       router.refresh();
     } catch (err) {
@@ -189,6 +204,51 @@ export function PackageForm({ initial, team, questionnaires, action, deleteActio
             <input name="durationMin" type="number" min="0" defaultValue={initial?.durationMin ?? ""} className="input" />
           </Field>
         </section>
+
+        {addons.length > 0 && (
+          <section className="card p-6">
+            <div className="eyebrow eyebrow-muted mb-3">Verfügbare Zusatzprodukte</div>
+            <div className="text-xs text-smoke mb-4">
+              Welche Add-Ons sollen bei Buchung dieses Pakets zur Auswahl stehen?
+              <span className="block mt-0.5">Neue Add-Ons legst du unter Einstellungen → Zusatzprodukte an.</span>
+            </div>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {addons.map((a) => {
+                const checked = selectedAddons.includes(a.id);
+                return (
+                  <li key={a.id}>
+                    <label
+                      className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition hover:bg-linen/50"
+                      style={{
+                        borderColor: checked ? "var(--ink)" : "var(--stone)",
+                        background: checked ? "var(--linen)" : "var(--paper)",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleAddon(a.id)}
+                        className="w-4 h-4 shrink-0"
+                      />
+                      {a.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.imageUrl} alt={a.name} className="w-10 h-10 rounded object-cover shrink-0 border border-stone" />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-linen shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{a.name}</div>
+                        <div className="text-xs text-smoke tabular-nums">
+                          {a.price.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                        </div>
+                      </div>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <section className="card p-6 flex items-center gap-3">
           <input id="isActive" type="checkbox" name="isActive" defaultChecked={initial?.isActive ?? true} className="w-4 h-4" />

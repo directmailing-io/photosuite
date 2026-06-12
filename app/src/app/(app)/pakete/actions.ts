@@ -30,6 +30,7 @@ export async function createPackage(formData: FormData) {
   }
   const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
   const questionnaireIds = formData.getAll("questionnaireIds").map(String).filter(Boolean);
+  const addonIds = formData.getAll("availableAddonIds").map(String).filter(Boolean);
 
   await prisma.package.create({
     data: {
@@ -44,6 +45,7 @@ export async function createPackage(formData: FormData) {
       primaryContactId: s(formData.get("primaryContactId")),
       defaultTeam: teamIds.length ? { connect: teamIds.map((id) => ({ id })) } : undefined,
       defaultQuestionnaires: questionnaireIds.length ? { connect: questionnaireIds.map((id) => ({ id })) } : undefined,
+      addons: addonIds.length ? { connect: addonIds.map((id) => ({ id })) } : undefined,
     },
   });
   revalidatePath("/pakete");
@@ -62,6 +64,7 @@ export async function updatePackage(id: string, formData: FormData) {
   }
   const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
   const questionnaireIds = formData.getAll("questionnaireIds").map(String).filter(Boolean);
+  const addonIds = formData.getAll("availableAddonIds").map(String).filter(Boolean);
 
   await prisma.package.update({
     where: { id },
@@ -77,6 +80,7 @@ export async function updatePackage(id: string, formData: FormData) {
       primaryContactId: s(formData.get("primaryContactId")) ?? null,
       defaultTeam: { set: teamIds.map((id) => ({ id })) },
       defaultQuestionnaires: { set: questionnaireIds.map((id) => ({ id })) },
+      addons: { set: addonIds.map((id) => ({ id })) },
     },
   });
   revalidatePath("/pakete");

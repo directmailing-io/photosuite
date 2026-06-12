@@ -13,6 +13,7 @@ import {
   UsersRound,
   FileQuestion,
   Receipt,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "./authActions";
@@ -28,6 +29,7 @@ const dailyItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/kunden", label: "Kunden", icon: Users },
   { href: "/shootings", label: "Shootings", icon: Camera },
+  { href: "/kalender", label: "Kalender", icon: CalendarDays },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/buchhaltung", label: "Buchhaltung", icon: Receipt },
 ];

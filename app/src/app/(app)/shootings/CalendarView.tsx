@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { cn, formatEUR } from "@/lib/utils";
 import { Field, FormRow } from "@/components/form/Field";
 import { moveShootingToDate, createShooting } from "./actions";
+import { setDayAvailability } from "../einstellungen/availabilityActions";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const MONTHS = [
@@ -57,8 +58,11 @@ export type AvailabilityDay = {
   maxShootings: number;
   bookedCount: number;
   freeSlots: number;
+  startMinutes: number | null;
+  endMinutes: number | null;
   isOverride: boolean;
   note: string | null;
+  overrideId: string | null;
 };
 
 type Props = {
@@ -70,6 +74,8 @@ type Props = {
   packages: CalendarPackage[];
   availability: AvailabilityDay[];
   nextFreeDays: AvailabilityDay[];
+  // Wo soll die Navigation hin? "/kalender" (eigene Route) oder "/shootings?view=calendar".
+  basePath?: string;
 };
 
 function ymd(d: Date): string {
@@ -87,11 +93,12 @@ function addMonths(year: number, month: number, delta: number): { year: number; 
   return { year: newYear, month: newMonth };
 }
 
-export function CalendarView({ shootings: initialShootings, externalEvents, year, month, customers, packages, availability, nextFreeDays }: Props) {
+export function CalendarView({ shootings: initialShootings, externalEvents, year, month, customers, packages, availability, nextFreeDays, basePath = "/shootings?view=calendar" }: Props) {
   const router = useRouter();
   const [shootings, setShootings] = useState(initialShootings);
   const [selected, setSelected] = useState<CalendarShooting | null>(null);
   const [createForDate, setCreateForDate] = useState<string | null>(null); // YYYY-MM-DD
+  const [editAvailabilityFor, setEditAvailabilityFor] = useState<string | null>(null);
   const [activeDrag, setActiveDrag] = useState<CalendarShooting | null>(null);
   const [showOnlyFree, setShowOnlyFree] = useState(false);
   const [, startTransition] = useTransition();
@@ -168,6 +175,22 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
     const currentDate = ymd(new Date(sh.scheduledAt));
     if (currentDate === targetDate) return;
 
+    // Verfügbarkeits-Check vor dem Verschieben — bei vollem/gesperrtem Tag nachfragen.
+    const target = availabilityByDay.get(targetDate);
+    if (target) {
+      if (target.maxShootings === 0) {
+        const proceed = confirm(
+          `Dieser Tag ist nicht verfügbar${target.note ? ` (${target.note})` : ""}.\n\nTrotzdem verschieben?`,
+        );
+        if (!proceed) return;
+      } else if (target.freeSlots === 0) {
+        const proceed = confirm(
+          `Dieser Tag ist bereits voll belegt (${target.bookedCount}/${target.maxShootings}).\n\nTrotzdem verschieben (überbuchen)?`,
+        );
+        if (!proceed) return;
+      }
+    }
+
     // Optimistic Update: lokales Datum aktualisieren (Uhrzeit behalten)
     const original = new Date(sh.scheduledAt);
     const [y, m, d] = targetDate.split("-").map(Number);
@@ -193,8 +216,8 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
         {/* Monats-Navigation */}
         <div className="px-5 py-4 flex items-center justify-between gap-4 border-b border-stone/60">
           <div className="flex items-center gap-1">
-            <CalendarLink year={prev.year} month={prev.month} label="Voriger Monat" icon={<ChevronLeft size={16} />} />
-            <CalendarLink year={next.year} month={next.month} label="Nächster Monat" icon={<ChevronRight size={16} />} />
+            <CalendarLink basePath={basePath} year={prev.year} month={prev.month} label="Voriger Monat" icon={<ChevronLeft size={16} />} />
+            <CalendarLink basePath={basePath} year={next.year} month={next.month} label="Nächster Monat" icon={<ChevronRight size={16} />} />
           </div>
           <div className="text-center">
             <div className="font-serif text-xl">{MONTHS[month - 1]} {year}</div>
@@ -213,7 +236,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
               <Sparkles size={13} /> Nur freie
             </button>
             {!todayInThisMonth && (
-              <Link href={`/shootings?view=calendar&month=${todayParam}`} className="btn-secondary text-xs h-9">
+              <Link href={`${basePath}${basePath.includes("?") ? "&" : "?"}month=${todayParam}`} className="btn-secondary text-xs h-9">
                 <CalendarIcon size={13} /> Heute
               </Link>
             )}
@@ -261,6 +284,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
                   dimNonFree={showOnlyFree}
                   onSelect={(s) => setSelected(s)}
                   onCreate={() => setCreateForDate(dayKey)}
+                  onEditAvailability={() => setEditAvailabilityFor(dayKey)}
                 />
               );
             })}
@@ -287,12 +311,168 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
           packages={packages}
           existingShootings={byDay.get(createForDate) ?? []}
           availability={availabilityByDay.get(createForDate) ?? null}
+          quickPicks={nextFreeDays.slice(0, 3).filter((d) => d.date !== createForDate)}
+          onSwitchDate={(ymd) => setCreateForDate(ymd)}
           onClose={() => setCreateForDate(null)}
         />
       )}
 
       <FreeSlotsPanel nextFreeDays={nextFreeDays} onPick={(ymd) => setCreateForDate(ymd)} />
+
+      {editAvailabilityFor && (
+        <AvailabilityPopover
+          isoDate={editAvailabilityFor}
+          availability={availabilityByDay.get(editAvailabilityFor) ?? null}
+          onClose={() => setEditAvailabilityFor(null)}
+        />
+      )}
     </>
+  );
+}
+
+// Inline-Popover für Tag-Verfügbarkeit — Lisa klickt im Kalender auf einen Tag und
+// markiert ihn als verfügbar/unverfügbar. Schreibt einen AvailabilityOverride.
+function AvailabilityPopover({
+  isoDate, availability, onClose,
+}: {
+  isoDate: string;
+  availability: AvailabilityDay | null;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [max, setMax] = useState(availability?.maxShootings ?? 0);
+  const [note, setNote] = useState(availability?.note ?? "");
+
+  const dateLabel = new Date(isoDate + "T00:00:00").toLocaleDateString("de-DE", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
+  function save(newMax: number) {
+    setMax(newMax);
+    startTransition(async () => {
+      try {
+        await setDayAvailability(isoDate, newMax, note || null);
+        toast.success("Verfügbarkeit gespeichert");
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err?.message ?? "Fehler");
+      }
+    });
+  }
+
+  function resetToWeekly() {
+    startTransition(async () => {
+      try {
+        await setDayAvailability(isoDate, null, null);
+        toast.success("Auf Wochenregel zurückgesetzt");
+        router.refresh();
+        onClose();
+      } catch (err: any) {
+        toast.error(err?.message ?? "Fehler");
+      }
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-sm w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="h-1.5" style={{ background: max > 0 ? "rgb(120, 167, 119)" : "var(--taupe)" }} />
+        <div className="p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="eyebrow eyebrow-muted">Verfügbarkeit</div>
+              <div className="font-serif text-lg mt-0.5">{dateLabel}</div>
+              <div className="text-xs text-smoke mt-1">
+                {availability?.isOverride
+                  ? "Überschreibt die Wochenregel"
+                  : "Wochenregel — Änderung speichert als Ausnahme"}
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="btn-icon shrink-0" aria-label="Schließen">
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg border" style={{
+            borderColor: "var(--stone)",
+            background: max > 0 ? "rgba(120, 167, 119, 0.10)" : "var(--linen)",
+          }}>
+            <div>
+              <div className="text-xs text-smoke">Slots</div>
+              <div className="font-serif text-2xl tabular-nums leading-none mt-0.5">
+                {max === 0 ? "zu" : max}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={pending || max === 0}
+                onClick={() => save(max - 1)}
+                className="w-9 h-9 rounded-md border border-stone hover:bg-linen disabled:opacity-30"
+                aria-label="Weniger"
+              >−</button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => save(max + 1)}
+                className="w-9 h-9 rounded-md border border-stone hover:bg-linen"
+                aria-label="Mehr"
+              >+</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => save(0)}
+              className="btn-secondary text-xs h-9"
+              title="Tag sperren"
+            >
+              <CalendarOff size={12} /> Sperren
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => save(1)}
+              className="btn-secondary text-xs h-9"
+            >1 Slot</button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => save(2)}
+              className="btn-secondary text-xs h-9"
+            >2 Slots</button>
+          </div>
+
+          <div>
+            <label className="text-xs text-smoke">Notiz</label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onBlur={() => { if (max !== availability?.maxShootings || note !== (availability?.note ?? "")) save(max); }}
+              placeholder="z.B. Urlaub, Familienfeier …"
+              className="input h-9 text-sm mt-1"
+            />
+          </div>
+
+          {availability?.isOverride && (
+            <div className="pt-3 border-t border-stone/60">
+              <button
+                type="button"
+                onClick={resetToWeekly}
+                disabled={pending}
+                className="btn-ghost text-xs h-8 text-smoke"
+              >
+                Wieder Wochenregel verwenden
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -373,7 +553,7 @@ function FreeSlotsPanel({
 }
 
 function DayCell({
-  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, availability, dimNonFree, onSelect, onCreate,
+  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, availability, dimNonFree, onSelect, onCreate, onEditAvailability,
 }: {
   date: Date;
   dayKey: string;
@@ -388,6 +568,7 @@ function DayCell({
   dimNonFree: boolean;
   onSelect: (s: CalendarShooting) => void;
   onCreate: () => void;
+  onEditAvailability: () => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: dayKey });
 
@@ -402,13 +583,13 @@ function DayCell({
 
   let baseBg: string;
   if (!inMonth) baseBg = "var(--linen)";
-  else if (isClosed) baseBg = "rgba(236, 235, 232, 0.7)";
-  else if (hasFreeSlots) baseBg = "rgba(120, 167, 119, 0.10)";  // sanftes Grün
+  else if (isClosed) baseBg = "rgba(236, 235, 232, 0.65)";
+  else if (hasFreeSlots) baseBg = "rgba(120, 167, 119, 0.16)";  // klares aber dezentes Grün
   else if (isWeekend) baseBg = "rgba(236, 235, 232, 0.45)";
   else baseBg = "var(--paper)";
 
-  // Bei „Nur freie": Tage ohne freie Slots dimmen — aber nur im aktiven Monat.
   const dimmed = dimNonFree && inMonth && !hasFreeSlots;
+  const isOverride = !!availability?.isOverride;
 
   return (
     <div
@@ -421,44 +602,66 @@ function DayCell({
       style={{
         background: isOver ? "var(--accent-soft)" : baseBg,
         opacity: inMonth ? (dimmed ? 0.35 : 1) : 0.55,
-        outline: isOver ? "2px solid var(--accent)" : hasFreeSlots && inMonth ? "1px solid rgba(120, 167, 119, 0.35)" : "none",
+        outline: isOver
+          ? "2px solid var(--accent)"
+          : (hasFreeSlots && inMonth ? "1px solid rgba(120, 167, 119, 0.45)" : "none"),
         outlineOffset: -1,
       }}
     >
-      <div className="flex items-center justify-between mb-1.5">
+      {/* Override-Indikator: kleiner Punkt links oben, zeigt „Lisa hat hier manuell etwas geändert" */}
+      {inMonth && isOverride && (
         <div
-          className="inline-flex items-center justify-center rounded-full text-xs font-medium w-6 h-6"
+          className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full"
+          style={{ background: "var(--accent)" }}
+          title="Manuelle Ausnahme"
+        />
+      )}
+
+      <div className="flex items-center justify-between mb-1.5">
+        <button
+          type="button"
+          onClick={inMonth ? onEditAvailability : undefined}
+          disabled={!inMonth}
+          className={cn(
+            "inline-flex items-center justify-center rounded-full text-xs font-medium w-6 h-6 transition",
+            inMonth && "hover:ring-2 hover:ring-stone cursor-pointer",
+          )}
+          title={inMonth ? "Verfügbarkeit für diesen Tag anpassen" : undefined}
           style={{
             background: isToday ? "var(--accent)" : "transparent",
             color: isToday ? "#fff" : inMonth ? "var(--ink)" : "var(--smoke)",
           }}
         >
           {date.getDate()}
-        </div>
+        </button>
         <div className="flex items-center gap-1">
           {inMonth && availability && availability.maxShootings > 0 && (
-            <span
-              className="text-[9px] tabular-nums px-1.5 py-0.5 rounded font-medium"
+            <button
+              type="button"
+              onClick={onEditAvailability}
+              className="text-[9px] tabular-nums px-1.5 py-0.5 rounded font-medium hover:ring-1 hover:ring-stone transition"
               style={{
-                background: hasFreeSlots ? "rgba(120, 167, 119, 0.20)" : "rgba(0,0,0,0.06)",
-                color: hasFreeSlots ? "rgb(70, 115, 70)" : "var(--smoke)",
+                background: hasFreeSlots ? "rgba(120, 167, 119, 0.26)" : "rgba(0,0,0,0.06)",
+                color: hasFreeSlots ? "rgb(60, 105, 60)" : "var(--smoke)",
               }}
               title={
                 hasFreeSlots
-                  ? `${availability.freeSlots} von ${availability.maxShootings} frei`
-                  : `Voll belegt (${availability.bookedCount}/${availability.maxShootings})`
+                  ? `${availability.freeSlots} von ${availability.maxShootings} frei · klicken zum Anpassen`
+                  : `Voll belegt (${availability.bookedCount}/${availability.maxShootings}) · klicken zum Anpassen`
               }
             >
               {hasFreeSlots ? `${availability.freeSlots}/${availability.maxShootings}` : "voll"}
-            </span>
+            </button>
           )}
           {inMonth && isClosed && (
-            <span
-              className="text-[9px] uppercase tracking-wider text-smoke flex items-center gap-0.5"
-              title={availability?.note ?? "Nicht verfügbar"}
+            <button
+              type="button"
+              onClick={onEditAvailability}
+              className="text-[9px] uppercase tracking-wider text-smoke flex items-center gap-0.5 hover:text-ink transition"
+              title={availability?.note ?? "Nicht verfügbar — klicken zum Anpassen"}
             >
               <CalendarOff size={9} />
-            </span>
+            </button>
           )}
           {inMonth && !isClosed && (
             <button
@@ -569,46 +772,69 @@ function ShootingTile({ shooting, isOverlay }: { shooting: CalendarShooting; isO
   );
 }
 
-function CalendarLink({ year, month, label, icon }: { year: number; month: number; label: string; icon: React.ReactNode }) {
+function fmtMin(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function CalendarLink({ basePath, year, month, label, icon }: { basePath: string; year: number; month: number; label: string; icon: React.ReactNode }) {
   const param = `${year}-${String(month).padStart(2, "0")}`;
+  const sep = basePath.includes("?") ? "&" : "?";
   return (
-    <Link href={`/shootings?view=calendar&month=${param}`} aria-label={label} className="btn-icon" title={label}>
+    <Link href={`${basePath}${sep}month=${param}`} aria-label={label} className="btn-icon" title={label}>
       {icon}
     </Link>
   );
 }
 
-// Schlägt eine sinnvolle Start-Uhrzeit vor: 30 Min nach dem zuletzt endenden Termin,
-// sonst 10:00 als Standard.
-function suggestStartTime(existing: CalendarShooting[]): string {
-  if (existing.length === 0) return "10:00";
-  const last = existing
-    .map((s) => {
-      const start = new Date(s.scheduledAt);
-      const end = new Date(start.getTime() + (s.durationMin ?? 60) * 60_000);
-      return end;
-    })
-    .sort((a, b) => b.getTime() - a.getTime())[0];
-  const next = new Date(last.getTime() + 30 * 60_000);
-  // Auf 15-Minuten-Raster runden
-  next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15);
-  if (next.getHours() >= 21) return "10:00"; // bei spät: nächster Tag-Default
-  return `${String(next.getHours()).padStart(2, "0")}:${String(next.getMinutes()).padStart(2, "0")}`;
+// Schlägt eine sinnvolle Start-Uhrzeit vor.
+// Priorität: 30 Min nach letztem Termin (wenn in Zeitfenster), sonst Zeitfenster-Start,
+// sonst 10:00 als Default.
+function suggestStartTime(existing: CalendarShooting[], availability: AvailabilityDay | null): string {
+  const fenceStart = availability?.startMinutes ?? null;
+  const fenceEnd = availability?.endMinutes ?? null;
+
+  if (existing.length > 0) {
+    const last = existing
+      .map((s) => {
+        const start = new Date(s.scheduledAt);
+        return new Date(start.getTime() + (s.durationMin ?? 60) * 60_000);
+      })
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    const next = new Date(last.getTime() + 30 * 60_000);
+    next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15);
+    const nextMin = next.getHours() * 60 + next.getMinutes();
+    // Wenn Vorschlag im Zeitfenster bleibt → übernehmen
+    if (fenceEnd == null || nextMin < fenceEnd) {
+      if (next.getHours() < 21) {
+        return `${String(next.getHours()).padStart(2, "0")}:${String(next.getMinutes()).padStart(2, "0")}`;
+      }
+    }
+  }
+  if (fenceStart != null) {
+    const h = Math.floor(fenceStart / 60);
+    const m = fenceStart % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+  return "10:00";
 }
 
 function QuickCreateModal({
-  isoDate, customers, packages, existingShootings, availability, onClose,
+  isoDate, customers, packages, existingShootings, availability, quickPicks, onSwitchDate, onClose,
 }: {
   isoDate: string;
   customers: CalendarCustomer[];
   packages: CalendarPackage[];
   existingShootings: CalendarShooting[];
   availability: AvailabilityDay | null;
+  quickPicks: AvailabilityDay[];
+  onSwitchDate: (ymd: string) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [time, setTime] = useState(() => suggestStartTime(existingShootings));
+  const [time, setTime] = useState(() => suggestStartTime(existingShootings, availability));
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
   const [packageId, setPackageId] = useState("");
   const [title, setTitle] = useState("");
@@ -743,7 +969,34 @@ function QuickCreateModal({
             <div className="text-xs text-smoke flex items-center gap-1.5">
               <Sparkles size={11} style={{ color: "rgb(80, 130, 80)" }} />
               {availability.freeSlots} von {availability.maxShootings} Slots noch frei.
+              {availability.startMinutes != null && availability.endMinutes != null && (
+                <span className="opacity-70"> · Empfohlen {fmtMin(availability.startMinutes)}–{fmtMin(availability.endMinutes)}</span>
+              )}
               {availability.note && <span className="opacity-70"> · {availability.note}</span>}
+            </div>
+          )}
+          {availability && (availability.maxShootings === 0 || availability.freeSlots === 0) && quickPicks.length > 0 && (
+            <div className="rounded-lg border border-stone bg-paper p-3 space-y-2">
+              <div className="text-xs text-smoke flex items-center gap-1.5">
+                <Sparkles size={11} style={{ color: "rgb(80, 130, 80)" }} /> Stattdessen ein freier Tag?
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {quickPicks.map((d) => {
+                  const dt = new Date(d.date + "T00:00:00");
+                  return (
+                    <button
+                      key={d.date}
+                      type="button"
+                      onClick={() => onSwitchDate(d.date)}
+                      className="text-xs px-2 py-1 rounded border border-stone hover:bg-linen transition tabular-nums"
+                      title={`${d.freeSlots} von ${d.maxShootings} frei`}
+                    >
+                      {dt.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" })}
+                      <span className="ml-1.5 text-[10px] text-smoke">{d.freeSlots}/{d.maxShootings}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 

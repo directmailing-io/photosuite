@@ -179,11 +179,18 @@ async function CalendarSection({ userId }: { userId: string }) {
   return (
     <div className="space-y-6">
       <AvailabilityManager
-        weekly={weekly.map((w) => ({ weekday: w.weekday, maxShootings: w.maxShootings }))}
+        weekly={weekly.map((w) => ({
+          weekday: w.weekday,
+          maxShootings: w.maxShootings,
+          startMinutes: w.startMinutes,
+          endMinutes: w.endMinutes,
+        }))}
         overrides={overrides.map((o) => ({
           id: o.id,
           date: o.date,
           maxShootings: o.maxShootings,
+          startMinutes: o.startMinutes,
+          endMinutes: o.endMinutes,
           note: o.note,
         }))}
       />

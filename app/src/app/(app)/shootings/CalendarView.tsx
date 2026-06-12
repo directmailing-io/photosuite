@@ -10,6 +10,7 @@ import {
 import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin,
   X, ExternalLink, User, Package as PackageIcon, Euro, Plus, Save,
+  Sparkles, AlertTriangle, CalendarOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatEUR } from "@/lib/utils";
@@ -49,6 +50,17 @@ export type ExternalEvent = {
   provider: string;
 };
 
+// Spiegelt DayStatus aus lib/availability — als serialisierbarer Plain-Object.
+export type AvailabilityDay = {
+  date: string;          // YYYY-MM-DD
+  weekday: number;
+  maxShootings: number;
+  bookedCount: number;
+  freeSlots: number;
+  isOverride: boolean;
+  note: string | null;
+};
+
 type Props = {
   shootings: CalendarShooting[];
   externalEvents: ExternalEvent[];
@@ -56,6 +68,8 @@ type Props = {
   month: number;
   customers: CalendarCustomer[];
   packages: CalendarPackage[];
+  availability: AvailabilityDay[];
+  nextFreeDays: AvailabilityDay[];
 };
 
 function ymd(d: Date): string {
@@ -73,13 +87,21 @@ function addMonths(year: number, month: number, delta: number): { year: number; 
   return { year: newYear, month: newMonth };
 }
 
-export function CalendarView({ shootings: initialShootings, externalEvents, year, month, customers, packages }: Props) {
+export function CalendarView({ shootings: initialShootings, externalEvents, year, month, customers, packages, availability, nextFreeDays }: Props) {
   const router = useRouter();
   const [shootings, setShootings] = useState(initialShootings);
   const [selected, setSelected] = useState<CalendarShooting | null>(null);
   const [createForDate, setCreateForDate] = useState<string | null>(null); // YYYY-MM-DD
   const [activeDrag, setActiveDrag] = useState<CalendarShooting | null>(null);
+  const [showOnlyFree, setShowOnlyFree] = useState(false);
   const [, startTransition] = useTransition();
+
+  // Verfügbarkeit pro Tag indexieren (für O(1)-Lookup im Grid)
+  const availabilityByDay = useMemo(() => {
+    const map = new Map<string, AvailabilityDay>();
+    for (const d of availability) map.set(d.date, d);
+    return map;
+  }, [availability]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -177,7 +199,19 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
           <div className="text-center">
             <div className="font-serif text-xl">{MONTHS[month - 1]} {year}</div>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowOnlyFree((v) => !v)}
+              className="btn-secondary text-xs h-9"
+              style={{
+                borderColor: showOnlyFree ? "var(--accent)" : undefined,
+                color: showOnlyFree ? "var(--accent)" : undefined,
+              }}
+              title="Nur Tage mit freien Slots hervorheben"
+            >
+              <Sparkles size={13} /> Nur freie
+            </button>
             {!todayInThisMonth && (
               <Link href={`/shootings?view=calendar&month=${todayParam}`} className="btn-secondary text-xs h-9">
                 <CalendarIcon size={13} /> Heute
@@ -210,6 +244,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
               const dayExternal = externalByDay.get(dayKey) ?? [];
               const isLastRow = i >= 35;
               const isLastCol = i % 7 === 6;
+              const dayAvailability = availabilityByDay.get(dayKey) ?? null;
               return (
                 <DayCell
                   key={i}
@@ -222,6 +257,8 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
                   isLastCol={isLastCol}
                   shootings={dayShootings}
                   externalEvents={dayExternal}
+                  availability={dayAvailability}
+                  dimNonFree={showOnlyFree}
                   onSelect={(s) => setSelected(s)}
                   onCreate={() => setCreateForDate(dayKey)}
                 />
@@ -249,15 +286,94 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
           customers={customers}
           packages={packages}
           existingShootings={byDay.get(createForDate) ?? []}
+          availability={availabilityByDay.get(createForDate) ?? null}
           onClose={() => setCreateForDate(null)}
         />
       )}
+
+      <FreeSlotsPanel nextFreeDays={nextFreeDays} onPick={(ymd) => setCreateForDate(ymd)} />
     </>
   );
 }
 
+function FreeSlotsPanel({
+  nextFreeDays,
+  onPick,
+}: {
+  nextFreeDays: AvailabilityDay[];
+  onPick: (ymd: string) => void;
+}) {
+  if (nextFreeDays.length === 0) {
+    return (
+      <div className="card p-6 mt-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-linen flex items-center justify-center shrink-0">
+            <AlertTriangle size={18} className="text-smoke" />
+          </div>
+          <div>
+            <div className="font-medium">Keine freien Termine in den nächsten 90 Tagen</div>
+            <div className="text-sm text-smoke mt-1">
+              Erhöhe in den Einstellungen deine Slots pro Wochentag oder entferne eine Ausnahme.{" "}
+              <Link href="/einstellungen?tab=kalender" className="underline hover:text-ink">
+                Verfügbarkeit anpassen →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="card overflow-hidden mt-6">
+      <div className="px-6 py-4 border-b border-stone/60 flex items-center justify-between">
+        <div>
+          <div className="eyebrow eyebrow-muted flex items-center gap-1.5">
+            <Sparkles size={11} /> Nächste freie Termine
+          </div>
+          <div className="text-sm text-smoke mt-1">
+            Die nächsten Tage, an denen du noch Slots hast — direkt in der Liste buchen.
+          </div>
+        </div>
+        <Link href="/einstellungen?tab=kalender" className="btn-ghost text-xs h-8">
+          Verfügbarkeit anpassen
+        </Link>
+      </div>
+      <ul className="divide-y divide-stone/60">
+        {nextFreeDays.map((d) => {
+          const date = new Date(d.date + "T00:00:00");
+          const dayLabel = date.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long" });
+          return (
+            <li key={d.date} className="px-6 py-3 flex items-center gap-4 hover:bg-linen/40 transition">
+              <div className="w-12 text-center shrink-0">
+                <div className="text-[10px] uppercase tracking-wider text-smoke">
+                  {date.toLocaleDateString("de-DE", { month: "short" })}
+                </div>
+                <div className="font-serif text-xl leading-none mt-0.5">{date.getDate()}</div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">{dayLabel}</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  {d.freeSlots} von {d.maxShootings} frei
+                  {d.bookedCount > 0 && ` · ${d.bookedCount} bereits gebucht`}
+                  {d.note && ` · ${d.note}`}
+                </div>
+              </div>
+              <button
+                onClick={() => onPick(d.date)}
+                className="btn-primary text-xs h-8"
+              >
+                <Plus size={12} /> Termin
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function DayCell({
-  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, onSelect, onCreate,
+  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, availability, dimNonFree, onSelect, onCreate,
 }: {
   date: Date;
   dayKey: string;
@@ -268,11 +384,31 @@ function DayCell({
   isLastCol: boolean;
   shootings: CalendarShooting[];
   externalEvents: ExternalEvent[];
+  availability: AvailabilityDay | null;
+  dimNonFree: boolean;
   onSelect: (s: CalendarShooting) => void;
   onCreate: () => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: dayKey });
-  const baseBg = !inMonth ? "var(--linen)" : isWeekend ? "rgba(236,235,232,0.45)" : "var(--paper)";
+
+  // Verfügbarkeits-Status für die Tag-Hintergrund-Farbe.
+  // — hasFreeSlots:  Tag hat Kapazität und ist noch nicht voll → grünlich
+  // — isFull:        Tag hat Kapazität, aber voll belegt → neutral
+  // — isClosed:      maxShootings = 0 (geschlossen / Urlaub) → grau, Plus-Button aus
+  // — undefined av:  nicht in Range (sollte nicht passieren) → neutral
+  const hasFreeSlots = !!(availability && availability.maxShootings > 0 && availability.freeSlots > 0);
+  const isFull = !!(availability && availability.maxShootings > 0 && availability.freeSlots === 0);
+  const isClosed = !!(availability && availability.maxShootings === 0);
+
+  let baseBg: string;
+  if (!inMonth) baseBg = "var(--linen)";
+  else if (isClosed) baseBg = "rgba(236, 235, 232, 0.7)";
+  else if (hasFreeSlots) baseBg = "rgba(120, 167, 119, 0.10)";  // sanftes Grün
+  else if (isWeekend) baseBg = "rgba(236, 235, 232, 0.45)";
+  else baseBg = "var(--paper)";
+
+  // Bei „Nur freie": Tage ohne freie Slots dimmen — aber nur im aktiven Monat.
+  const dimmed = dimNonFree && inMonth && !hasFreeSlots;
 
   return (
     <div
@@ -284,9 +420,9 @@ function DayCell({
       )}
       style={{
         background: isOver ? "var(--accent-soft)" : baseBg,
-        opacity: inMonth ? 1 : 0.55,
-        outline: isOver ? "2px solid var(--accent)" : "none",
-        outlineOffset: -2,
+        opacity: inMonth ? (dimmed ? 0.35 : 1) : 0.55,
+        outline: isOver ? "2px solid var(--accent)" : hasFreeSlots && inMonth ? "1px solid rgba(120, 167, 119, 0.35)" : "none",
+        outlineOffset: -1,
       }}
     >
       <div className="flex items-center justify-between mb-1.5">
@@ -300,10 +436,31 @@ function DayCell({
           {date.getDate()}
         </div>
         <div className="flex items-center gap-1">
-          {shootings.length > 0 && (
-            <span className="text-[10px] text-smoke tabular-nums">{shootings.length}</span>
+          {inMonth && availability && availability.maxShootings > 0 && (
+            <span
+              className="text-[9px] tabular-nums px-1.5 py-0.5 rounded font-medium"
+              style={{
+                background: hasFreeSlots ? "rgba(120, 167, 119, 0.20)" : "rgba(0,0,0,0.06)",
+                color: hasFreeSlots ? "rgb(70, 115, 70)" : "var(--smoke)",
+              }}
+              title={
+                hasFreeSlots
+                  ? `${availability.freeSlots} von ${availability.maxShootings} frei`
+                  : `Voll belegt (${availability.bookedCount}/${availability.maxShootings})`
+              }
+            >
+              {hasFreeSlots ? `${availability.freeSlots}/${availability.maxShootings}` : "voll"}
+            </span>
           )}
-          {inMonth && (
+          {inMonth && isClosed && (
+            <span
+              className="text-[9px] uppercase tracking-wider text-smoke flex items-center gap-0.5"
+              title={availability?.note ?? "Nicht verfügbar"}
+            >
+              <CalendarOff size={9} />
+            </span>
+          )}
+          {inMonth && !isClosed && (
             <button
               type="button"
               onClick={onCreate}
@@ -440,12 +597,13 @@ function suggestStartTime(existing: CalendarShooting[]): string {
 }
 
 function QuickCreateModal({
-  isoDate, customers, packages, existingShootings, onClose,
+  isoDate, customers, packages, existingShootings, availability, onClose,
 }: {
   isoDate: string;
   customers: CalendarCustomer[];
   packages: CalendarPackage[];
   existingShootings: CalendarShooting[];
+  availability: AvailabilityDay | null;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -550,6 +708,44 @@ function QuickCreateModal({
               <X size={15} />
             </button>
           </div>
+
+          {availability && availability.maxShootings === 0 && (
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg border text-sm"
+              style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
+            >
+              <CalendarOff size={16} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+              <div>
+                <div className="font-medium" style={{ color: "var(--accent)" }}>
+                  Tag eigentlich nicht verfügbar
+                </div>
+                <div className="text-xs text-smoke mt-0.5">
+                  {availability.note ?? "Wochenregel/Ausnahme sagt: kein Slot."} Du kannst den Termin trotzdem anlegen.
+                </div>
+              </div>
+            </div>
+          )}
+          {availability && availability.maxShootings > 0 && availability.freeSlots === 0 && (
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg border text-sm"
+              style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "var(--linen)" }}
+            >
+              <AlertTriangle size={16} className="shrink-0 mt-0.5 text-taupe" />
+              <div>
+                <div className="font-medium">Tag bereits voll belegt</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  {availability.bookedCount} von {availability.maxShootings} Slots vergeben — über-buchen ist möglich, prüfe vorher.
+                </div>
+              </div>
+            </div>
+          )}
+          {availability && availability.maxShootings > 0 && availability.freeSlots > 0 && (
+            <div className="text-xs text-smoke flex items-center gap-1.5">
+              <Sparkles size={11} style={{ color: "rgb(80, 130, 80)" }} />
+              {availability.freeSlots} von {availability.maxShootings} Slots noch frei.
+              {availability.note && <span className="opacity-70"> · {availability.note}</span>}
+            </div>
+          )}
 
           <FormRow>
             <Field label="Uhrzeit">

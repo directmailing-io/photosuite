@@ -729,3 +729,26 @@ model Activity {
   @@index([customerId, createdAt])
   @@index([shootingId, createdAt])
 }
+
+// -------------------- VERFÜGBARKEIT --------------------
+// Wochenregel: für jeden Wochentag (0=Sonntag..6=Samstag) wie viele Shootings maximal.
+// 0 = nicht verfügbar (Lisa hat an dem Wochentag generell zu).
+model AvailabilityWeekly {
+  id           String   @id @default(cuid())
+  weekday      Int      @unique  // 0..6
+  maxShootings Int      @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+// Tag-Override: konkretes Datum überschreibt die Wochenregel.
+// maxShootings=0 + note="Urlaub" → Tag gesperrt.
+// maxShootings=3 → Sonderkapazität am Tag.
+// `date` als String "YYYY-MM-DD" vermeidet Timezone-Edge-Cases beim Vergleich.
+model AvailabilityOverride {
+  id           String   @id @default(cuid())
+  date         String   @unique  // "YYYY-MM-DD"
+  maxShootings Int
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

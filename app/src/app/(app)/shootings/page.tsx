@@ -8,6 +8,7 @@ import { Camera, Plus, LayoutGrid, List, MapPin, CalendarDays, Calendar } from "
 import { formatDateTime, formatEUR, cn } from "@/lib/utils";
 import { KanbanBoard } from "./KanbanBoard";
 import { CalendarView } from "./CalendarView";
+import { getAvailability, findNextFreeDays } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,14 @@ export default async function ShootingsPage({
     (s) => s.scheduledAt && s.scheduledAt >= calRangeStart && s.scheduledAt < calRangeEnd,
   );
 
+  // Verfügbarkeit fürs angezeigte Grid + nächste freie Tage für den „Freie Termine"-Panel
+  const [availabilityDays, nextFreeDays] = view === "calendar"
+    ? await Promise.all([
+        getAvailability(calRangeStart, calRangeEnd),
+        findNextFreeDays(new Date(), 10, 90),
+      ])
+    : [[], []];
+
   return (
     <>
       <PageHeader
@@ -126,6 +135,8 @@ export default async function ShootingsPage({
           month={month}
           customers={customers}
           packages={packages}
+          availability={availabilityDays}
+          nextFreeDays={nextFreeDays}
           externalEvents={externalEvents.map((e) => ({
             id: e.id,
             startAt: e.startAt.toISOString(),

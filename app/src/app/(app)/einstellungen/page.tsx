@@ -6,6 +6,8 @@ import { LogoUploader } from "./LogoUploader";
 import { InvoiceProfile } from "./InvoiceProfile";
 import { StripeProfile } from "./StripeProfile";
 import { CalendarSettings } from "./CalendarSettings";
+import { AvailabilityManager } from "./AvailabilityManager";
+import { ensureWeeklyDefaults } from "./availabilityActions";
 import { AddonManager } from "./AddonManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { EmptyState } from "@/components/EmptyState";
@@ -164,23 +166,40 @@ async function AddonSection() {
 }
 
 async function CalendarSection({ userId }: { userId: string }) {
-  const conns = await prisma.calendarConnection.findMany({
-    where: { userId },
-    orderBy: { createdAt: "asc" },
-  });
+  // Default-Wochenregel anlegen, wenn Lisa noch keine konfiguriert hat.
+  await ensureWeeklyDefaults();
+  const [conns, weekly, overrides] = await Promise.all([
+    prisma.calendarConnection.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.availabilityWeekly.findMany({ orderBy: { weekday: "asc" } }),
+    prisma.availabilityOverride.findMany({ orderBy: { date: "asc" } }),
+  ]);
   return (
-    <CalendarSettings
-      connections={conns.map((c) => ({
-        id: c.id,
-        provider: c.provider,
-        status: c.status,
-        accountEmail: c.accountEmail,
-        externalCalendarName: c.externalCalendarName,
-        lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
-        lastSyncError: c.lastSyncError,
-        pseudonymize: c.pseudonymize,
-      }))}
-    />
+    <div className="space-y-6">
+      <AvailabilityManager
+        weekly={weekly.map((w) => ({ weekday: w.weekday, maxShootings: w.maxShootings }))}
+        overrides={overrides.map((o) => ({
+          id: o.id,
+          date: o.date,
+          maxShootings: o.maxShootings,
+          note: o.note,
+        }))}
+      />
+      <CalendarSettings
+        connections={conns.map((c) => ({
+          id: c.id,
+          provider: c.provider,
+          status: c.status,
+          accountEmail: c.accountEmail,
+          externalCalendarName: c.externalCalendarName,
+          lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
+          lastSyncError: c.lastSyncError,
+          pseudonymize: c.pseudonymize,
+        }))}
+      />
+    </div>
   );
 }
 

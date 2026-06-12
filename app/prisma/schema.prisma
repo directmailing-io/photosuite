@@ -429,8 +429,30 @@ model Package {
   primaryContact   TeamMember?  @relation("PackageDefaultContact", fields: [primaryContactId], references: [id])
   primaryContactId String?
   defaultTeam      TeamMember[] @relation("PackageDefaultTeam")
+  // Verfügbare Zusatzprodukte für dieses Paket (Bilderbuch M, Leinwand …)
+  addons        Addon[]    @relation("PackageAddons")
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+}
+
+// Zusatzprodukte (Bilderbuch M, Leinwand 60x90, Make-up-Service …)
+// Kann zu mehreren Paketen verknüpft sein (als „verfügbar"), wird pro Shooting konkret gebucht.
+// Preis in EUR (brutto/netto konsistent mit Package.price). Beim Anlegen einer Schluss-
+// rechnung erscheinen die ausgewählten Add-Ons als eigene Positionen.
+model Addon {
+  id               String     @id @default(cuid())
+  name             String
+  description      String?
+  imageUrl         String?    // gecroppt für Anzeige
+  imageOriginalUrl String?    // Original für Re-Cropping
+  imageMimeType    String?
+  price            Float      // in EUR
+  isActive         Boolean    @default(true)
+  position         Int        @default(0)
+  packages         Package[]  @relation("PackageAddons")
+  shootings        Shooting[] @relation("ShootingAddons")
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 }
 
 model PackageChecklistTemplate {
@@ -489,6 +511,8 @@ model Shooting {
   primaryContact   TeamMember?  @relation("ShootingPrimaryContact", fields: [primaryContactId], references: [id])
   primaryContactId String?
   team             TeamMember[] @relation("ShootingTeam")
+  // Gebuchte Zusatzprodukte (Bilderbuch M, Leinwand etc.) — werden in der Rechnung als Items übernommen
+  addons         Addon[]        @relation("ShootingAddons")
   // Inhalt
   dates          ShootingDate[]
   notes          ShootingNote[]

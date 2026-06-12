@@ -6,6 +6,7 @@ import { LogoUploader } from "./LogoUploader";
 import { InvoiceProfile } from "./InvoiceProfile";
 import { StripeProfile } from "./StripeProfile";
 import { CalendarSettings } from "./CalendarSettings";
+import { AddonManager } from "./AddonManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { auth } from "@/lib/auth";
@@ -23,7 +24,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "status", "tags"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "addons", "status", "tags"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -137,9 +138,28 @@ export default async function EinstellungenPage({
         )
       )}
 
+      {tab === "addons" && <AddonSection />}
+
       {tab === "status" && <StatusSection />}
       {tab === "tags" && <TagsSection />}
     </>
+  );
+}
+
+async function AddonSection() {
+  const addons = await prisma.addon.findMany({ orderBy: { position: "asc" } });
+  return (
+    <AddonManager
+      addons={addons.map((a) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        price: a.price,
+        isActive: a.isActive,
+        position: a.position,
+        imageUrl: a.imageUrl,
+      }))}
+    />
   );
 }
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Receipt, User, Tags, ListChecks, AlertCircle, CreditCard, Calendar as CalendarSync } from "lucide-react";
+import { Receipt, User, Tags, ListChecks, AlertCircle, CreditCard, Calendar as CalendarSync, Gift } from "lucide-react";
 
-export type SettingsTab = "studio" | "rechnung" | "zahlungen" | "kalender" | "status" | "tags";
+export type SettingsTab = "studio" | "rechnung" | "zahlungen" | "kalender" | "addons" | "status" | "tags";
 
 type TabDef = {
   key: SettingsTab;
@@ -11,12 +11,13 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { key: "studio",    label: "Studio-Profil", icon: User },
-  { key: "rechnung",  label: "Rechnung",      icon: Receipt },
-  { key: "zahlungen", label: "Zahlungen",     icon: CreditCard },
-  { key: "kalender",  label: "Kalender",      icon: CalendarSync },
-  { key: "status",    label: "Status",        icon: ListChecks },
-  { key: "tags",      label: "Tags",          icon: Tags },
+  { key: "studio",    label: "Studio-Profil",    icon: User },
+  { key: "rechnung",  label: "Rechnung",         icon: Receipt },
+  { key: "zahlungen", label: "Zahlungen",        icon: CreditCard },
+  { key: "kalender",  label: "Kalender",         icon: CalendarSync },
+  { key: "addons",    label: "Zusatzprodukte",   icon: Gift },
+  { key: "status",    label: "Status",           icon: ListChecks },
+  { key: "tags",      label: "Tags",             icon: Tags },
 ];
 
 export function SettingsTabs({

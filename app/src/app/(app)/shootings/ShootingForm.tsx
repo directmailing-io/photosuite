@@ -2,7 +2,7 @@
 
 import { Field, FormRow } from "@/components/form/Field";
 import { TeamPicker, type TeamPickerMember } from "@/components/TeamPicker";
-import { Trash2, UsersRound } from "lucide-react";
+import { Trash2, UsersRound, Plus, Minus, Image as ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -22,7 +22,10 @@ type Pkg = {
   availableAddonIds?: string[];
 };
 type Status = { id: string; label: string; color: string };
-type AddonOpt = { id: string; name: string; price: number; imageUrl: string | null; description: string | null };
+type AddonOpt = { id: string; name: string; price: number; imageUrl: string | null; description: string | null; isActive: boolean };
+
+// Gebuchte Add-Ons mit Anzahl + Preis-Snapshot (Anzeige im Stepper)
+export type BookedAddon = { addonId: string; quantity: number; unitPrice: number };
 
 export type ShootingInitial = {
   id?: string;
@@ -38,7 +41,7 @@ export type ShootingInitial = {
   paymentTerms?: string | null;
   primaryContactId?: string | null;
   teamIds?: string[];
-  addonIds?: string[];
+  bookedAddons?: BookedAddon[];
 };
 
 type Props = {
@@ -60,7 +63,12 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
   const [deposit, setDeposit] = useState<string>(initial?.depositAmount?.toString() ?? "");
   const [terms, setTerms] = useState<string>(initial?.paymentTerms ?? "");
   const [description, setDescription] = useState<string>(initial?.description ?? "");
-  const [selectedAddons, setSelectedAddons] = useState<string[]>(initial?.addonIds ?? []);
+  // Map<addonId, quantity>. Quantity 0 = nicht gebucht.
+  const [bookedQty, setBookedQty] = useState<Map<string, number>>(() => {
+    const m = new Map<string, number>();
+    (initial?.bookedAddons ?? []).forEach((b) => m.set(b.addonId, b.quantity));
+    return m;
+  });
 
   const activePackages = useMemo(
     () => packages.filter((p) => p.isActive || p.id === initial?.packageId),
@@ -68,17 +76,28 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
   );
 
   // Welche Add-Ons sind für das aktuell gewählte Paket verfügbar?
-  // Wenn kein Paket gewählt: alle aktiven anzeigen (Lisa kann Add-Ons auch ohne Paket buchen).
+  // Sichtbar: alle aktiven (gefiltert nach Paket-Whitelist, falls vorhanden) PLUS bereits gebuchte
+  // (auch wenn inaktiv oder nicht mehr im Paket — sonst würde die Buchung „verschwinden").
   const availableAddons = useMemo(() => {
-    if (!packageId) return addons;
-    const pkg = packages.find((p) => p.id === packageId);
+    const pkg = packageId ? packages.find((p) => p.id === packageId) : null;
     const allowed = new Set(pkg?.availableAddonIds ?? []);
-    if (allowed.size === 0) return addons; // Paket hat keine Beschränkung
-    return addons.filter((a) => allowed.has(a.id) || selectedAddons.includes(a.id));
-  }, [packageId, packages, addons, selectedAddons]);
+    const hasWhitelist = allowed.size > 0;
+    return addons.filter((a) => {
+      const booked = (bookedQty.get(a.id) ?? 0) > 0;
+      if (booked) return true;
+      if (!a.isActive) return false;
+      if (!hasWhitelist) return true;
+      return allowed.has(a.id);
+    });
+  }, [packageId, packages, addons, bookedQty]);
 
-  function toggleAddon(id: string) {
-    setSelectedAddons((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  function setAddonQty(id: string, q: number) {
+    setBookedQty((prev) => {
+      const next = new Map(prev);
+      if (q <= 0) next.delete(id);
+      else next.set(id, Math.min(q, 99));
+      return next;
+    });
   }
 
   function applyPackageDefaults(pid: string) {
@@ -91,18 +110,29 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
     if (!description) setDescription(pkg.description ?? "");
   }
 
-  // Summe Paket-Preis + ausgewählte Add-Ons (Hilfsanzeige unter dem Preisfeld)
-  const addonSum = useMemo(
-    () => selectedAddons.reduce((sum, id) => sum + (addons.find((a) => a.id === id)?.price ?? 0), 0),
-    [selectedAddons, addons],
-  );
+  // Summe gebuchter Add-Ons
+  const addonSum = useMemo(() => {
+    let sum = 0;
+    bookedQty.forEach((qty, id) => {
+      const a = addons.find((x) => x.id === id);
+      if (a) sum += a.price * qty;
+    });
+    return sum;
+  }, [bookedQty, addons]);
+
+  const pkgPriceNum = Number(price) || 0;
+  const totalPrice = pkgPriceNum + addonSum;
+  const bookedCount = Array.from(bookedQty.values()).reduce((a, b) => a + b, 0);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     try {
       const fd = new FormData(e.currentTarget);
-      selectedAddons.forEach((id) => fd.append("addonIds", id));
+      // Format: addons[<id>] = quantity  → Server splittet
+      bookedQty.forEach((qty, id) => {
+        fd.append("addons", `${id}:${qty}`);
+      });
       await action(fd);
       toast.success(initial?.id ? "Gespeichert" : "Shooting angelegt");
       router.refresh();
@@ -187,52 +217,108 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
 
       {availableAddons.length > 0 && (
         <section className="card p-6 space-y-4">
-          <div className="eyebrow eyebrow-muted">Zusatzprodukte</div>
-          <div className="text-xs text-smoke">
-            Buchst du Add-Ons mit? Sie erscheinen in der Rechnung als eigene Positionen
-            zusätzlich zum Paket-Preis.
+          <div className="flex items-baseline justify-between">
+            <div className="eyebrow eyebrow-muted">Zusatzprodukte</div>
+            {bookedCount > 0 && (
+              <div className="text-xs text-smoke">
+                {bookedCount} {bookedCount === 1 ? "Position" : "Positionen"} gewählt
+              </div>
+            )}
           </div>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="text-xs text-smoke">
+            Erscheinen in der Rechnung als eigene Positionen zusätzlich zum Paket-Preis.
+          </div>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {availableAddons.map((a) => {
-              const checked = selectedAddons.includes(a.id);
+              const qty = bookedQty.get(a.id) ?? 0;
+              const isActive = qty > 0;
+              const subtotal = a.price * qty;
               return (
                 <li key={a.id}>
-                  <label
-                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition hover:bg-linen/50"
+                  <div
+                    className="rounded-lg border overflow-hidden transition"
                     style={{
-                      borderColor: checked ? "var(--ink)" : "var(--stone)",
-                      background: checked ? "var(--linen)" : "var(--paper)",
+                      borderColor: isActive ? "var(--ink)" : "var(--stone)",
+                      background: isActive ? "var(--linen)" : "var(--paper)",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleAddon(a.id)}
-                      className="w-4 h-4 shrink-0"
-                    />
-                    {a.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.imageUrl} alt={a.name} className="w-10 h-10 rounded object-cover shrink-0 border border-stone" />
-                    ) : (
-                      <div className="w-10 h-10 rounded bg-linen shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{a.name}</div>
-                      <div className="text-xs text-smoke tabular-nums">
-                        {a.price.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                    <div className="flex items-stretch gap-3 p-3">
+                      {a.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.imageUrl} alt={a.name} className="w-14 h-14 rounded object-cover shrink-0 border border-stone" />
+                      ) : (
+                        <div className="w-14 h-14 rounded bg-linen shrink-0 flex items-center justify-center">
+                          <ImageIcon size={20} className="text-smoke opacity-40" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{a.name}</div>
+                        {a.description && (
+                          <div className="text-xs text-smoke line-clamp-1 mt-0.5">{a.description}</div>
+                        )}
+                        <div className="text-xs text-smoke tabular-nums mt-0.5">
+                          {a.price.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                          <span className="opacity-50"> / Stück</span>
+                        </div>
                       </div>
                     </div>
-                  </label>
+                    {isActive ? (
+                      <div
+                        className="flex items-center justify-between px-3 py-2 border-t"
+                        style={{ borderColor: "var(--stone)", background: "var(--paper)" }}
+                      >
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setAddonQty(a.id, qty - 1)}
+                            className="w-8 h-8 rounded-md border border-stone flex items-center justify-center hover:bg-linen transition"
+                            aria-label="Weniger"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <div className="w-8 text-center text-sm font-medium tabular-nums">{qty}</div>
+                          <button
+                            type="button"
+                            onClick={() => setAddonQty(a.id, qty + 1)}
+                            className="w-8 h-8 rounded-md border border-stone flex items-center justify-center hover:bg-linen transition"
+                            aria-label="Mehr"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <div className="text-sm font-medium tabular-nums">
+                          = {subtotal.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setAddonQty(a.id, 1)}
+                        className="w-full px-3 py-2 border-t text-xs font-medium hover:bg-linen transition flex items-center justify-center gap-1.5"
+                        style={{ borderColor: "var(--stone)", color: "var(--smoke)" }}
+                      >
+                        <Plus size={13} /> Hinzufügen
+                      </button>
+                    )}
+                  </div>
                 </li>
               );
             })}
           </ul>
           {addonSum > 0 && (
-            <div className="text-xs text-smoke pt-2 border-t border-stone/60">
-              Add-Ons-Summe: <span className="font-medium tabular-nums text-ink">
-                {addonSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
-              </span>
-              <span className="ml-1">— wird zusätzlich zum Paket-Preis ({price ? Number(price).toLocaleString("de-DE", { style: "currency", currency: "EUR" }) : "—"}) berechnet.</span>
+            <div className="pt-3 border-t border-stone/60 space-y-1 text-sm tabular-nums">
+              <div className="flex justify-between text-smoke">
+                <span>Paket-Preis</span>
+                <span>{pkgPriceNum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span>
+              </div>
+              <div className="flex justify-between text-smoke">
+                <span>Zusatzprodukte ({bookedCount})</span>
+                <span>+ {addonSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span>
+              </div>
+              <div className="flex justify-between font-medium pt-1 border-t border-stone/40">
+                <span>Gesamt für Rechnung</span>
+                <span>{totalPrice.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span>
+              </div>
             </div>
           )}
         </section>

@@ -436,23 +436,41 @@ model Package {
 }
 
 // Zusatzprodukte (Bilderbuch M, Leinwand 60x90, Make-up-Service …)
-// Kann zu mehreren Paketen verknüpft sein (als „verfügbar"), wird pro Shooting konkret gebucht.
-// Preis in EUR (brutto/netto konsistent mit Package.price). Beim Anlegen einer Schluss-
-// rechnung erscheinen die ausgewählten Add-Ons als eigene Positionen.
+// Kann zu mehreren Paketen verknüpft sein (als „verfügbar"). Konkrete Buchung pro Shooting
+// läuft über ShootingAddon (Join mit Quantity + unitPrice-Snapshot).
 model Addon {
-  id               String     @id @default(cuid())
+  id               String          @id @default(cuid())
   name             String
   description      String?
-  imageUrl         String?    // gecroppt für Anzeige
-  imageOriginalUrl String?    // Original für Re-Cropping
+  imageUrl         String?
+  imageOriginalUrl String?
   imageMimeType    String?
-  price            Float      // in EUR
-  isActive         Boolean    @default(true)
-  position         Int        @default(0)
-  packages         Package[]  @relation("PackageAddons")
-  shootings        Shooting[] @relation("ShootingAddons")
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  price            Float           // EUR — wird beim Buchen als unitPrice in ShootingAddon kopiert
+  isActive         Boolean         @default(true)
+  position         Int             @default(0)
+  packages         Package[]       @relation("PackageAddons")
+  bookings         ShootingAddon[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+// Buchung eines Add-Ons in einem Shooting.
+// unitPrice ist ein SNAPSHOT zum Buchungszeitpunkt — schützt vor rückwirkenden Preis-Drifts,
+// wenn Lisa den Add-On-Preis später ändert.
+model ShootingAddon {
+  id         String   @id @default(cuid())
+  shooting   Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
+  shootingId String
+  addon      Addon    @relation(fields: [addonId], references: [id], onDelete: Restrict)
+  addonId    String
+  quantity   Int      @default(1)
+  unitPrice  Float    // Snapshot bei Buchung
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@unique([shootingId, addonId])
+  @@index([shootingId])
+  @@index([addonId])
 }
 
 model PackageChecklistTemplate {
@@ -511,8 +529,8 @@ model Shooting {
   primaryContact   TeamMember?  @relation("ShootingPrimaryContact", fields: [primaryContactId], references: [id])
   primaryContactId String?
   team             TeamMember[] @relation("ShootingTeam")
-  // Gebuchte Zusatzprodukte (Bilderbuch M, Leinwand etc.) — werden in der Rechnung als Items übernommen
-  addons         Addon[]        @relation("ShootingAddons")
+  // Gebuchte Zusatzprodukte (Bilderbuch M, Leinwand etc.) — Quantity + Preis-Snapshot in ShootingAddon
+  addons         ShootingAddon[]
   // Inhalt
   dates          ShootingDate[]
   notes          ShootingNote[]

@@ -30,7 +30,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         status: true,
         team: true,
         primaryContact: true,
-        addons: true,
+        addons: { orderBy: { position: "asc" }, include: { addon: true } },
         dates: { orderBy: [{ startAt: "asc" }] },
         notes: { orderBy: { createdAt: "desc" } },
         checklists: {
@@ -58,11 +58,15 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
       orderBy: [{ position: "asc" }],
       include: { _count: { select: { fields: true } } },
     }),
-    prisma.addon.findMany({ where: { isActive: true }, orderBy: { position: "asc" } }),
+    prisma.addon.findMany({ orderBy: { position: "asc" } }),
   ]);
   if (!shooting) return notFound();
 
   const publicUrl = shooting.publicSlug ? `/k/${shooting.publicSlug}` : null;
+  // Gesamt-Preis = Paket + Add-Ons (Snapshot). Restbetrag basiert auf diesem Gesamt.
+  const addonsTotal = shooting.addons.reduce((sum, b) => sum + b.unitPrice * b.quantity, 0);
+  const grandTotal = (shooting.price ?? 0) + addonsTotal;
+  const remaining = grandTotal - (shooting.depositAmount ?? 0);
 
   return (
     <>
@@ -85,9 +89,23 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         </Link>
         <div className="hidden md:block w-px h-10 bg-stone" />
         <div>
-          <div className="text-xs text-smoke">Preis</div>
+          <div className="text-xs text-smoke">{addonsTotal > 0 ? "Paket" : "Preis"}</div>
           <div className="font-medium tabular-nums">{formatEUR(shooting.price)}</div>
         </div>
+        {addonsTotal > 0 && (
+          <>
+            <div className="hidden md:block w-px h-10 bg-stone" />
+            <div>
+              <div className="text-xs text-smoke">+ Add-Ons ({shooting.addons.length})</div>
+              <div className="font-medium tabular-nums">{formatEUR(addonsTotal)}</div>
+            </div>
+            <div className="hidden md:block w-px h-10 bg-stone" />
+            <div>
+              <div className="text-xs text-smoke">= Gesamt</div>
+              <div className="font-medium tabular-nums">{formatEUR(grandTotal)}</div>
+            </div>
+          </>
+        )}
         {shooting.depositAmount != null && (
           <>
             <div className="hidden md:block w-px h-10 bg-stone" />
@@ -106,7 +124,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         <div>
           <div className="text-xs text-smoke">Restbetrag</div>
           <div className="font-medium tabular-nums">
-            {formatEUR((shooting.price ?? 0) - (shooting.depositAmount ?? 0))}
+            {formatEUR(remaining)}
             <span className="ml-2 text-xs" style={{ color: shooting.finalPaid ? "var(--accent)" : "var(--smoke)" }}>
               {shooting.finalPaid ? "✓ erhalten" : "ausstehend"}
             </span>
@@ -159,7 +177,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
                 paymentTerms: shooting.paymentTerms,
                 primaryContactId: shooting.primaryContactId,
                 teamIds: shooting.team.map((m) => m.id),
-                addonIds: shooting.addons.map((a) => a.id),
+                bookedAddons: shooting.addons.map((b) => ({ addonId: b.addonId, quantity: b.quantity, unitPrice: b.unitPrice })),
               }}
               customers={customers}
               packages={packages.map((p) => ({
@@ -172,7 +190,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               team={team.map((m) => ({
                 id: m.id, firstName: m.firstName, lastName: m.lastName, role: m.role, avatarUrl: m.avatarUrl, isOwner: m.isOwner,
               }))}
-              addons={allAddons.map((a) => ({ id: a.id, name: a.name, price: a.price, imageUrl: a.imageUrl, description: a.description }))}
+              addons={allAddons.map((a) => ({ id: a.id, name: a.name, price: a.price, imageUrl: a.imageUrl, description: a.description, isActive: a.isActive }))}
               action={updateShooting.bind(null, id)}
               deleteAction={deleteShooting.bind(null, id)}
             />

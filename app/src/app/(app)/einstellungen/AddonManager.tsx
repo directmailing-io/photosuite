@@ -7,7 +7,7 @@ import {
   Plus, Trash2, Pencil, Save, X, Upload, Eye, EyeOff, ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { createAddon, updateAddon, deleteAddon } from "./addonActions";
+import { createAddon, updateAddon, deleteAddon, toggleAddonActive } from "./addonActions";
 
 export type AddonRow = {
   id: string;
@@ -78,20 +78,38 @@ function AddonRowView({ addon, onEdit }: { addon: AddonRow; onEdit: () => void }
   const [pending, startTransition] = useTransition();
 
   function onDelete() {
-    if (!confirm(`„${addon.name}" wirklich löschen?\nWird bei Paketen und Shootings, die es enthalten, automatisch entfernt.`)) return;
+    if (!confirm(`„${addon.name}" wirklich löschen?\nIn Shootings bereits gebucht? Dann wird es stattdessen nur deaktiviert.`)) return;
     startTransition(async () => {
       try {
         await deleteAddon(addon.id);
         toast.success("Gelöscht");
         router.refresh();
       } catch (err: any) {
-        toast.error(err?.message ?? "Konnte nicht löschen");
+        // Soft-Delete-Fallback wirft eine erklärende Message — dann ist „deaktiviert" der Erfolgszustand.
+        const msg = err?.message ?? "Konnte nicht löschen";
+        if (msg.includes("inaktiv")) {
+          toast.success(msg);
+          router.refresh();
+        } else {
+          toast.error(msg);
+        }
+      }
+    });
+  }
+
+  function onToggleActive() {
+    startTransition(async () => {
+      try {
+        await toggleAddonActive(addon.id, !addon.isActive);
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err?.message ?? "Konnte nicht umschalten");
       }
     });
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4" style={{ opacity: addon.isActive ? 1 : 0.55 }}>
       <div
         className="w-14 h-14 rounded-lg overflow-hidden border border-stone shrink-0 flex items-center justify-center bg-linen"
       >
@@ -117,6 +135,14 @@ function AddonRowView({ addon, onEdit }: { addon: AddonRow; onEdit: () => void }
       </div>
       <div className="text-right tabular-nums font-medium shrink-0">{formatEUR(addon.price)}</div>
       <div className="flex gap-1 shrink-0">
+        <button
+          onClick={onToggleActive}
+          className="btn-icon"
+          disabled={pending}
+          title={addon.isActive ? "Deaktivieren (in neuen Shootings ausblenden)" : "Aktivieren"}
+        >
+          {addon.isActive ? <Eye size={13} /> : <EyeOff size={13} />}
+        </button>
         <button onClick={onEdit} className="btn-icon" disabled={pending} title="Bearbeiten">
           <Pencil size={13} />
         </button>

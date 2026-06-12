@@ -92,7 +92,10 @@ export async function createDraftInvoice(opts: CreateOptions) {
   if (!customer) throw new Error("Kunde nicht gefunden");
   const shooting = resolvedShootingId ? await prisma.shooting.findUnique({
     where: { id: resolvedShootingId },
-    include: { package: true, addons: { orderBy: { position: "asc" } } },
+    include: {
+      package: true,
+      addons: { orderBy: { position: "asc" }, include: { addon: true } },
+    },
   }) : null;
 
   const issuer = snapshotFromUser(user);
@@ -128,14 +131,16 @@ export async function createDraftInvoice(opts: CreateOptions) {
       totalCents: Math.round((shooting.price ?? 0) * 100),
       position: 0,
     }];
-    for (const addon of shooting.addons ?? []) {
+    // ShootingAddon.unitPrice ist der Snapshot zum Buchungszeitpunkt — nicht den aktuellen Addon.price nehmen.
+    for (const booking of shooting.addons ?? []) {
+      const unitCents = Math.round(booking.unitPrice * 100);
       items.push({
-        title: addon.name,
-        description: addon.description,
-        quantity: 1,
-        unit: "Pauschal",
-        unitPriceCents: Math.round(addon.price * 100),
-        totalCents: Math.round(addon.price * 100),
+        title: booking.addon.name,
+        description: booking.addon.description,
+        quantity: booking.quantity,
+        unit: "Stück",
+        unitPriceCents: unitCents,
+        totalCents: unitCents * booking.quantity,
         position: items.length,
       });
     }

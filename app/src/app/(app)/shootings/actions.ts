@@ -24,6 +24,19 @@ function dt(v: FormDataEntryValue | null): Date | null | undefined {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// FormData liefert `addons` als "id:qty"-Pairs. Wir parsen + dedupen (gewinnt die letzte Eingabe).
+function parseAddons(formData: FormData): Array<{ addonId: string; quantity: number }> {
+  const raw = formData.getAll("addons").map(String);
+  const map = new Map<string, number>();
+  for (const entry of raw) {
+    const [id, q] = entry.split(":");
+    if (!id) continue;
+    const qty = Math.max(1, Math.min(99, Number(q) || 1));
+    map.set(id, qty);
+  }
+  return Array.from(map.entries()).map(([addonId, quantity]) => ({ addonId, quantity }));
+}
+
 export async function createShooting(formData: FormData) {
   const customerId = s(formData.get("customerId"));
   const title = s(formData.get("title"));
@@ -50,6 +63,24 @@ export async function createShooting(formData: FormData) {
     : null;
 
   const slug = generateSlug(customer ? customer.firstName : "shooting");
+
+  // Add-Ons mit Preis-Snapshot vorbereiten
+  const addonInput = parseAddons(formData);
+  const addonRecords = addonInput.length
+    ? await prisma.addon.findMany({ where: { id: { in: addonInput.map((a) => a.addonId) } } })
+    : [];
+  const addonsToCreate = addonInput
+    .map((bo, idx) => {
+      const ad = addonRecords.find((r) => r.id === bo.addonId);
+      if (!ad) return null;
+      return {
+        addonId: bo.addonId,
+        quantity: bo.quantity,
+        unitPrice: ad.price,
+        position: idx,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
   // Override-Team aus Form, sonst Paket-Default, sonst Owner als Fallback
   const formTeamIds = formData.getAll("teamIds").map(String).filter(Boolean);
@@ -82,10 +113,7 @@ export async function createShooting(formData: FormData) {
       paymentTerms: s(formData.get("paymentTerms")),
       primaryContactId: primaryId,
       team: teamIds.length ? { connect: teamIds.map((id) => ({ id })) } : undefined,
-      addons: (() => {
-        const addonIds = formData.getAll("addonIds").map(String).filter(Boolean);
-        return addonIds.length ? { connect: addonIds.map((id) => ({ id })) } : undefined;
-      })(),
+      addons: addonsToCreate.length ? { create: addonsToCreate } : undefined,
       // Checklisten aus Paket-Templates kopieren (mit Audience)
       checklists: pkg && pkg.checklistTemplates.length > 0 ? {
         create: pkg.checklistTemplates.map((tpl) => ({
@@ -156,8 +184,44 @@ export async function updateShooting(id: string, formData: FormData) {
 
   const newStatusId = s(formData.get("statusId"));
   const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
-  const addonIds = formData.getAll("addonIds").map(String).filter(Boolean);
   const primaryId = s(formData.get("primaryContactId"));
+
+  // Add-Ons: vorhandene Buchungen behalten Snapshot-Preis, neue holen aktuellen Addon.price.
+  const addonInput = parseAddons(formData);
+  const existingBookings = await prisma.shootingAddon.findMany({ where: { shootingId: id } });
+  const addonRecords = addonInput.length
+    ? await prisma.addon.findMany({ where: { id: { in: addonInput.map((a) => a.addonId) } } })
+    : [];
+
+  await prisma.$transaction(async (tx) => {
+    const wanted = new Set(addonInput.map((a) => a.addonId));
+    const removeIds = existingBookings.filter((b) => !wanted.has(b.addonId)).map((b) => b.id);
+    if (removeIds.length) {
+      await tx.shootingAddon.deleteMany({ where: { id: { in: removeIds } } });
+    }
+    for (let i = 0; i < addonInput.length; i++) {
+      const bo = addonInput[i];
+      const existingBooking = existingBookings.find((b) => b.addonId === bo.addonId);
+      if (existingBooking) {
+        await tx.shootingAddon.update({
+          where: { id: existingBooking.id },
+          data: { quantity: bo.quantity, position: i },
+        });
+      } else {
+        const ad = addonRecords.find((r) => r.id === bo.addonId);
+        if (!ad) continue;
+        await tx.shootingAddon.create({
+          data: {
+            shootingId: id,
+            addonId: bo.addonId,
+            quantity: bo.quantity,
+            unitPrice: ad.price,
+            position: i,
+          },
+        });
+      }
+    }
+  });
 
   const updated = await prisma.shooting.update({
     where: { id },
@@ -176,7 +240,6 @@ export async function updateShooting(id: string, formData: FormData) {
       paymentTerms: s(formData.get("paymentTerms")) ?? null,
       primaryContactId: primaryId ?? null,
       team: { set: teamIds.map((id) => ({ id })) },
-      addons: { set: addonIds.map((id) => ({ id })) },
     },
   });
 

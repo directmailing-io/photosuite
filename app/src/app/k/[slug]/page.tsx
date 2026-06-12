@@ -31,7 +31,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
     include: {
       customer: true,
       package: true,
-      addons: { orderBy: { position: "asc" } },
+      addons: { orderBy: { position: "asc" }, include: { addon: true } },
       dates: { orderBy: { startAt: "asc" } },
       checklists: {
         where: { audience: "CUSTOMER" },
@@ -149,31 +149,49 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
       <div className="max-w-5xl mx-auto px-6 -mt-12 relative space-y-12 pb-24">
 
         {/* ZUSATZPRODUKTE — was zusätzlich zum Paket gebucht ist */}
-        {shooting.addons.length > 0 && (
-          <section className="card p-8">
-            <div className="eyebrow">Deine Zusatzprodukte</div>
-            <h2 className="font-serif text-3xl mt-1 mb-6">Zusätzlich zu deinem Paket</h2>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {shooting.addons.map((a) => (
-                <li key={a.id} className="flex items-center gap-4 p-4 rounded-lg border border-stone bg-paper">
-                  {a.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.imageUrl} alt={a.name} className="w-16 h-16 rounded object-cover shrink-0 border border-stone" />
-                  ) : (
-                    <div className="w-16 h-16 rounded bg-linen shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-serif text-lg leading-tight">{a.name}</div>
-                    {a.description && <div className="text-xs text-smoke mt-1 line-clamp-2">{a.description}</div>}
-                    <div className="text-sm tabular-nums mt-1 text-ink">
-                      {a.price.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {shooting.addons.length > 0 && (() => {
+          const addonsTotal = shooting.addons.reduce((sum, b) => sum + b.unitPrice * b.quantity, 0);
+          return (
+            <section className="card p-8">
+              <div className="eyebrow">Deine Zusatzprodukte</div>
+              <h2 className="font-serif text-3xl mt-1 mb-6">Zusätzlich zu deinem Paket</h2>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {shooting.addons.map((b) => {
+                  const a = b.addon;
+                  const subtotal = b.unitPrice * b.quantity;
+                  return (
+                    <li key={b.id} className="flex items-center gap-4 p-4 rounded-lg border border-stone bg-paper">
+                      {a.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.imageUrl} alt={a.name} className="w-16 h-16 rounded object-cover shrink-0 border border-stone" />
+                      ) : (
+                        <div className="w-16 h-16 rounded bg-linen shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-serif text-lg leading-tight">
+                          {a.name}
+                          {b.quantity > 1 && <span className="text-smoke text-base font-sans"> · {b.quantity} Stück</span>}
+                        </div>
+                        {a.description && <div className="text-xs text-smoke mt-1 line-clamp-2">{a.description}</div>}
+                        <div className="text-sm tabular-nums mt-1 text-ink">
+                          {b.quantity > 1
+                            ? `${b.quantity} × ${b.unitPrice.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} = ${subtotal.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}`
+                            : subtotal.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-6 pt-4 border-t border-stone flex justify-between items-baseline">
+                <span className="eyebrow eyebrow-muted">Zusatzprodukte gesamt</span>
+                <span className="font-serif text-xl tabular-nums">
+                  {addonsTotal.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                </span>
+              </div>
+            </section>
+          );
+        })()}
 
         {/* FRAGEBÖGEN */}
         {shooting.questionnaires.length > 0 && (

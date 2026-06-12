@@ -52,7 +52,7 @@ export async function createAddon(formData: FormData) {
       name,
       description: s(formData.get("description")),
       price,
-      isActive: formData.get("isActive") !== "off",
+      isActive: formData.get("isActive") === "on",
       position: (last?.position ?? -1) + 1,
       imageUrl,
       imageOriginalUrl: imageUrl,
@@ -94,7 +94,7 @@ export async function updateAddon(id: string, formData: FormData) {
       name: s(formData.get("name")) ?? existing.name,
       description: s(formData.get("description")) ?? null,
       price: num(formData.get("price")) ?? existing.price,
-      isActive: formData.get("isActive") !== "off",
+      isActive: formData.get("isActive") === "on",
       imageUrl,
       imageOriginalUrl,
       imageMimeType,
@@ -107,7 +107,28 @@ export async function updateAddon(id: string, formData: FormData) {
 
 export async function deleteAddon(id: string): Promise<void> {
   await requireSession();
+  // Wenn das Add-On bereits in Shootings gebucht ist, würde ein Hard-Delete den
+  // Restrict-FK-Trigger der ShootingAddon-Tabelle werfen und Buchungshistorie zerstören.
+  // Stattdessen: soft-deaktivieren und Hinweis geben.
+  const inUse = await prisma.shootingAddon.count({ where: { addonId: id } });
+  if (inUse > 0) {
+    await prisma.addon.update({ where: { id }, data: { isActive: false } });
+    revalidatePath("/einstellungen");
+    revalidatePath("/pakete");
+    revalidatePath("/shootings");
+    throw new Error(
+      `In ${inUse} ${inUse === 1 ? "Shooting" : "Shootings"} gebucht — als „inaktiv" markiert, statt zu löschen.`,
+    );
+  }
   await prisma.addon.delete({ where: { id } });
+  revalidatePath("/einstellungen");
+  revalidatePath("/pakete");
+  revalidatePath("/shootings");
+}
+
+export async function toggleAddonActive(id: string, isActive: boolean): Promise<void> {
+  await requireSession();
+  await prisma.addon.update({ where: { id }, data: { isActive } });
   revalidatePath("/einstellungen");
   revalidatePath("/pakete");
   revalidatePath("/shootings");

@@ -383,6 +383,7 @@ model Customer {
   tasks         Task[]
   invoices      Invoice[]
   companions    CustomerCompanion[]
+  bookings      Booking[]
   // Meta
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -541,6 +542,7 @@ model Shooting {
   questionnaires Questionnaire[]
   invoices       Invoice[]
   paymentSchedule PaymentSchedule?
+  bookings       Booking[]
   kanbanPosition Int            @default(0)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -757,4 +759,78 @@ model AvailabilityOverride {
   note         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// -------------------- ONLINE-BUCHUNG (Calendly-Double) --------------------
+
+// Buchungs-Typ: ein öffentlich teilbarer Termin-Slot-Typ.
+// Beispiel: "Erstgespräch — 30 Min kostenlos", "Boudoir-Beratung — 60 Min, 50€".
+// Public-URL: /b/[slug]. Verfügbare Slots werden aus AvailabilityWeekly + bestehenden
+// Shootings/Bookings dynamisch generiert (siehe lib/bookingSlots.ts).
+model BookingType {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  description       String?
+  durationMin       Int      @default(30)
+  // Preis in Cent (0 = kostenlos). Wird nur informativ auf der Buchungsseite gezeigt,
+  // keine Zahlung im Online-Flow — Zahlung läuft bei Lisa weiter über Rechnung/Stripe.
+  priceCents        Int      @default(0)
+  // Puffer in Minuten vor/nach dem Termin — verhindert dass Lisa zwei Termine direkt
+  // hintereinander hat (Wechselzeit, Vorbereitung).
+  bufferBeforeMin   Int      @default(0)
+  bufferAfterMin    Int      @default(15)
+  // Mindest-Vorlaufzeit: keine Buchung weniger als X Stunden im Voraus möglich.
+  minLeadHours      Int      @default(24)
+  // Maximaler Buchungs-Horizont: nicht weiter als N Tage in der Zukunft buchbar.
+  maxAheadDays      Int      @default(60)
+  // Slot-Raster: in welchen Intervallen werden Slots angeboten (15, 30, 60 Min).
+  slotIntervalMin   Int      @default(30)
+  location          String?  // z.B. "Lisa Studio, Berlin" oder "Online via Zoom"
+  // Auto-Confirm: PENDING springt sofort auf CONFIRMED beim Buchen.
+  // Sonst muss Lisa in der Inbox manuell annehmen.
+  autoConfirm       Boolean  @default(false)
+  // Welche Pflichtfelder im Formular: Name + Email immer; Phone und Message optional.
+  requirePhone      Boolean  @default(true)
+  requireMessage    Boolean  @default(false)
+  color             String   @default("#9F877F")
+  isActive          Boolean  @default(true)
+  position          Int      @default(0)
+  bookings          Booking[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// BookingStatus als String — SQLite hat keine Enum-Unterstützung. Erlaubt: "PENDING" | "CONFIRMED" | "CANCELLED".
+
+// Eine konkrete Online-Buchung durch eine Kundin.
+// Snapshot der Eingaben (customerName/Email/Phone/message) bleibt unabhängig vom
+// später ggf. verknüpften Customer-Record erhalten.
+model Booking {
+  id              String        @id @default(cuid())
+  bookingType     BookingType   @relation(fields: [bookingTypeId], references: [id], onDelete: Cascade)
+  bookingTypeId   String
+  // Kundinnen-Daten als Snapshot zum Buchungszeitpunkt
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  message         String?
+  // Termin
+  startAt         DateTime
+  endAt           DateTime
+  status          String        @default("PENDING")   // PENDING | CONFIRMED | CANCELLED
+  // Nach „Annehmen" im CRM: optional verknüpfte Customer/Shooting-Records
+  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId      String?
+  shooting        Shooting?     @relation(fields: [shootingId], references: [id], onDelete: SetNull)
+  shootingId      String?
+  // Audit
+  confirmedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([bookingTypeId, startAt])
+  @@index([status, startAt])
 }

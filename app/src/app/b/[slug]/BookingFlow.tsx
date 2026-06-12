@@ -1,0 +1,907 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import {
+  ChevronLeft, ChevronRight, Clock, MapPin, Calendar as CalendarIcon,
+  CheckCircle2, ArrowLeft, Mail, Phone, MessageSquare, User as UserIcon,
+  AlertCircle, Loader2,
+} from "lucide-react";
+import { Field } from "@/components/form/Field";
+import { submitBooking } from "./actions";
+import type { DayWithSlots, BookableSlot } from "@/lib/bookingSlots";
+
+type BookingTypeForClient = {
+  slug: string;
+  name: string;
+  description: string | null;
+  durationMin: number;
+  priceCents: number;
+  location: string | null;
+  autoConfirm: boolean;
+  requirePhone: boolean;
+  requireMessage: boolean;
+  color: string;
+};
+
+type Studio = {
+  studioName: string | null;
+  studioTagline: string | null;
+  studioEmail: string | null;
+  studioPhone: string | null;
+  logoUrl: string | null;
+} | null;
+
+type Step = "calendar" | "form" | "done";
+
+const WEEKDAYS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+function ymd(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function fmtPrice(cents: number) {
+  return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+// Locale-Datums-Helfer ohne TZ-Stolperfallen.
+function fmtLongDate(date: string /* YYYY-MM-DD */) {
+  const [y, m, d] = date.split("-").map(Number);
+  const obj = new Date(y, m - 1, d);
+  return obj.toLocaleDateString("de-DE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function BookingFlow({
+  type,
+  studio,
+  days,
+  year,
+  month,
+}: {
+  type: BookingTypeForClient;
+  studio: Studio;
+  days: DayWithSlots[];
+  year: number;
+  month: number; // 0-basiert
+}) {
+  const [step, setStep] = useState<Step>("calendar");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<BookableSlot | null>(null);
+  const [doneFirstName, setDoneFirstName] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // Map: date → DayWithSlots für O(1)-Lookup beim Rendern des Kalenders.
+  const daysByDate = useMemo(() => {
+    const m = new Map<string, DayWithSlots>();
+    for (const d of days) m.set(d.date, d);
+    return m;
+  }, [days]);
+
+  // 6-Wochen-Grid (Mo-first). Erster Tag = Montag der Woche, in der der 1. liegt.
+  const calendarCells = useMemo(() => {
+    const first = new Date(year, month, 1);
+    // JS: 0=So..6=Sa → wir wollen 0=Mo..6=So
+    const jsWeekday = first.getDay();
+    const moFirstOffset = (jsWeekday + 6) % 7; // wieviele Tage VOR dem 1. bis Montag
+    const gridStart = new Date(year, month, 1 - moFirstOffset);
+    const cells: { date: Date; inMonth: boolean; key: string }[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+      cells.push({
+        date: d,
+        inMonth: d.getMonth() === month,
+        key: ymd(d.getFullYear(), d.getMonth(), d.getDate()),
+      });
+    }
+    return cells;
+  }, [year, month]);
+
+  // Heute als YYYY-MM-DD lokal — für "today"-Highlight.
+  const todayKey = useMemo(() => {
+    const t = new Date();
+    return ymd(t.getFullYear(), t.getMonth(), t.getDate());
+  }, []);
+
+  // Prev/Next-Monat als YYYY-MM für ?month=…-Link.
+  const prevMonthHref = useMemo(() => {
+    const y = month === 0 ? year - 1 : year;
+    const m = month === 0 ? 11 : month - 1;
+    return `?month=${y}-${pad2(m + 1)}`;
+  }, [year, month]);
+  const nextMonthHref = useMemo(() => {
+    const y = month === 11 ? year + 1 : year;
+    const m = month === 11 ? 0 : month + 1;
+    return `?month=${y}-${pad2(m + 1)}`;
+  }, [year, month]);
+
+  // Ist der Prev-Button sinnvoll? Nicht in vergangene Monate navigieren.
+  const isPrevDisabled = useMemo(() => {
+    const now = new Date();
+    return year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth());
+  }, [year, month]);
+
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("de-DE", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const selectedDay = selectedDate ? daysByDate.get(selectedDate) : null;
+
+  function selectDay(key: string) {
+    setSelectedDate(key);
+    setSelectedSlot(null);
+  }
+
+  function selectSlot(slot: BookableSlot) {
+    setSelectedSlot(slot);
+    setStep("form");
+    // Sanftes Scrollen nach oben, damit Formular oben in View ist.
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function handleSubmit(formData: FormData) {
+    setError(null);
+    if (!selectedSlot) {
+      setError("Kein Termin ausgewählt.");
+      return;
+    }
+    // startAt aus selectedSlot anhängen (das Formular kennt es nicht).
+    formData.set("startAt", selectedSlot.startISO);
+    const firstName = String(formData.get("customerName") ?? "").trim().split(/\s+/)[0] ?? "";
+    startTransition(async () => {
+      try {
+        await submitBooking(type.slug, formData);
+        setDoneFirstName(firstName);
+        setStep("done");
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Etwas ist schiefgelaufen.");
+      }
+    });
+  }
+
+  function backToCalendar() {
+    setStep("calendar");
+    setSelectedSlot(null);
+    setError(null);
+  }
+
+  // ===== Studio-Branding-Header =====
+  const studioHeader = (
+    <header className="border-b" style={{ background: "var(--paper)", borderColor: "var(--stone)" }}>
+      <div className="max-w-5xl mx-auto px-6 h-20 flex items-center gap-4">
+        {studio?.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={studio.logoUrl}
+            alt={studio.studioName ?? "Studio"}
+            className="h-12 w-auto object-contain block"
+          />
+        ) : (
+          <div
+            className="leading-none"
+            style={{
+              fontFamily: '"Cormorant Garamond", Georgia, serif',
+              fontStyle: "italic",
+              fontWeight: 500,
+              fontSize: "22px",
+              color: "var(--ink)",
+            }}
+          >
+            {studio?.studioName ?? "Studio"}
+          </div>
+        )}
+        {studio?.studioName && studio?.logoUrl && (
+          <div
+            className="hidden sm:block"
+            style={{
+              fontFamily: '"Cormorant Garamond", Georgia, serif',
+              fontStyle: "italic",
+              fontWeight: 500,
+              fontSize: "18px",
+              color: "var(--smoke)",
+            }}
+          >
+            {studio.studioName}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+
+  // ===== Inhalt pro Step =====
+  return (
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      {studioHeader}
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+        {step === "calendar" && (
+          <CalendarStep
+            type={type}
+            studio={studio}
+            calendarCells={calendarCells}
+            daysByDate={daysByDate}
+            todayKey={todayKey}
+            selectedDate={selectedDate}
+            selectedDay={selectedDay ?? null}
+            monthLabel={monthLabel}
+            prevMonthHref={prevMonthHref}
+            nextMonthHref={nextMonthHref}
+            isPrevDisabled={isPrevDisabled}
+            onSelectDay={selectDay}
+            onSelectSlot={selectSlot}
+          />
+        )}
+
+        {step === "form" && selectedSlot && (
+          <FormStep
+            type={type}
+            slot={selectedSlot}
+            error={error}
+            isPending={isPending}
+            onBack={backToCalendar}
+            onSubmit={handleSubmit}
+          />
+        )}
+
+        {step === "done" && selectedSlot && (
+          <DoneStep
+            type={type}
+            slot={selectedSlot}
+            firstName={doneFirstName}
+            studio={studio}
+          />
+        )}
+      </main>
+
+      <footer className="max-w-5xl mx-auto px-6 pb-10 text-center text-xs text-smoke">
+        <span style={{ color: "var(--smoke)" }}>
+          {studio?.studioName ?? "Studio"} · Online-Terminbuchung
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+// =================== STEP 1: KALENDER ===================
+
+function CalendarStep({
+  type,
+  studio,
+  calendarCells,
+  daysByDate,
+  todayKey,
+  selectedDate,
+  selectedDay,
+  monthLabel,
+  prevMonthHref,
+  nextMonthHref,
+  isPrevDisabled,
+  onSelectDay,
+  onSelectSlot,
+}: {
+  type: BookingTypeForClient;
+  studio: Studio;
+  calendarCells: { date: Date; inMonth: boolean; key: string }[];
+  daysByDate: Map<string, DayWithSlots>;
+  todayKey: string;
+  selectedDate: string | null;
+  selectedDay: DayWithSlots | null;
+  monthLabel: string;
+  prevMonthHref: string;
+  nextMonthHref: string;
+  isPrevDisabled: boolean;
+  onSelectDay: (key: string) => void;
+  onSelectSlot: (slot: BookableSlot) => void;
+}) {
+  return (
+    <div className="space-y-10">
+      {/* Hero / Type-Info */}
+      <section className="text-center">
+        <div className="eyebrow inline-flex items-center gap-2">
+          <span
+            style={{
+              display: "inline-block",
+              width: 28,
+              height: 1,
+              background: "var(--accent)",
+            }}
+          />
+          Termin buchen
+        </div>
+        <h1
+          className="font-serif font-medium mt-3 leading-[1.05]"
+          style={{ fontSize: "clamp(36px, 6vw, 56px)", color: "var(--ink)" }}
+        >
+          {type.name}
+        </h1>
+        {type.description && (
+          <p
+            className="mt-5 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto"
+            style={{ color: "var(--smoke)" }}
+          >
+            {type.description}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "var(--smoke)" }}>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock size={14} style={{ color: "var(--accent)" }} />
+            {type.durationMin} Minuten
+          </span>
+          {type.location && (
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin size={14} style={{ color: "var(--accent)" }} />
+              {type.location}
+            </span>
+          )}
+          {type.priceCents > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
+              {fmtPrice(type.priceCents)}
+            </span>
+          )}
+        </div>
+      </section>
+
+      {/* Kalender + Slot-Liste */}
+      <section className="card p-5 sm:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 lg:gap-12">
+          {/* LINKS: Kalender */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <div className="eyebrow">Wähle einen Tag</div>
+                <div
+                  className="font-serif mt-1 capitalize"
+                  style={{ fontSize: "26px", color: "var(--ink)" }}
+                >
+                  {monthLabel}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {isPrevDisabled ? (
+                  <button
+                    disabled
+                    aria-label="Vorheriger Monat"
+                    className="btn-icon"
+                    style={{ opacity: 0.3, cursor: "not-allowed" }}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                ) : (
+                  <Link href={prevMonthHref} aria-label="Vorheriger Monat" className="btn-icon" scroll={false}>
+                    <ChevronLeft size={18} />
+                  </Link>
+                )}
+                <Link href={nextMonthHref} aria-label="Nächster Monat" className="btn-icon" scroll={false}>
+                  <ChevronRight size={18} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Wochentag-Header */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+              {WEEKDAYS_SHORT.map((w) => (
+                <div
+                  key={w}
+                  className="text-center text-[11px] font-semibold tracking-wider uppercase py-1"
+                  style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}
+                >
+                  {w}
+                </div>
+              ))}
+            </div>
+
+            {/* Tage */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {calendarCells.map((cell) => {
+                const dayInfo = daysByDate.get(cell.key);
+                const hasSlots = !!dayInfo?.hasSlots;
+                const isToday = cell.key === todayKey;
+                const isSelected = selectedDate === cell.key;
+                const isOtherMonth = !cell.inMonth;
+
+                const baseClass =
+                  "aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition relative select-none";
+
+                if (!hasSlots) {
+                  // Nicht klickbar — leer/dim
+                  return (
+                    <div
+                      key={cell.key}
+                      className={baseClass}
+                      style={{
+                        color: isOtherMonth ? "transparent" : "var(--smoke)",
+                        background: "transparent",
+                        cursor: "not-allowed",
+                        opacity: isOtherMonth ? 0 : 0.35,
+                      }}
+                      aria-disabled="true"
+                    >
+                      {cell.date.getDate()}
+                      {isToday && !isOtherMonth && (
+                        <span
+                          className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                          style={{ background: "var(--accent)", opacity: 0.6 }}
+                        />
+                      )}
+                    </div>
+                  );
+                }
+
+                // Klickbarer Tag
+                return (
+                  <button
+                    key={cell.key}
+                    onClick={() => onSelectDay(cell.key)}
+                    className={baseClass + " cursor-pointer hover:scale-[1.04]"}
+                    style={{
+                      background: isSelected ? "var(--accent)" : "var(--accent-soft)",
+                      color: isSelected ? "white" : "var(--ink)",
+                      border: `1px solid ${isSelected ? "var(--accent)" : "transparent"}`,
+                      fontWeight: isSelected ? 600 : 500,
+                    }}
+                    aria-pressed={isSelected}
+                    aria-label={`${cell.date.getDate()}. – freie Termine verfügbar`}
+                  >
+                    {cell.date.getDate()}
+                    {isToday && !isSelected && (
+                      <span
+                        className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                        style={{ background: "var(--accent)" }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legende */}
+            <div
+              className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs"
+              style={{ color: "var(--smoke)" }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-3 h-3 rounded-sm"
+                  style={{ background: "var(--accent-soft)" }}
+                />
+                Freie Termine
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-3 h-3 rounded-sm"
+                  style={{ background: "var(--accent)" }}
+                />
+                Ausgewählt
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: "var(--accent)" }}
+                />
+                Heute
+              </span>
+            </div>
+          </div>
+
+          {/* RECHTS: Slot-Liste */}
+          <div className="lg:border-l lg:pl-12" style={{ borderColor: "var(--stone)" }}>
+            {!selectedDate && (
+              <div
+                className="rounded-xl border border-dashed p-8 text-center"
+                style={{ borderColor: "var(--stone)" }}
+              >
+                <CalendarIcon
+                  size={32}
+                  className="mx-auto mb-3"
+                  style={{ color: "var(--accent)" }}
+                  strokeWidth={1.4}
+                />
+                <div className="eyebrow">Noch nichts ausgewählt</div>
+                <p className="font-serif text-xl mt-2" style={{ color: "var(--ink)" }}>
+                  Wähle einen Tag aus,<br />
+                  der frei ist.
+                </p>
+                <p className="text-xs mt-3" style={{ color: "var(--smoke)" }}>
+                  Freie Tage sind rosa hinterlegt.
+                </p>
+              </div>
+            )}
+
+            {selectedDate && selectedDay && (
+              <div>
+                <div className="eyebrow">Verfügbare Zeiten</div>
+                <h2
+                  className="font-serif mt-1 mb-5 capitalize"
+                  style={{ fontSize: "24px", color: "var(--ink)" }}
+                >
+                  {fmtLongDate(selectedDate)}
+                </h2>
+
+                {selectedDay.slots.length === 0 ? (
+                  <div
+                    className="rounded-lg border p-5 text-sm flex items-start gap-3"
+                    style={{
+                      borderColor: "var(--stone)",
+                      background: "var(--linen)",
+                      color: "var(--smoke)",
+                    }}
+                  >
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" style={{ color: "var(--accent)" }} />
+                    <span>
+                      Keine freien Slots an diesem Tag — bitte einen anderen wählen.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                    {selectedDay.slots.map((slot) => (
+                      <button
+                        key={slot.startISO}
+                        onClick={() => onSelectSlot(slot)}
+                        className="rounded-lg font-medium transition flex items-center justify-center"
+                        style={{
+                          minHeight: 48,
+                          background: "var(--paper)",
+                          color: "var(--ink)",
+                          border: "1px solid var(--stone)",
+                          fontSize: "15px",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "var(--ink)";
+                          e.currentTarget.style.color = "var(--bg)";
+                          e.currentTarget.style.borderColor = "var(--ink)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "var(--paper)";
+                          e.currentTarget.style.color = "var(--ink)";
+                          e.currentTarget.style.borderColor = "var(--stone)";
+                        }}
+                      >
+                        {slot.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-xs mt-5" style={{ color: "var(--smoke)" }}>
+                  Zeitzone Europe/Berlin · {type.durationMin} Min pro Termin
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// =================== STEP 2: FORMULAR ===================
+
+function FormStep({
+  type,
+  slot,
+  error,
+  isPending,
+  onBack,
+  onSubmit,
+}: {
+  type: BookingTypeForClient;
+  slot: BookableSlot;
+  error: string | null;
+  isPending: boolean;
+  onBack: () => void;
+  onSubmit: (fd: FormData) => void;
+}) {
+  return (
+    <div className="max-w-2xl mx-auto">
+      {/* Summary-Header */}
+      <section
+        className="card p-6 sm:p-7 mb-6"
+        style={{ background: "var(--accent-soft)", borderColor: "var(--accent)" }}
+      >
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <div className="eyebrow">Dein Termin</div>
+            <h2
+              className="font-serif mt-1"
+              style={{ fontSize: "26px", color: "var(--ink)" }}
+            >
+              {type.name}
+            </h2>
+            <div className="mt-3 space-y-1.5 text-sm" style={{ color: "var(--ink)" }}>
+              <div className="flex items-center gap-2">
+                <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
+                <span className="capitalize">{fmtLongDate(slot.startISO.slice(0, 10))}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock size={14} style={{ color: "var(--accent)" }} />
+                {slot.label} Uhr · {type.durationMin} Min
+              </div>
+              {type.location && (
+                <div className="flex items-center gap-2">
+                  <MapPin size={14} style={{ color: "var(--accent)" }} />
+                  {type.location}
+                </div>
+              )}
+              {type.priceCents > 0 && (
+                <div className="text-sm mt-2 pt-2 border-t" style={{ borderColor: "var(--accent)" }}>
+                  <span className="eyebrow eyebrow-muted">Preis: </span>
+                  <span className="font-serif text-lg tabular-nums">{fmtPrice(type.priceCents)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="btn-ghost text-xs h-9 shrink-0"
+            style={{ color: "var(--ink)" }}
+          >
+            <ArrowLeft size={13} /> Anderen Termin wählen
+          </button>
+        </div>
+      </section>
+
+      {/* Form */}
+      <section className="card p-6 sm:p-8">
+        <div className="mb-6">
+          <div className="eyebrow">Deine Daten</div>
+          <h3 className="font-serif mt-1" style={{ fontSize: "22px", color: "var(--ink)" }}>
+            Wer bist du?
+          </h3>
+          <p className="text-sm mt-2" style={{ color: "var(--smoke)" }}>
+            Damit wir uns gut auf dich vorbereiten können.
+          </p>
+        </div>
+
+        <form
+          action={onSubmit}
+          className="space-y-5"
+        >
+          <Field label="Name *">
+            <div className="relative">
+              <UserIcon
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--smoke)" }}
+              />
+              <input
+                name="customerName"
+                type="text"
+                required
+                className="input"
+                style={{ paddingLeft: 38 }}
+                placeholder="Vor- und Nachname"
+                autoComplete="name"
+              />
+            </div>
+          </Field>
+
+          <Field label="E-Mail *">
+            <div className="relative">
+              <Mail
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--smoke)" }}
+              />
+              <input
+                name="customerEmail"
+                type="email"
+                required
+                className="input"
+                style={{ paddingLeft: 38 }}
+                placeholder="du@beispiel.de"
+                autoComplete="email"
+              />
+            </div>
+          </Field>
+
+          <Field label={`Telefon${type.requirePhone ? " *" : " (optional)"}`}>
+            <div className="relative">
+              <Phone
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--smoke)" }}
+              />
+              <input
+                name="customerPhone"
+                type="tel"
+                required={type.requirePhone}
+                className="input"
+                style={{ paddingLeft: 38 }}
+                placeholder="+49 …"
+                autoComplete="tel"
+              />
+            </div>
+          </Field>
+
+          <Field
+            label={`Nachricht${type.requireMessage ? " *" : " (optional)"}`}
+            hint={
+              type.requireMessage
+                ? "Erzähl uns kurz, worum es geht."
+                : "Worauf sollen wir uns einstellen? (Anlass, Wünsche, Fragen)"
+            }
+          >
+            <div className="relative">
+              <MessageSquare
+                size={16}
+                className="absolute left-3 top-3 pointer-events-none"
+                style={{ color: "var(--smoke)" }}
+              />
+              <textarea
+                name="message"
+                required={type.requireMessage}
+                className="textarea"
+                style={{ paddingLeft: 38, minHeight: 110 }}
+                placeholder={
+                  type.requireMessage
+                    ? "Was hast du dir überlegt?"
+                    : "Optional — alles, was du uns mitgeben magst."
+                }
+              />
+            </div>
+          </Field>
+
+          {error && (
+            <div
+              className="rounded-lg border p-4 text-sm flex items-start gap-3"
+              style={{
+                borderColor: "var(--accent)",
+                background: "var(--accent-soft)",
+                color: "var(--accent-deep)",
+              }}
+              role="alert"
+            >
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row-reverse gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="btn-accent flex-1 sm:flex-initial sm:min-w-[260px] h-12 text-base"
+              style={{ fontWeight: 500 }}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Sende …
+                </>
+              ) : (
+                <>Termin verbindlich anfragen</>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              disabled={isPending}
+              className="btn-secondary h-12 text-base"
+            >
+              <ArrowLeft size={14} /> Zurück
+            </button>
+          </div>
+
+          <p className="text-xs pt-3" style={{ color: "var(--smoke)" }}>
+            Mit der Anfrage stimmst du zu, dass deine Daten zur Bearbeitung deiner Buchungsanfrage
+            verarbeitet werden.
+          </p>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+// =================== STEP 3: CONFIRMATION ===================
+
+function DoneStep({
+  type,
+  slot,
+  firstName,
+  studio,
+}: {
+  type: BookingTypeForClient;
+  slot: BookableSlot;
+  firstName: string;
+  studio: Studio;
+}) {
+  return (
+    <div className="max-w-2xl mx-auto text-center">
+      <div
+        className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6"
+        style={{ background: "var(--accent-soft)" }}
+      >
+        <CheckCircle2 size={44} style={{ color: "var(--accent)" }} strokeWidth={1.6} />
+      </div>
+
+      <div className="eyebrow">
+        {type.autoConfirm ? "Termin bestätigt" : "Anfrage erhalten"}
+      </div>
+      <h1
+        className="font-serif font-medium mt-3 leading-tight"
+        style={{ fontSize: "clamp(34px, 5vw, 48px)", color: "var(--ink)" }}
+      >
+        Danke{firstName ? <>, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em></> : null}!
+      </h1>
+
+      <p
+        className="mt-5 text-base sm:text-lg leading-relaxed max-w-md mx-auto"
+        style={{ color: "var(--smoke)" }}
+      >
+        {type.autoConfirm
+          ? "Dein Termin ist bestätigt. Du bekommst gleich eine E-Mail mit allen Details."
+          : "Wir prüfen deine Anfrage und melden uns innerhalb von 24 Stunden bei dir."}
+      </p>
+
+      <section
+        className="card p-6 sm:p-7 mt-10 text-left"
+        style={{ background: "var(--paper)" }}
+      >
+        <div className="eyebrow">Dein Termin</div>
+        <div
+          className="font-serif mt-1 mb-4"
+          style={{ fontSize: "22px", color: "var(--ink)" }}
+        >
+          {type.name}
+        </div>
+        <div className="space-y-2 text-sm" style={{ color: "var(--ink)" }}>
+          <div className="flex items-center gap-2">
+            <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
+            <span className="capitalize">{fmtLongDate(slot.startISO.slice(0, 10))}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock size={14} style={{ color: "var(--accent)" }} />
+            {slot.label} Uhr · {type.durationMin} Min
+          </div>
+          {type.location && (
+            <div className="flex items-center gap-2">
+              <MapPin size={14} style={{ color: "var(--accent)" }} />
+              {type.location}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {(studio?.studioEmail || studio?.studioPhone) && (
+        <p className="mt-8 text-sm" style={{ color: "var(--smoke)" }}>
+          Fragen?{" "}
+          {studio?.studioEmail && (
+            <a
+              href={`mailto:${studio.studioEmail}`}
+              className="hover:underline"
+              style={{ color: "var(--accent)" }}
+            >
+              {studio.studioEmail}
+            </a>
+          )}
+          {studio?.studioEmail && studio?.studioPhone && " · "}
+          {studio?.studioPhone && (
+            <a
+              href={`tel:${studio.studioPhone}`}
+              className="hover:underline"
+              style={{ color: "var(--accent)" }}
+            >
+              {studio.studioPhone}
+            </a>
+          )}
+        </p>
+      )}
+    </div>
+  );
+}

@@ -5,12 +5,13 @@ import { loadCurrentUser } from "@/lib/loadUser";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  const [user, submittedRaw] = await Promise.all([
+  const [user, submittedRaw, pendingBookings] = await Promise.all([
     loadCurrentUser(session),
     prisma.questionnaire.findMany({
       where: { status: "SUBMITTED" },
       select: { seenByStudioAt: true, submittedAt: true },
     }),
+    prisma.booking.count({ where: { status: "PENDING" } }),
   ]);
   const newSubmissions = submittedRaw.filter(
     (q) => !q.seenByStudioAt || (q.submittedAt && q.seenByStudioAt < q.submittedAt),
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         userName={session?.user?.name}
         studioName={user?.studioName}
         newQuestionnaireSubmissions={newSubmissions}
+        pendingBookings={pendingBookings}
       />
       <main className="flex-1 min-w-0">
         <div className="max-w-[1400px] mx-auto px-8 py-10 page-enter">{children}</div>

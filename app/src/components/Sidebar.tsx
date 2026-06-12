@@ -14,6 +14,7 @@ import {
   FileQuestion,
   Receipt,
   CalendarDays,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "./authActions";
@@ -30,6 +31,7 @@ const dailyItems: NavItem[] = [
   { href: "/kunden", label: "Kunden", icon: Users },
   { href: "/shootings", label: "Shootings", icon: Camera },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
+  { href: "/buchungen", label: "Buchungen", icon: Inbox },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/buchhaltung", label: "Buchhaltung", icon: Receipt },
 ];
@@ -45,14 +47,20 @@ export function Sidebar({
   userName,
   studioName,
   newQuestionnaireSubmissions = 0,
+  pendingBookings = 0,
 }: {
   userName?: string | null;
   studioName?: string | null;
   newQuestionnaireSubmissions?: number;
+  pendingBookings?: number;
 }) {
   const pathname = usePathname();
 
-  // Inject badge into setup items
+  const dailyWithBadges = dailyItems.map((it) =>
+    it.href === "/buchungen"
+      ? { ...it, badgeCount: pendingBookings }
+      : it,
+  );
   const setupWithBadges = setupItems.map((it) =>
     it.href === "/fragebogen"
       ? { ...it, badgeCount: newQuestionnaireSubmissions }
@@ -73,7 +81,7 @@ export function Sidebar({
       </div>
 
       <nav className="px-3 flex-1 overflow-y-auto">
-        <NavSection items={dailyItems} pathname={pathname} />
+        <NavSection items={dailyWithBadges} pathname={pathname} />
         <NavSection
           label="Setup"
           items={setupWithBadges}

@@ -9,6 +9,7 @@ import { CalendarSettings } from "./CalendarSettings";
 import { AvailabilityManager } from "./AvailabilityManager";
 import { ensureWeeklyDefaults } from "./availabilityActions";
 import { AddonManager } from "./AddonManager";
+import { BookingTypeManager } from "./BookingTypeManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { auth } from "@/lib/auth";
@@ -26,7 +27,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "addons", "status", "tags"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "addons", "status", "tags"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -140,11 +141,42 @@ export default async function EinstellungenPage({
         )
       )}
 
+      {tab === "buchung" && <BuchungSection />}
+
       {tab === "addons" && <AddonSection />}
 
       {tab === "status" && <StatusSection />}
       {tab === "tags" && <TagsSection />}
     </>
+  );
+}
+
+async function BuchungSection() {
+  const types = await prisma.bookingType.findMany({ orderBy: { position: "asc" } });
+  return (
+    <BookingTypeManager
+      appBaseUrl={process.env.APP_BASE_URL ?? ""}
+      types={types.map((t) => ({
+        id: t.id,
+        slug: t.slug,
+        name: t.name,
+        description: t.description,
+        durationMin: t.durationMin,
+        priceCents: t.priceCents,
+        bufferBeforeMin: t.bufferBeforeMin,
+        bufferAfterMin: t.bufferAfterMin,
+        minLeadHours: t.minLeadHours,
+        maxAheadDays: t.maxAheadDays,
+        slotIntervalMin: t.slotIntervalMin,
+        location: t.location,
+        autoConfirm: t.autoConfirm,
+        requirePhone: t.requirePhone,
+        requireMessage: t.requireMessage,
+        color: t.color,
+        isActive: t.isActive,
+        position: t.position,
+      }))}
+    />
   );
 }
 

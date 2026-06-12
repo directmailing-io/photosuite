@@ -42,6 +42,8 @@ export default async function EditPackagePage({ params }: { params: Promise<{ id
           depositAmount: pkg.depositAmount,
           paymentTerms: pkg.paymentTerms,
           durationMin: pkg.durationMin,
+          bookingBufferBeforeMin: pkg.bookingBufferBeforeMin,
+          bookingBufferAfterMin: pkg.bookingBufferAfterMin,
           isActive: pkg.isActive,
           primaryContactId: pkg.primaryContactId,
           defaultTeamIds: pkg.defaultTeam.map((m) => m.id),

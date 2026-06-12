@@ -3,16 +3,20 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { parseYmd, ymdLocal, hhmmToMinutes } from "@/lib/availability";
+import {
+  parseYmd,
+  ymdLocal,
+  hhmmToMinutes,
+  serializeSlots,
+  ensureWeeklyDefaults as _ensureWeeklyDefaults,
+  type TimeWindow,
+} from "@/lib/availability";
 
 async function requireSession() {
   const session = await auth();
   if (!session?.user) throw new Error("Nicht angemeldet");
 }
 
-// Re-Export für Page-Loader, die explizit Defaults seeden wollen.
-// In "use server" dürfen nur async functions exportiert werden — daher Wrapper.
-import { ensureWeeklyDefaults as _ensureWeeklyDefaults } from "@/lib/availability";
 export async function ensureWeeklyDefaults() {
   await _ensureWeeklyDefaults();
 }
@@ -23,32 +27,49 @@ function revalidateAll() {
   revalidatePath("/kalender");
 }
 
-// Speichert die ganze Wochenregel aus dem Setup-Form. Atomar in einer Transaction —
-// sonst könnte ein Mittendrin-Absturz Lisa mit halb-aktualisierten Regeln zurücklassen.
+// Hilfsfunktion: liest paarweise weekly.<weekday>.slots.<i>.start / .end aus FormData
+// und baut ein bereinigtes TimeWindow[]. Ungültige oder doppelte werden verworfen.
+function parseWindowsFromForm(fd: FormData, prefix: string): TimeWindow[] {
+  const windows: TimeWindow[] = [];
+  for (let i = 0; i < 12; i++) {
+    const start = hhmmToMinutes(String(fd.get(`${prefix}.${i}.start`) ?? ""));
+    const end = hhmmToMinutes(String(fd.get(`${prefix}.${i}.end`) ?? ""));
+    if (start == null || end == null || end <= start) continue;
+    windows.push({ start, end });
+  }
+  // Sortieren, überlappende mergen
+  windows.sort((a, b) => a.start - b.start);
+  const merged: TimeWindow[] = [];
+  for (const w of windows) {
+    const last = merged[merged.length - 1];
+    if (last && w.start <= last.end) last.end = Math.max(last.end, w.end);
+    else merged.push({ ...w });
+  }
+  return merged;
+}
+
+// Wochenregel: pro Tag isAvailable + slotsJson aus FormData.
+// Form-Felder pro Wochentag w (0..6):
+//   weekly.<w>.available     "on" | nicht gesetzt
+//   weekly.<w>.slots.<i>.start  HH:MM
+//   weekly.<w>.slots.<i>.end    HH:MM
+//   weekly.<w>.useDefault    "on" → slotsJson=null („ganzer Tag" aus User-Default)
 export async function saveWeeklyRules(formData: FormData): Promise<void> {
   await requireSession();
   const upserts = [];
   for (let weekday = 0; weekday < 7; weekday++) {
-    const raw = formData.get(`weekly.${weekday}.max`);
-    const max = Math.max(0, Math.min(10, Number(raw) || 0));
-    const startMinutes = hhmmToMinutes(String(formData.get(`weekly.${weekday}.start`) ?? ""));
-    const endMinutes = hhmmToMinutes(String(formData.get(`weekly.${weekday}.end`) ?? ""));
-    // Wenn End vor Start → beide ignorieren statt komische Daten zu speichern.
-    const validRange = startMinutes != null && endMinutes != null && endMinutes > startMinutes;
+    const isAvailable = formData.get(`weekly.${weekday}.available`) === "on";
+    const useDefault = formData.get(`weekly.${weekday}.useDefault`) === "on";
+    let slotsJson: string | null = null;
+    if (isAvailable && !useDefault) {
+      const windows = parseWindowsFromForm(formData, `weekly.${weekday}.slots`);
+      slotsJson = windows.length > 0 ? serializeSlots(windows) : null;
+    }
     upserts.push(
       prisma.availabilityWeekly.upsert({
         where: { weekday },
-        create: {
-          weekday,
-          maxShootings: max,
-          startMinutes: validRange ? startMinutes : null,
-          endMinutes: validRange ? endMinutes : null,
-        },
-        update: {
-          maxShootings: max,
-          startMinutes: validRange ? startMinutes : null,
-          endMinutes: validRange ? endMinutes : null,
-        },
+        create: { weekday, isAvailable, slotsJson },
+        update: { isAvailable, slotsJson },
       }),
     );
   }
@@ -56,9 +77,22 @@ export async function saveWeeklyRules(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
-// Override anlegen — optional als Date-Range (Bulk-Urlaub). Wenn `dateEnd` gesetzt ist,
-// werden alle Tage von `date` bis inkl. `dateEnd` mit denselben Werten angelegt/aktualisiert.
-// Wir batchen das in einer Transaction, sonst können wir bei 14-Tage-Urlaub halb-applied stehenbleiben.
+// User-Default-Zeitfenster für „ganzer Tag" speichern.
+export async function saveDefaultDayWindow(formData: FormData): Promise<void> {
+  await requireSession();
+  const start = hhmmToMinutes(String(formData.get("defaultDayStart") ?? "")) ?? 540;
+  const end = hhmmToMinutes(String(formData.get("defaultDayEnd") ?? "")) ?? 1080;
+  if (end <= start) throw new Error("Endzeit muss nach der Startzeit liegen");
+  const user = await prisma.user.findFirst({ select: { id: true } });
+  if (!user) throw new Error("Kein User-Profil");
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { defaultDayStartMinutes: start, defaultDayEndMinutes: end },
+  });
+  revalidateAll();
+}
+
+// Tag-Override: optional Date-Range (Bulk).
 export async function upsertOverride(formData: FormData): Promise<void> {
   await requireSession();
   const date = String(formData.get("date") ?? "").trim();
@@ -69,15 +103,15 @@ export async function upsertOverride(formData: FormData): Promise<void> {
   if (!end) throw new Error("Ungültiges Bis-Datum");
   if (end < start) throw new Error('„Bis"-Datum darf nicht vor dem Startdatum liegen');
 
-  const max = Math.max(0, Math.min(10, Number(formData.get("maxShootings")) || 0));
+  const isAvailable = formData.get("isAvailable") === "on";
+  const useDefault = formData.get("useDefault") === "on";
   const note = String(formData.get("note") ?? "").trim() || null;
-  const startMinutes = hhmmToMinutes(String(formData.get("startTime") ?? ""));
-  const endMinutes = hhmmToMinutes(String(formData.get("endTime") ?? ""));
-  const validRange = startMinutes != null && endMinutes != null && endMinutes > startMinutes;
-  const startVal = validRange ? startMinutes : null;
-  const endVal = validRange ? endMinutes : null;
+  let slotsJson: string | null = null;
+  if (isAvailable && !useDefault) {
+    const windows = parseWindowsFromForm(formData, "slots");
+    slotsJson = windows.length > 0 ? serializeSlots(windows) : null;
+  }
 
-  // Datums-Range materialisieren (Cap bei 366 Tagen — schützt vor Fehleingaben)
   const dates: string[] = [];
   const cur = new Date(start);
   let safety = 366;
@@ -90,8 +124,8 @@ export async function upsertOverride(formData: FormData): Promise<void> {
     dates.map((d) =>
       prisma.availabilityOverride.upsert({
         where: { date: d },
-        create: { date: d, maxShootings: max, note, startMinutes: startVal, endMinutes: endVal },
-        update: { maxShootings: max, note, startMinutes: startVal, endMinutes: endVal },
+        create: { date: d, isAvailable, slotsJson, note },
+        update: { isAvailable, slotsJson, note },
       }),
     ),
   );
@@ -104,26 +138,34 @@ export async function deleteOverride(id: string): Promise<void> {
   revalidateAll();
 }
 
-// Click-im-Kalender-Action: Lisa klickt im Kalender auf einen Tag und ändert die
-// Verfügbarkeit direkt. Kein Form-State, nur die Werte als Args.
-// `maxShootings=null` löscht den Override (zurück zur Wochenregel).
+// Click-im-Kalender: Tag-Override direkt aus dem Kalender setzen.
+// `windows=null` + `isAvailable=true` → User-Default („ganzer Tag").
+// `isAvailable=false` → Tag sperren.
+// `unset=true` → Override löschen (zurück zur Wochenregel).
 export async function setDayAvailability(
   date: string,
-  maxShootings: number | null,
-  note: string | null,
+  args: {
+    isAvailable?: boolean;
+    windows?: TimeWindow[] | null;
+    note?: string | null;
+    unset?: boolean;
+  },
 ): Promise<void> {
   await requireSession();
   if (!parseYmd(date)) throw new Error("Ungültiges Datum");
-  if (maxShootings == null) {
+  if (args.unset) {
     await prisma.availabilityOverride.deleteMany({ where: { date } });
     revalidateAll();
     return;
   }
-  const max = Math.max(0, Math.min(10, maxShootings));
+  const isAvailable = args.isAvailable ?? false;
+  const slotsJson = args.windows && args.windows.length > 0
+    ? serializeSlots(args.windows)
+    : null;
   await prisma.availabilityOverride.upsert({
     where: { date },
-    create: { date, maxShootings: max, note },
-    update: { maxShootings: max, note },
+    create: { date, isAvailable, slotsJson, note: args.note ?? null },
+    update: { isAvailable, slotsJson, note: args.note ?? null },
   });
   revalidateAll();
 }

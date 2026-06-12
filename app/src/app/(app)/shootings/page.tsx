@@ -49,7 +49,7 @@ export default async function ShootingsPage({
       ? prisma.customer.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: [{ lastName: "asc" }, { firstName: "asc" }] })
       : Promise.resolve([]),
     view === "calendar"
-      ? prisma.package.findMany({ where: { isActive: true }, select: { id: true, name: true, price: true, durationMin: true }, orderBy: { position: "asc" } })
+      ? prisma.package.findMany({ where: { isActive: true }, select: { id: true, name: true, price: true, durationMin: true, bookingBufferBeforeMin: true, bookingBufferAfterMin: true }, orderBy: { position: "asc" } })
       : Promise.resolve([]),
   ]);
 

@@ -2,89 +2,246 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarOff, Plus, Save, Trash2, Info, Clock } from "lucide-react";
+import {
+  Calendar,
+  CalendarOff,
+  Clock,
+  Plus,
+  X,
+  Save,
+  Trash2,
+  Info,
+  ToggleLeft,
+  ToggleRight,
+  Sun,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Field } from "@/components/form/Field";
-import { saveWeeklyRules, upsertOverride, deleteOverride } from "./availabilityActions";
+import {
+  parseSlotsJson,
+  minutesToHHMM,
+  hhmmToMinutes,
+  type TimeWindow,
+} from "@/lib/availability";
+import {
+  saveDefaultDayWindow,
+  saveWeeklyRules,
+  upsertOverride,
+  deleteOverride,
+} from "./availabilityActions";
 
 const WEEKDAY_SHORT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const WEEKDAY_LONG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 // Display-Reihenfolge Mo..So, intern bleiben wir bei 0=So
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
+const MAX_WINDOWS = 12;
+
 export type WeeklyRow = {
   weekday: number;
-  maxShootings: number;
-  startMinutes: number | null;
-  endMinutes: number | null;
+  isAvailable: boolean;
+  slotsJson: string | null;
 };
 export type OverrideRow = {
   id: string;
   date: string;
-  maxShootings: number;
-  startMinutes: number | null;
-  endMinutes: number | null;
+  isAvailable: boolean;
+  slotsJson: string | null;
   note: string | null;
 };
 
-function minutesToHHMM(min: number | null | undefined): string {
-  if (min == null) return "";
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-export function AvailabilityManager({
-  weekly,
-  overrides,
-}: {
+type Props = {
+  defaultDayStartMinutes: number;
+  defaultDayEndMinutes: number;
   weekly: WeeklyRow[];
   overrides: OverrideRow[];
-}) {
+};
+
+export function AvailabilityManager({
+  defaultDayStartMinutes,
+  defaultDayEndMinutes,
+  weekly,
+  overrides,
+}: Props) {
   return (
     <div className="space-y-4">
+      <DefaultDayWindowCard
+        defaultDayStartMinutes={defaultDayStartMinutes}
+        defaultDayEndMinutes={defaultDayEndMinutes}
+      />
       <WeeklyEditor weekly={weekly} />
-      <WeeklyPreview weekly={weekly} overrides={overrides} />
+      <WeeklyPreview
+        weekly={weekly}
+        overrides={overrides}
+        defaultDayStartMinutes={defaultDayStartMinutes}
+        defaultDayEndMinutes={defaultDayEndMinutes}
+      />
       <OverrideEditor overrides={overrides} />
     </div>
   );
 }
 
-type WeeklyState = { max: number; start: string; end: string };
+/* ------------------------------------------------------------------ *
+ * A) DefaultDayWindowCard — User-Default-„ganzer Tag"-Fenster
+ * ------------------------------------------------------------------ */
+
+function DefaultDayWindowCard({
+  defaultDayStartMinutes,
+  defaultDayEndMinutes,
+}: {
+  defaultDayStartMinutes: number;
+  defaultDayEndMinutes: number;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [start, setStart] = useState(minutesToHHMM(defaultDayStartMinutes));
+  const [end, setEnd] = useState(minutesToHHMM(defaultDayEndMinutes));
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.set("defaultDayStart", start);
+    fd.set("defaultDayEnd", end);
+    startTransition(async () => {
+      try {
+        await saveDefaultDayWindow(fd);
+        toast.success("Standard-Tagesfenster gespeichert");
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err?.message ?? "Fehler");
+      }
+    });
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="card">
+      <div className="px-6 py-4 border-b border-stone/60 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="eyebrow eyebrow-muted flex items-center gap-1.5">
+            <Sun size={11} /> Was bedeutet „ganzer Tag"?
+          </div>
+          <div className="text-sm text-smoke mt-1 max-w-xl">
+            Dein Standard-Tagesfenster. Wird verwendet, wenn ein Tag verfügbar ist, aber keine konkreten Zeitfenster festgelegt sind.
+          </div>
+        </div>
+        <div className="flex items-end gap-3 shrink-0">
+          <div>
+            <label className="label">Von</label>
+            <input
+              type="time"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="input h-9 text-sm w-28"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Bis</label>
+            <input
+              type="time"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className="input h-9 text-sm w-28"
+              required
+            />
+          </div>
+          <button type="submit" disabled={pending} className="btn-primary text-sm h-9">
+            <Save size={13} /> {pending ? "…" : "Speichern"}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * B) WeeklyEditor — Wochenregel mit Zeitfenster-Listen pro Tag
+ * ------------------------------------------------------------------ */
+
+type WeeklyDayState = {
+  isAvailable: boolean;
+  useDefault: boolean;
+  windows: TimeWindow[];
+};
+
+const QUICK_MORNING: TimeWindow = { start: 9 * 60, end: 13 * 60 };
+const QUICK_AFTERNOON: TimeWindow = { start: 14 * 60, end: 18 * 60 };
+
+function initialWeeklyState(weekly: WeeklyRow[]): Map<number, WeeklyDayState> {
+  const m = new Map<number, WeeklyDayState>();
+  for (let w = 0; w < 7; w++) {
+    m.set(w, { isAvailable: false, useDefault: true, windows: [] });
+  }
+  for (const w of weekly) {
+    const parsed = parseSlotsJson(w.slotsJson);
+    if (parsed && parsed.length > 0) {
+      m.set(w.weekday, {
+        isAvailable: w.isAvailable,
+        useDefault: false,
+        windows: parsed,
+      });
+    } else {
+      m.set(w.weekday, {
+        isAvailable: w.isAvailable,
+        useDefault: true,
+        windows: [],
+      });
+    }
+  }
+  return m;
+}
 
 function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [values, setValues] = useState<Record<number, WeeklyState>>(() => {
-    const m: Record<number, WeeklyState> = {};
-    for (let w = 0; w < 7; w++) m[w] = { max: 0, start: "", end: "" };
-    for (const w of weekly) {
-      m[w.weekday] = {
-        max: w.maxShootings,
-        start: minutesToHHMM(w.startMinutes),
-        end: minutesToHHMM(w.endMinutes),
-      };
-    }
-    return m;
-  });
+  const [state, setState] = useState<Map<number, WeeklyDayState>>(() => initialWeeklyState(weekly));
 
-  function setMax(weekday: number, max: number) {
-    setValues((prev) => ({
-      ...prev,
-      [weekday]: { ...prev[weekday], max: Math.max(0, Math.min(10, max)) },
-    }));
-  }
-  function setStart(weekday: number, start: string) {
-    setValues((prev) => ({ ...prev, [weekday]: { ...prev[weekday], start } }));
-  }
-  function setEnd(weekday: number, end: string) {
-    setValues((prev) => ({ ...prev, [weekday]: { ...prev[weekday], end } }));
+  function updateDay(weekday: number, patch: Partial<WeeklyDayState>) {
+    setState((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(weekday) ?? { isAvailable: false, useDefault: true, windows: [] };
+      next.set(weekday, { ...cur, ...patch });
+      return next;
+    });
   }
 
-  function applyTimeToAll(start: string, end: string) {
-    setValues((prev) => {
-      const next = { ...prev };
-      for (const w of WEEKDAY_ORDER) next[w] = { ...next[w], start, end };
+  function setWindow(weekday: number, idx: number, patch: Partial<TimeWindow>) {
+    setState((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(weekday);
+      if (!cur) return prev;
+      const windows = cur.windows.map((w, i) => (i === idx ? { ...w, ...patch } : w));
+      next.set(weekday, { ...cur, windows });
+      return next;
+    });
+  }
+
+  function addWindow(weekday: number, win?: TimeWindow) {
+    setState((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(weekday);
+      if (!cur) return prev;
+      if (cur.windows.length >= MAX_WINDOWS) return prev;
+      const candidate = win ?? { start: 10 * 60, end: 14 * 60 };
+      // Doppelte vermeiden
+      if (cur.windows.some((w) => w.start === candidate.start && w.end === candidate.end)) {
+        return prev;
+      }
+      next.set(weekday, {
+        ...cur,
+        useDefault: false,
+        windows: [...cur.windows, candidate],
+      });
+      return next;
+    });
+  }
+
+  function removeWindow(weekday: number, idx: number) {
+    setState((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(weekday);
+      if (!cur) return prev;
+      next.set(weekday, { ...cur, windows: cur.windows.filter((_, i) => i !== idx) });
       return next;
     });
   }
@@ -92,11 +249,18 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData();
-    for (const w of WEEKDAY_ORDER) {
-      const v = values[w];
-      fd.append(`weekly.${w}.max`, String(v.max));
-      fd.append(`weekly.${w}.start`, v.start);
-      fd.append(`weekly.${w}.end`, v.end);
+    for (let w = 0; w < 7; w++) {
+      const day = state.get(w);
+      if (!day) continue;
+      if (day.isAvailable) fd.set(`weekly.${w}.available`, "on");
+      if (day.useDefault || day.windows.length === 0) {
+        fd.set(`weekly.${w}.useDefault`, "on");
+      } else {
+        day.windows.forEach((win, i) => {
+          fd.set(`weekly.${w}.slots.${i}.start`, minutesToHHMM(win.start));
+          fd.set(`weekly.${w}.slots.${i}.end`, minutesToHHMM(win.end));
+        });
+      }
     }
     startTransition(async () => {
       try {
@@ -109,84 +273,30 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
     });
   }
 
-  const totalPerWeek = WEEKDAY_ORDER.reduce((sum, w) => sum + (values[w]?.max ?? 0), 0);
-
   return (
     <form onSubmit={onSubmit} className="card">
-      <div className="px-6 py-4 border-b border-stone/60 flex items-start justify-between gap-4">
-        <div>
-          <div className="eyebrow eyebrow-muted">Standard-Wochenregel</div>
-          <div className="text-sm text-smoke mt-1">
-            Wie viele Shootings nimmst du pro Wochentag an? Optionales Zeitfenster wird als Vorschlag im Quick-Create genutzt.
-          </div>
+      <div className="px-6 py-4 border-b border-stone/60">
+        <div className="eyebrow eyebrow-muted">Standard-Wochenregel</div>
+        <div className="text-sm text-smoke mt-1">
+          Für jeden Wochentag: Verfügbar oder nicht — und optional konkrete Zeitfenster.
         </div>
-        <BulkTimeButton onApply={applyTimeToAll} />
       </div>
 
       <div className="px-6 py-5">
         <ul className="divide-y divide-stone/60">
           {WEEKDAY_ORDER.map((w) => {
-            const v = values[w];
-            const isClosed = v.max === 0;
+            const day = state.get(w) ?? { isAvailable: false, useDefault: true, windows: [] };
             return (
-              <li key={w} className="py-3 first:pt-0 last:pb-0">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="w-24 shrink-0">
-                    <div className="text-sm font-medium">{WEEKDAY_LONG[w]}</div>
-                    <div className="text-xs text-smoke">{WEEKDAY_SHORT[w]}</div>
-                  </div>
-
-                  <div
-                    className="flex items-center gap-1 rounded-md border px-1.5 py-1"
-                    style={{
-                      borderColor: isClosed ? "var(--stone)" : "rgba(120, 167, 119, 0.6)",
-                      background: isClosed ? "var(--paper)" : "rgba(120, 167, 119, 0.10)",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setMax(w, v.max - 1)}
-                      className="w-7 h-7 rounded hover:bg-linen text-base leading-none"
-                      aria-label="Weniger"
-                    >−</button>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      value={v.max}
-                      onChange={(e) => setMax(w, Number(e.target.value))}
-                      className="w-10 text-center text-sm font-medium tabular-nums bg-transparent border-0 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setMax(w, v.max + 1)}
-                      className="w-7 h-7 rounded hover:bg-linen text-base leading-none"
-                      aria-label="Mehr"
-                    >+</button>
-                  </div>
-                  <div className="text-xs text-smoke w-12">
-                    {isClosed ? "zu" : v.max === 1 ? "1 Slot" : `${v.max} Slots`}
-                  </div>
-
-                  <div className="flex items-center gap-2 ml-auto flex-1 sm:flex-none">
-                    <Clock size={13} className="text-smoke shrink-0" />
-                    <input
-                      type="time"
-                      value={v.start}
-                      onChange={(e) => setStart(w, e.target.value)}
-                      disabled={isClosed}
-                      className="input h-8 text-xs w-28"
-                    />
-                    <span className="text-xs text-smoke">bis</span>
-                    <input
-                      type="time"
-                      value={v.end}
-                      onChange={(e) => setEnd(w, e.target.value)}
-                      disabled={isClosed}
-                      className="input h-8 text-xs w-28"
-                    />
-                  </div>
-                </div>
+              <li key={w} className="py-4 first:pt-0 last:pb-0">
+                <WeeklyDayRow
+                  weekday={w}
+                  state={day}
+                  onToggleAvailable={() => updateDay(w, { isAvailable: !day.isAvailable })}
+                  onSetMode={(useDefault) => updateDay(w, { useDefault })}
+                  onSetWindow={(i, patch) => setWindow(w, i, patch)}
+                  onAddWindow={(win) => addWindow(w, win)}
+                  onRemoveWindow={(i) => removeWindow(w, i)}
+                />
               </li>
             );
           })}
@@ -194,7 +304,7 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
 
         <div className="mt-5 flex items-center justify-between pt-4 border-t border-stone/60">
           <div className="text-xs text-smoke flex items-center gap-1.5">
-            <Info size={12} /> Insgesamt {totalPerWeek} {totalPerWeek === 1 ? "Slot" : "Slots"} pro Woche.
+            <Info size={12} /> „Ganzer Tag" nutzt dein Standard-Tagesfenster oben.
           </div>
           <button type="submit" disabled={pending} className="btn-primary text-sm">
             <Save size={13} /> {pending ? "Speichern…" : "Speichern"}
@@ -205,57 +315,285 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
   );
 }
 
-function BulkTimeButton({ onApply }: { onApply: (start: string, end: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [start, setStart] = useState("10:00");
-  const [end, setEnd] = useState("18:00");
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="btn-ghost text-xs h-8 shrink-0"
-        title="Gleiche Uhrzeit für alle Tage übernehmen"
-      >
-        <Clock size={11} /> Zeitfenster für alle
-      </button>
-    );
-  }
+function WeeklyDayRow({
+  weekday,
+  state,
+  onToggleAvailable,
+  onSetMode,
+  onSetWindow,
+  onAddWindow,
+  onRemoveWindow,
+}: {
+  weekday: number;
+  state: WeeklyDayState;
+  onToggleAvailable: () => void;
+  onSetMode: (useDefault: boolean) => void;
+  onSetWindow: (idx: number, patch: Partial<TimeWindow>) => void;
+  onAddWindow: (win?: TimeWindow) => void;
+  onRemoveWindow: (idx: number) => void;
+}) {
+  const sortedIdx = useMemo(() => {
+    // Indizes nach Startzeit sortiert ANZEIGEN, ohne den state zu mutieren.
+    return state.windows
+      .map((w, i) => ({ w, i }))
+      .sort((a, b) => a.w.start - b.w.start)
+      .map((x) => x.i);
+  }, [state.windows]);
+
   return (
-    <div className="flex items-center gap-2 shrink-0">
-      <input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="input h-8 text-xs w-24" />
-      <span className="text-xs text-smoke">bis</span>
-      <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className="input h-8 text-xs w-24" />
-      <button
-        type="button"
-        onClick={() => { onApply(start, end); setOpen(false); }}
-        className="btn-primary text-xs h-8"
-      >Übernehmen</button>
-      <button type="button" onClick={() => setOpen(false)} className="btn-ghost text-xs h-8">Abbrechen</button>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="w-24 shrink-0">
+          <div className="text-sm font-medium">{WEEKDAY_LONG[weekday]}</div>
+          <div className="text-xs text-smoke">{WEEKDAY_SHORT[weekday]}</div>
+        </div>
+
+        <ToggleButton
+          checked={state.isAvailable}
+          onChange={onToggleAvailable}
+          label={state.isAvailable ? "Verfügbar" : "Nicht verfügbar"}
+        />
+
+        {state.isAvailable && (
+          <div className="flex items-center gap-1 ml-auto">
+            <ModeChip
+              active={state.useDefault}
+              onClick={() => onSetMode(true)}
+              icon={<Sun size={11} />}
+              label="Ganzer Tag"
+            />
+            <ModeChip
+              active={!state.useDefault}
+              onClick={() => onSetMode(false)}
+              icon={<Clock size={11} />}
+              label="Eigene Zeitfenster"
+            />
+          </div>
+        )}
+      </div>
+
+      {state.isAvailable && !state.useDefault && (
+        <div className="pl-28">
+          <WindowList
+            windows={state.windows}
+            order={sortedIdx}
+            onSet={onSetWindow}
+            onRemove={onRemoveWindow}
+            onAdd={() => onAddWindow()}
+            canAdd={state.windows.length < MAX_WINDOWS}
+          />
+          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-smoke mr-1">Schnell:</span>
+            <QuickWindowChip
+              onClick={() => onAddWindow(QUICK_MORNING)}
+              label="Vormittag 09:00–13:00"
+            />
+            <QuickWindowChip
+              onClick={() => onAddWindow(QUICK_AFTERNOON)}
+              label="Nachmittag 14:00–18:00"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// 4-Wochen-Vorschau: zeigt sofort, wie die Wochenregel + Overrides den Kalender einfärben.
-// Rein clientseitig — verwendet die gleiche Logik wie der echte Kalender.
-function WeeklyPreview({ weekly, overrides }: { weekly: WeeklyRow[]; overrides: OverrideRow[] }) {
+function ToggleButton({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors"
+      style={{
+        borderColor: checked ? "rgba(120, 167, 119, 0.6)" : "var(--stone)",
+        background: checked ? "rgba(120, 167, 119, 0.12)" : "var(--paper)",
+        color: checked ? "rgb(70, 115, 70)" : "var(--smoke)",
+      }}
+      aria-pressed={checked}
+    >
+      {checked ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+      {label}
+    </button>
+  );
+}
+
+function ModeChip({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors"
+      style={{
+        borderColor: active ? "var(--ink)" : "var(--stone)",
+        background: active ? "var(--ink)" : "var(--paper)",
+        color: active ? "var(--linen)" : "var(--smoke)",
+      }}
+      aria-pressed={active}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function WindowList({
+  windows,
+  order,
+  onSet,
+  onRemove,
+  onAdd,
+  canAdd,
+}: {
+  windows: TimeWindow[];
+  order: number[];
+  onSet: (idx: number, patch: Partial<TimeWindow>) => void;
+  onRemove: (idx: number) => void;
+  onAdd: () => void;
+  canAdd: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      {windows.length === 0 && (
+        <div className="text-xs text-smoke italic">
+          Noch keine Zeitfenster. Füge eines hinzu oder nutze einen Schnell-Button unten.
+        </div>
+      )}
+      {order.map((i) => {
+        const w = windows[i];
+        return (
+          <div key={i} className="flex items-center gap-2">
+            <Clock size={13} className="text-smoke shrink-0" />
+            <input
+              type="time"
+              value={minutesToHHMM(w.start)}
+              onChange={(e) => {
+                const v = hhmmToMinutes(e.target.value);
+                if (v != null) onSet(i, { start: v });
+              }}
+              className="input h-9 text-sm w-28"
+            />
+            <span className="text-xs text-smoke">bis</span>
+            <input
+              type="time"
+              value={minutesToHHMM(w.end)}
+              onChange={(e) => {
+                const v = hhmmToMinutes(e.target.value);
+                if (v != null) onSet(i, { end: v });
+              }}
+              className="input h-9 text-sm w-28"
+            />
+            <button
+              type="button"
+              onClick={() => onRemove(i)}
+              className="btn-icon"
+              style={{ color: "var(--accent)" }}
+              title="Fenster entfernen"
+              aria-label="Fenster entfernen"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        );
+      })}
+      {canAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="btn-ghost text-xs h-8 mt-1"
+        >
+          <Plus size={12} /> Fenster
+        </button>
+      )}
+    </div>
+  );
+}
+
+function QuickWindowChip({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[11px] rounded-full border border-stone/70 bg-paper px-2 py-0.5 text-smoke hover:text-ink hover:border-ink/40 transition-colors flex items-center gap-1"
+    >
+      <Plus size={10} /> {label}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * C) WeeklyPreview — 4-Wochen-Vorschau mit effektiven Fenstern
+ * ------------------------------------------------------------------ */
+
+function totalMinutes(windows: TimeWindow[]): number {
+  return windows.reduce((sum, w) => sum + Math.max(0, w.end - w.start), 0);
+}
+
+function WeeklyPreview({
+  weekly,
+  overrides,
+  defaultDayStartMinutes,
+  defaultDayEndMinutes,
+}: {
+  weekly: WeeklyRow[];
+  overrides: OverrideRow[];
+  defaultDayStartMinutes: number;
+  defaultDayEndMinutes: number;
+}) {
   const today = new Date();
-  // Starte beim Montag dieser Woche
   const dow = today.getDay(); // 0=So
-  const offsetToMonday = ((dow + 6) % 7);
+  const offsetToMonday = (dow + 6) % 7;
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offsetToMonday);
 
+  const userDefault: TimeWindow = useMemo(
+    () => ({ start: defaultDayStartMinutes, end: defaultDayEndMinutes }),
+    [defaultDayStartMinutes, defaultDayEndMinutes],
+  );
+
   const weeklyMap = useMemo(() => {
-    const m = new Map<number, number>();
-    for (const w of weekly) m.set(w.weekday, w.maxShootings);
+    const m = new Map<number, { isAvailable: boolean; windows: TimeWindow[] }>();
+    for (const w of weekly) {
+      const parsed = parseSlotsJson(w.slotsJson);
+      const windows = w.isAvailable
+        ? parsed && parsed.length > 0
+          ? parsed
+          : [userDefault]
+        : [];
+      m.set(w.weekday, { isAvailable: w.isAvailable, windows });
+    }
     return m;
-  }, [weekly]);
+  }, [weekly, userDefault]);
 
   const overrideMap = useMemo(() => {
-    const m = new Map<string, { max: number; note: string | null }>();
-    for (const o of overrides) m.set(o.date, { max: o.maxShootings, note: o.note });
+    const m = new Map<string, { isAvailable: boolean; windows: TimeWindow[]; note: string | null }>();
+    for (const o of overrides) {
+      const parsed = parseSlotsJson(o.slotsJson);
+      const windows = o.isAvailable
+        ? parsed && parsed.length > 0
+          ? parsed
+          : [userDefault]
+        : [];
+      m.set(o.date, { isAvailable: o.isAvailable, windows, note: o.note });
+    }
     return m;
-  }, [overrides]);
+  }, [overrides, userDefault]);
 
   const days = useMemo(() => {
     return Array.from({ length: 28 }, (_, i) => {
@@ -266,22 +604,36 @@ function WeeklyPreview({ weekly, overrides }: { weekly: WeeklyRow[]; overrides: 
       const da = String(d.getDate()).padStart(2, "0");
       const ymd = `${y}-${mo}-${da}`;
       const o = overrideMap.get(ymd);
-      const max = o ? o.max : (weeklyMap.get(d.getDay()) ?? 0);
-      return { date: d, ymd, max, isOverride: !!o, note: o?.note ?? null };
+      const wk = weeklyMap.get(d.getDay());
+      const eff = o ?? wk ?? { isAvailable: false, windows: [] as TimeWindow[] };
+      const minutes = totalMinutes(eff.windows);
+      return {
+        date: d,
+        ymd,
+        isAvailable: eff.isAvailable && minutes > 0,
+        isOverride: !!o,
+        note: o?.note ?? null,
+        minutes,
+      };
     });
   }, [start, weeklyMap, overrideMap]);
 
   return (
     <div className="card overflow-hidden">
       <div className="px-6 py-4 border-b border-stone/60">
-        <div className="eyebrow eyebrow-muted">Vorschau · nächste 4 Wochen</div>
+        <div className="eyebrow eyebrow-muted flex items-center gap-1.5">
+          <Calendar size={11} /> Vorschau · nächste 4 Wochen
+        </div>
         <div className="text-xs text-smoke mt-1">
-          So sieht dein Kalender mit der aktuellen Konfiguration aus.
+          So sieht dein Kalender mit der aktuellen Konfiguration aus. Stunden = verfügbares Tagesfenster.
         </div>
       </div>
       <div className="grid grid-cols-7 border-b border-stone/60 bg-linen/40">
         {[1, 2, 3, 4, 5, 6, 0].map((w) => (
-          <div key={w} className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-smoke text-center">
+          <div
+            key={w}
+            className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-smoke text-center"
+          >
             {WEEKDAY_SHORT[w]}
           </div>
         ))}
@@ -290,20 +642,26 @@ function WeeklyPreview({ weekly, overrides }: { weekly: WeeklyRow[]; overrides: 
         {days.map((d, i) => {
           const isFirst = d.date.getDate() === 1;
           const isToday = d.date.toDateString() === today.toDateString();
-          const isClosed = d.max === 0;
           const lastRow = i >= 21;
           const lastCol = i % 7 === 6;
+          const hours = d.minutes / 60;
+          const hoursLabel = hours >= 10
+            ? `${Math.round(hours)}h`
+            : `${hours.toFixed(1).replace(/\.0$/, "")}h`;
+
+          let bg = "rgba(236, 235, 232, 0.5)"; // grey: nicht verfügbar
+          if (d.isAvailable) bg = "rgba(120, 167, 119, 0.15)"; // green: verfügbar
+          if (d.isOverride && !d.isAvailable) bg = "rgba(159, 135, 127, 0.12)"; // accent-soft (gesperrter Override)
+          if (d.isOverride && d.isAvailable) bg = "rgba(159, 135, 127, 0.18)"; // accent-soft (verfügbarer Override)
+
           return (
             <div
               key={d.ymd}
               className="aspect-square p-1.5 relative"
               style={{
-                background: isClosed
-                  ? (d.isOverride ? "rgba(159, 135, 127, 0.12)" : "rgba(236, 235, 232, 0.5)")
-                  : "rgba(120, 167, 119, 0.15)",
+                background: bg,
                 borderBottom: !lastRow ? "1px solid var(--stone)" : undefined,
                 borderRight: !lastCol ? "1px solid var(--stone)" : undefined,
-                opacity: 1,
               }}
               title={d.note ?? undefined}
             >
@@ -312,19 +670,22 @@ function WeeklyPreview({ weekly, overrides }: { weekly: WeeklyRow[]; overrides: 
                   className="text-xs tabular-nums"
                   style={{
                     fontWeight: isToday ? 700 : isFirst ? 600 : 400,
-                    color: isClosed ? "var(--smoke)" : "var(--ink)",
+                    color: d.isAvailable ? "var(--ink)" : "var(--smoke)",
                   }}
                 >
                   {isFirst
                     ? d.date.toLocaleDateString("de-DE", { day: "numeric", month: "short" })
                     : d.date.getDate()}
                 </span>
-                {!isClosed && (
-                  <span className="text-[9px] tabular-nums font-medium" style={{ color: "rgb(70, 115, 70)" }}>
-                    {d.max}
+                {d.isAvailable && (
+                  <span
+                    className="text-[9px] tabular-nums font-medium"
+                    style={{ color: "rgb(70, 115, 70)" }}
+                  >
+                    {hoursLabel}
                   </span>
                 )}
-                {isClosed && d.isOverride && (
+                {!d.isAvailable && d.isOverride && (
                   <CalendarOff size={9} className="text-taupe" />
                 )}
               </div>
@@ -336,13 +697,18 @@ function WeeklyPreview({ weekly, overrides }: { weekly: WeeklyRow[]; overrides: 
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * D) OverrideEditor — Ausnahmen
+ * ------------------------------------------------------------------ */
+
 function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
 
-  // Vergangene Ausnahmen ausblenden, aber nicht löschen — Lisa kann nachsehen.
   const today = new Date();
-  const todayYmd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const todayYmd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate(),
+  ).padStart(2, "0")}`;
   const upcoming = overrides.filter((o) => o.date >= todayYmd);
   const past = overrides.filter((o) => o.date < todayYmd);
 
@@ -352,7 +718,7 @@ function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
         <div>
           <div className="eyebrow eyebrow-muted">Ausnahmen</div>
           <div className="text-sm text-smoke mt-1">
-            Urlaub, Feiertage, Sondertage — Wochenregel überschreiben.
+            Urlaub, Feiertage, Sondertage — überschreiben die Wochenregel.
           </div>
         </div>
         {!adding && (
@@ -366,7 +732,10 @@ function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
         <div className="px-6 py-5 bg-linen/40 border-b border-stone/60">
           <OverrideForm
             onClose={() => setAdding(false)}
-            onSaved={() => { setAdding(false); router.refresh(); }}
+            onSaved={() => {
+              setAdding(false);
+              router.refresh();
+            }}
           />
         </div>
       )}
@@ -377,7 +746,9 @@ function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
         </div>
       ) : (
         <ul className="divide-y divide-stone/60">
-          {upcoming.map((o) => <OverrideRowView key={o.id} override={o} />)}
+          {upcoming.map((o) => (
+            <OverrideRowView key={o.id} override={o} />
+          ))}
         </ul>
       )}
 
@@ -388,8 +759,14 @@ function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
           </summary>
           <ul className="mt-3 space-y-1">
             {past.map((o) => (
-              <li key={o.id} className="text-xs text-smoke flex items-center justify-between">
-                <span>{formatYmd(o.date)} — {o.maxShootings === 0 ? "gesperrt" : `${o.maxShootings} Slots`}{o.note && ` (${o.note})`}</span>
+              <li
+                key={o.id}
+                className="text-xs text-smoke flex items-center justify-between gap-2"
+              >
+                <span className="truncate">
+                  {formatYmd(o.date)} — {summarizeOverride(o)}
+                  {o.note && ` (${o.note})`}
+                </span>
                 <DeleteOverrideButton id={o.id} />
               </li>
             ))}
@@ -400,26 +777,46 @@ function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
   );
 }
 
+function summarizeOverride(o: OverrideRow): string {
+  if (!o.isAvailable) return "gesperrt";
+  const parsed = parseSlotsJson(o.slotsJson);
+  if (!parsed || parsed.length === 0) return "verfügbar (ganzer Tag)";
+  const txt = parsed
+    .map((w) => `${minutesToHHMM(w.start)}–${minutesToHHMM(w.end)}`)
+    .join(", ");
+  return `verfügbar · ${txt}`;
+}
+
 function OverrideRowView({ override }: { override: OverrideRow }) {
+  const parsed = parseSlotsJson(override.slotsJson);
+  const hasCustomWindows = override.isAvailable && parsed && parsed.length > 0;
+  const isBlocked = !override.isAvailable;
+
   return (
     <li className="px-6 py-3 flex items-center gap-4">
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
         style={{
-          background: override.maxShootings === 0 ? "var(--linen)" : "rgba(120, 167, 119, 0.15)",
-          color: override.maxShootings === 0 ? "var(--smoke)" : "rgb(80, 130, 80)",
+          background: isBlocked ? "var(--linen)" : "rgba(120, 167, 119, 0.15)",
+          color: isBlocked ? "var(--smoke)" : "rgb(80, 130, 80)",
         }}
       >
-        {override.maxShootings === 0 ? <CalendarOff size={16} /> : (
-          <span className="text-sm font-medium tabular-nums">{override.maxShootings}</span>
-        )}
+        {isBlocked ? <CalendarOff size={16} /> : <Calendar size={16} />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm">{formatYmd(override.date)}</div>
         <div className="text-xs text-smoke mt-0.5">
-          {override.maxShootings === 0 ? "Gesperrt" : `${override.maxShootings} ${override.maxShootings === 1 ? "Slot" : "Slots"}`}
-          {override.startMinutes != null && override.endMinutes != null && (
-            <span> · {minutesToHHMM(override.startMinutes)}–{minutesToHHMM(override.endMinutes)}</span>
+          {isBlocked ? (
+            <span>Gesperrt</span>
+          ) : hasCustomWindows ? (
+            <span>
+              Verfügbar — Fenster:{" "}
+              {parsed!
+                .map((w) => `${minutesToHHMM(w.start)}–${minutesToHHMM(w.end)}`)
+                .join(", ")}
+            </span>
+          ) : (
+            <span>Verfügbar — ganzer Tag</span>
           )}
           {override.note && <span> · {override.note}</span>}
         </div>
@@ -445,7 +842,13 @@ function DeleteOverrideButton({ id }: { id: string }) {
     });
   }
   return (
-    <button onClick={onClick} disabled={pending} className="btn-icon" style={{ color: "var(--accent)" }} title="Entfernen">
+    <button
+      onClick={onClick}
+      disabled={pending}
+      className="btn-icon"
+      style={{ color: "var(--accent)" }}
+      title="Entfernen"
+    >
       <Trash2 size={13} />
     </button>
   );
@@ -455,10 +858,10 @@ function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [pending, startTransition] = useTransition();
   const [date, setDate] = useState("");
   const [dateEnd, setDateEnd] = useState("");
-  const [maxShootings, setMaxShootings] = useState(0);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [useDefault, setUseDefault] = useState(true);
+  const [windows, setWindows] = useState<TimeWindow[]>([]);
   const [note, setNote] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
 
   const rangeDays = (() => {
     if (!date) return 0;
@@ -468,15 +871,48 @@ function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
   })();
 
+  const sortedIdx = useMemo(() => {
+    return windows
+      .map((w, i) => ({ w, i }))
+      .sort((a, b) => a.w.start - b.w.start)
+      .map((x) => x.i);
+  }, [windows]);
+
+  function setWindow(idx: number, patch: Partial<TimeWindow>) {
+    setWindows((prev) => prev.map((w, i) => (i === idx ? { ...w, ...patch } : w)));
+  }
+
+  function addWindow(win?: TimeWindow) {
+    setWindows((prev) => {
+      if (prev.length >= MAX_WINDOWS) return prev;
+      const candidate = win ?? { start: 10 * 60, end: 14 * 60 };
+      if (prev.some((w) => w.start === candidate.start && w.end === candidate.end)) return prev;
+      return [...prev, candidate];
+    });
+    setUseDefault(false);
+  }
+
+  function removeWindow(idx: number) {
+    setWindows((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData();
     fd.set("date", date);
     if (dateEnd && dateEnd !== date) fd.set("dateEnd", dateEnd);
-    fd.set("maxShootings", String(maxShootings));
+    if (isAvailable) fd.set("isAvailable", "on");
     fd.set("note", note);
-    if (maxShootings > 0 && startTime) fd.set("startTime", startTime);
-    if (maxShootings > 0 && endTime) fd.set("endTime", endTime);
+    if (isAvailable) {
+      if (useDefault || windows.length === 0) {
+        fd.set("useDefault", "on");
+      } else {
+        windows.forEach((win, i) => {
+          fd.set(`slots.${i}.start`, minutesToHHMM(win.start));
+          fd.set(`slots.${i}.end`, minutesToHHMM(win.end));
+        });
+      }
+    }
     startTransition(async () => {
       try {
         await upsertOverride(fd);
@@ -510,47 +946,65 @@ function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           />
         </Field>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Slots pro Tag" hint="0 = gesperrt">
-          <input
-            type="number"
-            min="0"
-            max="10"
-            value={maxShootings}
-            onChange={(e) => setMaxShootings(Number(e.target.value))}
-            className="input h-9 text-sm"
-          />
-        </Field>
-        <Field label="Notiz" hint="optional">
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Urlaub, Feiertag …"
-            className="input h-9 text-sm"
-          />
-        </Field>
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <ToggleButton
+          checked={isAvailable}
+          onChange={() => setIsAvailable((v) => !v)}
+          label={isAvailable ? "Verfügbar" : "Gesperrt"}
+        />
+        {isAvailable && (
+          <div className="flex items-center gap-1">
+            <ModeChip
+              active={useDefault}
+              onClick={() => setUseDefault(true)}
+              icon={<Sun size={11} />}
+              label="Ganzer Tag"
+            />
+            <ModeChip
+              active={!useDefault}
+              onClick={() => setUseDefault(false)}
+              icon={<Clock size={11} />}
+              label="Eigene Zeitfenster"
+            />
+          </div>
+        )}
       </div>
-      {maxShootings > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Zeitfenster ab" hint="optional · überschreibt Wochenregel">
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="input h-9 text-sm"
+
+      {isAvailable && !useDefault && (
+        <div>
+          <WindowList
+            windows={windows}
+            order={sortedIdx}
+            onSet={setWindow}
+            onRemove={removeWindow}
+            onAdd={() => addWindow()}
+            canAdd={windows.length < MAX_WINDOWS}
+          />
+          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-smoke mr-1">Schnell:</span>
+            <QuickWindowChip
+              onClick={() => addWindow(QUICK_MORNING)}
+              label="Vormittag 09:00–13:00"
             />
-          </Field>
-          <Field label="Bis">
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="input h-9 text-sm"
+            <QuickWindowChip
+              onClick={() => addWindow(QUICK_AFTERNOON)}
+              label="Nachmittag 14:00–18:00"
             />
-          </Field>
+          </div>
         </div>
       )}
+
+      <Field label="Notiz" hint="optional · z.B. Urlaub, Feiertag">
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Urlaub, Feiertag …"
+          className="input h-9 text-sm"
+        />
+      </Field>
+
       <div className="flex justify-between items-center pt-2 border-t border-stone/60">
         <div className="text-xs text-smoke">
           {rangeDays > 1 && `Wird auf ${rangeDays} Tage angewendet`}
@@ -571,5 +1025,10 @@ function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 function formatYmd(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString("de-DE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }

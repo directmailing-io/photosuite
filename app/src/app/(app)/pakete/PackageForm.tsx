@@ -17,6 +17,8 @@ export type PackageInitial = {
   depositAmount?: number | null;
   paymentTerms?: string | null;
   durationMin?: number | null;
+  bookingBufferBeforeMin?: number | null;
+  bookingBufferAfterMin?: number | null;
   isActive?: boolean;
   primaryContactId?: string | null;
   defaultTeamIds?: string[];
@@ -200,9 +202,17 @@ export function PackageForm({ initial, team, questionnaires, addons = [], action
           <Field label="Zahlungsbedingungen">
             <textarea name="paymentTerms" defaultValue={initial?.paymentTerms ?? ""} rows={3} className="textarea" placeholder={`z.B. „50 % bei Buchung, Rest am Shootingtag"`} />
           </Field>
-          <Field label="Standard-Dauer (Minuten)">
+          <Field label="Termin-Dauer (Minuten)" hint="Wie lange blockiert das Paket den Kalender? Wird beim Slot-Finden geprüft (muss am Stück reinpassen).">
             <input name="durationMin" type="number" min="0" defaultValue={initial?.durationMin ?? ""} className="input" />
           </Field>
+          <FormRow>
+            <Field label="Puffer vorher (Min)" hint="Aufbau, Anreise">
+              <input name="bookingBufferBeforeMin" type="number" min="0" defaultValue={initial?.bookingBufferBeforeMin ?? 0} className="input" />
+            </Field>
+            <Field label="Puffer nachher (Min)" hint="Abbau, Nachbereitung">
+              <input name="bookingBufferAfterMin" type="number" min="0" defaultValue={initial?.bookingBufferAfterMin ?? 15} className="input" />
+            </Field>
+          </FormRow>
         </section>
 
         {addons.length > 0 && (

@@ -1,46 +1,73 @@
-// Verfügbarkeits-Logik für Lisas Kalender.
+// Verfügbarkeits-Logik (v2 — Zeitfenster-basiert).
 //
-// Modell: Wochenregel (AvailabilityWeekly, eine Row pro Wochentag) + Tag-Override
-// (AvailabilityOverride, einzelne Tage). Override sticht Regel.
+// Modell:
+//   AvailabilityWeekly { weekday, isAvailable, slotsJson }
+//   AvailabilityOverride { date, isAvailable, slotsJson, note }
 //
-// effectiveMax pro Tag:
-//   override.maxShootings   wenn ein Override existiert
-//   weekly[weekday]         sonst die Wochenregel
-//   0                       Fallback (nicht konfiguriert = nicht verfügbar)
+// effektive Tagesfenster pro Datum:
+//   override existiert  →  override.isAvailable ? parseSlots(override) : []
+//   sonst weekly        →  weekly.isAvailable   ? parseSlots(weekly)   : []
 //
-// freeSlots = max(0, effectiveMax - bookedCount)
-// Datumsvergleich läuft auf lokaler Zeit (Server-TZ) — alle Boudoir-Shootings
-// finden lokal statt, eine Mischung mit UTC würde nur Bugs einführen.
+// parseSlots(rec):
+//   slotsJson vorhanden  →  Array von { start, end }-Fenstern
+//   sonst                →  ein einzelnes Fenster aus User.defaultDay*Minutes („ganzer Tag")
+//
+// Belegung pro Tag:
+//   gebuchte Shootings (mit ihrer durationMin + Paket-Buffer) belegen Zeit.
+//   freie Fenster = Tagesfenster MINUS belegte Zeiten.
 
 import { prisma } from "@/lib/prisma";
 
-// Sinnvolle Boudoir-Photographin-Defaults: Mo-Sa je 1 Slot, So zu.
-// Wird beim ersten Aufruf jeder Verfügbarkeits-anzeigenden Seite idempotent gesetzt,
-// damit Lisa nicht erst durch Settings muss bevor der Kalender bunt wird.
-const WEEKLY_DEFAULTS = [0, 1, 1, 1, 1, 1, 1]; // [So, Mo, Di, Mi, Do, Fr, Sa]
+export type TimeWindow = { start: number; end: number };  // Minuten seit Mitternacht (lokal)
+
+export type DayStatus = {
+  date: string;          // YYYY-MM-DD
+  weekday: number;       // 0=Sonntag..6=Samstag
+  isAvailable: boolean;  // explizit als verfügbar markiert
+  windows: TimeWindow[]; // Tagesfenster (alles was Lisa als „offen" markiert hat)
+  busyWindows: TimeWindow[];  // belegte Zeit durch Shootings inkl. Buffer
+  freeWindows: TimeWindow[];  // windows MINUS busyWindows, gemerged
+  freeMinutes: number;   // Summe freier Minuten
+  isOverride: boolean;
+  note: string | null;
+  overrideId: string | null;
+};
+
+// Default-User-Defaults, falls noch kein User existiert (sollte fast nie passieren)
+const DEFAULT_DAY_START = 540;  // 09:00
+const DEFAULT_DAY_END   = 1080; // 18:00
+
+// Vernünftige Defaults: Mo-Sa verfügbar, So zu (ohne spezifische Slots → ganzer Tag).
+const WEEKLY_DEFAULTS = [false, true, true, true, true, true, true]; // [So..Sa]
 
 export async function ensureWeeklyDefaults(): Promise<void> {
   const count = await prisma.availabilityWeekly.count();
   if (count > 0) return;
   await prisma.availabilityWeekly.createMany({
-    data: WEEKLY_DEFAULTS.map((max, weekday) => ({ weekday, maxShootings: max })),
+    data: WEEKLY_DEFAULTS.map((isAvail, weekday) => ({
+      weekday,
+      isAvailable: isAvail,
+      slotsJson: null,
+    })),
   });
 }
 
-export type DayStatus = {
-  date: string;            // YYYY-MM-DD (lokales Datum)
-  weekday: number;         // 0=Sonntag..6=Samstag
-  maxShootings: number;    // effektives Maximum
-  bookedCount: number;     // wie viele Shootings liegen an dem Tag
-  freeSlots: number;       // max - booked, mind. 0
-  startMinutes: number | null;  // Empfehlungs-Zeitfenster (lokal)
-  endMinutes: number | null;
-  isOverride: boolean;     // wurde durch Override gesetzt
-  note: string | null;     // z.B. "Urlaub"
-  overrideId: string | null;  // zum direkten Bearbeiten/Entfernen aus dem Kalender
-};
+// --------------------- Helper ---------------------
 
-// Hilfsfunktionen für Minuten ↔ "HH:MM"
+export function ymdLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function parseYmd(s: string): Date | null {
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export function minutesToHHMM(min: number | null | undefined): string {
   if (min == null) return "";
   const h = Math.floor(min / 60);
@@ -58,64 +85,141 @@ export function hhmmToMinutes(s: string | null | undefined): number | null {
   return hours * 60 + mins;
 }
 
-export function ymdLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+// JSON ↔ TimeWindow[]
+export function parseSlotsJson(json: string | null): TimeWindow[] | null {
+  if (!json) return null;
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const valid: TimeWindow[] = [];
+    for (const p of parsed) {
+      if (!p || typeof p !== "object") continue;
+      const start = (p as TimeWindow).start;
+      const end = (p as TimeWindow).end;
+      if (typeof start !== "number" || typeof end !== "number") continue;
+      if (start < 0 || end > 24 * 60 || start >= end) continue;
+      valid.push({ start, end });
+    }
+    valid.sort((a, b) => a.start - b.start);
+    return valid;
+  } catch {
+    return null;
+  }
 }
 
-export function parseYmd(s: string): Date | null {
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return isNaN(d.getTime()) ? null : d;
+export function serializeSlots(windows: TimeWindow[]): string {
+  return JSON.stringify(windows.map((w) => ({ start: w.start, end: w.end })));
 }
 
-// Holt alle Tage zwischen from (inkl.) und to (exkl.) mit ihrem Verfügbarkeits-Status.
-// Liest in EINEM Query: Weekly-Regeln + Overrides + Shooting-Counts.
+// Resolve effektive Fenster aus einem Datensatz (Weekly oder Override).
+function resolveWindows(
+  isAvailable: boolean,
+  slotsJson: string | null,
+  userDefault: TimeWindow,
+): TimeWindow[] {
+  if (!isAvailable) return [];
+  const parsed = parseSlotsJson(slotsJson);
+  if (parsed && parsed.length > 0) return parsed;
+  return [userDefault];
+}
+
+// Subtrahiert "busy" von "available" und liefert die Lücken.
+// O((n+m) log) — sort + line sweep.
+export function subtractBusy(available: TimeWindow[], busy: TimeWindow[]): TimeWindow[] {
+  if (available.length === 0) return [];
+  if (busy.length === 0) return [...available];
+
+  // Merge overlapping busy-Fenster
+  const sortedBusy = [...busy].sort((a, b) => a.start - b.start);
+  const merged: TimeWindow[] = [];
+  for (const b of sortedBusy) {
+    const last = merged[merged.length - 1];
+    if (last && b.start <= last.end) {
+      last.end = Math.max(last.end, b.end);
+    } else {
+      merged.push({ ...b });
+    }
+  }
+
+  const result: TimeWindow[] = [];
+  for (const win of available) {
+    let cursor = win.start;
+    for (const b of merged) {
+      if (b.end <= cursor) continue;
+      if (b.start >= win.end) break;
+      if (b.start > cursor) {
+        result.push({ start: cursor, end: Math.min(b.start, win.end) });
+      }
+      cursor = Math.max(cursor, b.end);
+      if (cursor >= win.end) break;
+    }
+    if (cursor < win.end) result.push({ start: cursor, end: win.end });
+  }
+  return result;
+}
+
+// --------------------- Hauptfunktion ---------------------
+
 export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]> {
-  // Sicherstellen, dass Wochenregel-Defaults da sind — sonst sieht Lisa nur graue Tage.
-  // Idempotent: noop wenn schon konfiguriert.
   await ensureWeeklyDefaults();
 
-  // Range normalisieren: from auf 00:00, to auf 00:00 (exklusiv)
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
-  const [weekly, overrides, shootings] = await Promise.all([
+  const [user, weekly, overrides, shootings] = await Promise.all([
+    prisma.user.findFirst({
+      select: { defaultDayStartMinutes: true, defaultDayEndMinutes: true },
+    }),
     prisma.availabilityWeekly.findMany(),
     prisma.availabilityOverride.findMany({
-      where: {
-        date: { gte: ymdLocal(start), lt: ymdLocal(end) },
-      },
+      where: { date: { gte: ymdLocal(start), lt: ymdLocal(end) } },
     }),
     prisma.shooting.findMany({
       where: { scheduledAt: { gte: start, lt: end } },
-      select: { scheduledAt: true },
+      select: {
+        scheduledAt: true,
+        durationMin: true,
+        package: {
+          select: {
+            bookingBufferBeforeMin: true,
+            bookingBufferAfterMin: true,
+            durationMin: true,
+          },
+        },
+      },
     }),
   ]);
 
-  const weeklyMap = new Map<number, { max: number; startMin: number | null; endMin: number | null }>();
-  for (const w of weekly) {
-    weeklyMap.set(w.weekday, { max: w.maxShootings, startMin: w.startMinutes, endMin: w.endMinutes });
-  }
+  const userDefault: TimeWindow = {
+    start: user?.defaultDayStartMinutes ?? DEFAULT_DAY_START,
+    end: user?.defaultDayEndMinutes ?? DEFAULT_DAY_END,
+  };
 
-  const overrideMap = new Map<string, {
-    id: string; max: number; note: string | null; startMin: number | null; endMin: number | null;
-  }>();
-  for (const o of overrides) {
-    overrideMap.set(o.date, {
-      id: o.id, max: o.maxShootings, note: o.note,
-      startMin: o.startMinutes, endMin: o.endMinutes,
-    });
-  }
+  const weeklyMap = new Map<number, { isAvailable: boolean; slotsJson: string | null }>();
+  for (const w of weekly) weeklyMap.set(w.weekday, { isAvailable: w.isAvailable, slotsJson: w.slotsJson });
 
-  const bookedByDay = new Map<string, number>();
-  for (const s of shootings) {
-    if (!s.scheduledAt) continue;
-    const key = ymdLocal(s.scheduledAt);
-    bookedByDay.set(key, (bookedByDay.get(key) ?? 0) + 1);
+  const overrideMap = new Map<string, { id: string; isAvailable: boolean; slotsJson: string | null; note: string | null }>();
+  for (const o of overrides) overrideMap.set(o.date, {
+    id: o.id, isAvailable: o.isAvailable, slotsJson: o.slotsJson, note: o.note,
+  });
+
+  // Shootings nach Datum gruppieren mit ihrem effektiven Zeitblock (inkl. Buffer)
+  const busyByDay = new Map<string, TimeWindow[]>();
+  for (const sh of shootings) {
+    if (!sh.scheduledAt) continue;
+    const key = ymdLocal(sh.scheduledAt);
+    const durationMin = sh.durationMin ?? sh.package?.durationMin ?? 60;
+    const bufferBefore = sh.package?.bookingBufferBeforeMin ?? 0;
+    const bufferAfter = sh.package?.bookingBufferAfterMin ?? 0;
+    const startMin = sh.scheduledAt.getHours() * 60 + sh.scheduledAt.getMinutes();
+    const endMin = startMin + durationMin;
+    const blocked: TimeWindow = {
+      start: Math.max(0, startMin - bufferBefore),
+      end: Math.min(24 * 60, endMin + bufferAfter),
+    };
+    const arr = busyByDay.get(key);
+    if (arr) arr.push(blocked);
+    else busyByDay.set(key, [blocked]);
   }
 
   const days: DayStatus[] = [];
@@ -125,19 +229,25 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
     const weekday = cur.getDay();
     const override = overrideMap.get(ymd);
     const weeklyRule = weeklyMap.get(weekday);
-    // Override sticht Wochenregel — auch in Zeitfenster-Logik.
-    const max = override ? override.max : (weeklyRule?.max ?? 0);
-    const startMin = override?.startMin ?? weeklyRule?.startMin ?? null;
-    const endMin = override?.endMin ?? weeklyRule?.endMin ?? null;
-    const booked = bookedByDay.get(ymd) ?? 0;
+
+    const isAvailable = override
+      ? override.isAvailable
+      : (weeklyRule?.isAvailable ?? false);
+
+    const slotsJson = override?.slotsJson ?? weeklyRule?.slotsJson ?? null;
+    const windows = resolveWindows(isAvailable, slotsJson, userDefault);
+    const busy = busyByDay.get(ymd) ?? [];
+    const free = subtractBusy(windows, busy);
+    const freeMinutes = free.reduce((sum, w) => sum + (w.end - w.start), 0);
+
     days.push({
       date: ymd,
       weekday,
-      maxShootings: max,
-      bookedCount: booked,
-      freeSlots: Math.max(0, max - booked),
-      startMinutes: startMin,
-      endMinutes: endMin,
+      isAvailable,
+      windows,
+      busyWindows: busy,
+      freeWindows: free,
+      freeMinutes,
       isOverride: !!override,
       note: override?.note ?? null,
       overrideId: override?.id ?? null,
@@ -147,7 +257,7 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
   return days;
 }
 
-// Schnellprüfung für einen einzelnen Tag.
+// Schneller Lookup für einen Einzeltag.
 export async function getAvailabilityForDate(ymd: string): Promise<DayStatus | null> {
   const d = parseYmd(ymd);
   if (!d) return null;
@@ -157,10 +267,45 @@ export async function getAvailabilityForDate(ymd: string): Promise<DayStatus | n
   return days[0] ?? null;
 }
 
-// Findet die nächsten N freien Tage ab `from`, max 365 Tage in die Zukunft.
-export async function findNextFreeDays(from: Date, count: number, maxHorizonDays = 90): Promise<DayStatus[]> {
+// Findet die nächsten N Tage mit mindestens `durationMin` zusammenhängender Freizeit.
+// Default: 60 Min (irgendwas geht).
+export async function findNextFreeDays(
+  from: Date,
+  count: number,
+  maxHorizonDays = 90,
+  minDurationMin = 60,
+): Promise<DayStatus[]> {
   const to = new Date(from);
   to.setDate(to.getDate() + maxHorizonDays + 1);
   const days = await getAvailability(from, to);
-  return days.filter((d) => d.freeSlots > 0).slice(0, count);
+  return days
+    .filter((d) => d.freeWindows.some((w) => w.end - w.start >= minDurationMin))
+    .slice(0, count);
+}
+
+// Gibt alle möglichen Startzeiten an einem Tag zurück, an denen ein Termin mit
+// `durationMin` (+ Buffer) am Stück reinpasst.
+// `intervalMin`: Granularität der Vorschläge (z.B. 15 → 10:00, 10:15, 10:30…).
+export function findStartTimesInDay(
+  day: DayStatus,
+  durationMin: number,
+  bufferBeforeMin: number,
+  bufferAfterMin: number,
+  intervalMin: number,
+): number[] {
+  const totalNeeded = bufferBeforeMin + durationMin + bufferAfterMin;
+  if (totalNeeded <= 0) return [];
+  const starts: number[] = [];
+  for (const w of day.freeWindows) {
+    if (w.end - w.start < totalNeeded) continue;
+    // Erlaubte Startzeit ist w.start + bufferBefore … (w.end - durationMin - bufferAfter)
+    const earliest = w.start + bufferBeforeMin;
+    const latest = w.end - durationMin - bufferAfterMin;
+    let t = Math.ceil(earliest / intervalMin) * intervalMin;
+    while (t <= latest) {
+      starts.push(t);
+      t += intervalMin;
+    }
+  }
+  return starts;
 }

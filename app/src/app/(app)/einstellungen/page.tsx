@@ -198,31 +198,34 @@ async function AddonSection() {
 }
 
 async function CalendarSection({ userId }: { userId: string }) {
-  // Default-Wochenregel anlegen, wenn Lisa noch keine konfiguriert hat.
   await ensureWeeklyDefaults();
-  const [conns, weekly, overrides] = await Promise.all([
+  const [conns, weekly, overrides, user] = await Promise.all([
     prisma.calendarConnection.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
     }),
     prisma.availabilityWeekly.findMany({ orderBy: { weekday: "asc" } }),
     prisma.availabilityOverride.findMany({ orderBy: { date: "asc" } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { defaultDayStartMinutes: true, defaultDayEndMinutes: true },
+    }),
   ]);
   return (
     <div className="space-y-6">
       <AvailabilityManager
+        defaultDayStartMinutes={user?.defaultDayStartMinutes ?? 540}
+        defaultDayEndMinutes={user?.defaultDayEndMinutes ?? 1080}
         weekly={weekly.map((w) => ({
           weekday: w.weekday,
-          maxShootings: w.maxShootings,
-          startMinutes: w.startMinutes,
-          endMinutes: w.endMinutes,
+          isAvailable: w.isAvailable,
+          slotsJson: w.slotsJson,
         }))}
         overrides={overrides.map((o) => ({
           id: o.id,
           date: o.date,
-          maxShootings: o.maxShootings,
-          startMinutes: o.startMinutes,
-          endMinutes: o.endMinutes,
+          isAvailable: o.isAvailable,
+          slotsJson: o.slotsJson,
           note: o.note,
         }))}
       />

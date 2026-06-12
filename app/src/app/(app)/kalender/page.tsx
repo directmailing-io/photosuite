@@ -45,7 +45,7 @@ export default async function KalenderPage({
     }),
     prisma.package.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, price: true, durationMin: true },
+      select: { id: true, name: true, price: true, durationMin: true, bookingBufferBeforeMin: true, bookingBufferAfterMin: true },
       orderBy: { position: "asc" },
     }),
     prisma.externalCalendarEvent.findMany({

@@ -10,13 +10,17 @@ import {
 import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin,
   X, ExternalLink, User, Package as PackageIcon, Euro, Plus, Save,
-  Sparkles, AlertTriangle, CalendarOff,
+  Sparkles, AlertTriangle, CalendarOff, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatEUR } from "@/lib/utils";
 import { Field, FormRow } from "@/components/form/Field";
 import { moveShootingToDate, createShooting } from "./actions";
 import { setDayAvailability } from "../einstellungen/availabilityActions";
+import {
+  findStartTimesInDay, minutesToHHMM, hhmmToMinutes,
+  type TimeWindow,
+} from "@/lib/availability";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const MONTHS = [
@@ -41,7 +45,14 @@ export type CalendarShooting = {
 };
 
 export type CalendarCustomer = { id: string; firstName: string; lastName: string };
-export type CalendarPackage = { id: string; name: string; price: number; durationMin: number | null };
+export type CalendarPackage = {
+  id: string;
+  name: string;
+  price: number;
+  durationMin: number | null;
+  bookingBufferBeforeMin?: number | null;
+  bookingBufferAfterMin?: number | null;
+};
 
 export type ExternalEvent = {
   id: string;
@@ -55,11 +66,11 @@ export type ExternalEvent = {
 export type AvailabilityDay = {
   date: string;          // YYYY-MM-DD
   weekday: number;
-  maxShootings: number;
-  bookedCount: number;
-  freeSlots: number;
-  startMinutes: number | null;
-  endMinutes: number | null;
+  isAvailable: boolean;
+  windows: TimeWindow[];      // Gesamte Tagesfenster (offene Zeiten)
+  busyWindows: TimeWindow[];  // Belegt durch Shootings + Paket-Buffer
+  freeWindows: TimeWindow[];  // windows minus busyWindows
+  freeMinutes: number;
   isOverride: boolean;
   note: string | null;
   overrideId: string | null;
@@ -178,14 +189,14 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
     // Verfügbarkeits-Check vor dem Verschieben — bei vollem/gesperrtem Tag nachfragen.
     const target = availabilityByDay.get(targetDate);
     if (target) {
-      if (target.maxShootings === 0) {
+      if (!target.isAvailable) {
         const proceed = confirm(
           `Dieser Tag ist nicht verfügbar${target.note ? ` (${target.note})` : ""}.\n\nTrotzdem verschieben?`,
         );
         if (!proceed) return;
-      } else if (target.freeSlots === 0) {
+      } else if (target.freeMinutes === 0) {
         const proceed = confirm(
-          `Dieser Tag ist bereits voll belegt (${target.bookedCount}/${target.maxShootings}).\n\nTrotzdem verschieben (überbuchen)?`,
+          `Dieser Tag ist bereits voll belegt.\n\nTrotzdem verschieben (überbuchen)?`,
         );
         if (!proceed) return;
       }
@@ -331,7 +342,8 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
 }
 
 // Inline-Popover für Tag-Verfügbarkeit — Lisa klickt im Kalender auf einen Tag und
-// markiert ihn als verfügbar/unverfügbar. Schreibt einen AvailabilityOverride.
+// markiert ihn als verfügbar/unverfügbar (mit optionalen Zeitfenstern).
+// Schreibt einen AvailabilityOverride.
 function AvailabilityPopover({
   isoDate, availability, onClose,
 }: {
@@ -341,20 +353,86 @@ function AvailabilityPopover({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [max, setMax] = useState(availability?.maxShootings ?? 0);
+  const [isAvailable, setIsAvailable] = useState<boolean>(availability?.isAvailable ?? true);
+  // useDefault=true → User-Default-Tagesfenster, useDefault=false → eigene Zeitfenster.
+  // Heuristik: wenn der Tag ein Override mit eigenen Fenstern hat → eigene Fenster.
+  // Wenn keine Fenster (oder kein Override) → useDefault.
+  const initialUseDefault =
+    !availability
+      ? true
+      : !availability.isAvailable
+        ? true
+        : !availability.isOverride
+          ? true
+          : availability.windows.length === 0
+            ? true
+            : false;
+  const [useDefault, setUseDefault] = useState<boolean>(initialUseDefault);
+  const [windows, setWindows] = useState<TimeWindow[]>(() => {
+    if (!availability || !availability.isAvailable) return [];
+    if (availability.windows.length > 0 && availability.isOverride) {
+      return availability.windows.map((w) => ({ start: w.start, end: w.end }));
+    }
+    return [];
+  });
   const [note, setNote] = useState(availability?.note ?? "");
 
   const dateLabel = new Date(isoDate + "T00:00:00").toLocaleDateString("de-DE", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
-  function save(newMax: number) {
-    setMax(newMax);
+  function addWindow() {
+    setWindows((prev) => {
+      if (prev.length >= 6) return prev;
+      const last = prev[prev.length - 1];
+      const newStart = last ? Math.min(last.end, 22 * 60) : 9 * 60;
+      const newEnd = Math.min(newStart + 120, 23 * 60);
+      return [...prev, { start: newStart, end: newEnd }];
+    });
+  }
+
+  function removeWindow(i: number) {
+    setWindows((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function updateWindow(i: number, key: "start" | "end", hhmm: string) {
+    const mins = hhmmToMinutes(hhmm);
+    if (mins == null) return;
+    setWindows((prev) => prev.map((w, idx) => idx === i ? { ...w, [key]: mins } : w));
+  }
+
+  function quickAdd(start: number, end: number) {
+    setWindows((prev) => {
+      // duplikate vermeiden
+      if (prev.some((w) => w.start === start && w.end === end)) return prev;
+      return [...prev, { start, end }].sort((a, b) => a.start - b.start);
+    });
+  }
+
+  function save() {
+    // Validierung: alle Fenster start<end
+    if (isAvailable && !useDefault) {
+      for (const w of windows) {
+        if (w.end <= w.start) {
+          toast.error("Endzeit muss nach der Startzeit liegen");
+          return;
+        }
+      }
+    }
     startTransition(async () => {
       try {
-        await setDayAvailability(isoDate, newMax, note || null);
+        await setDayAvailability(isoDate, {
+          isAvailable,
+          windows: !isAvailable
+            ? null
+            : useDefault
+              ? null
+              : windows,
+          note: note.trim() || null,
+        });
         toast.success("Verfügbarkeit gespeichert");
         router.refresh();
+        onClose();
       } catch (err: any) {
         toast.error(err?.message ?? "Fehler");
       }
@@ -364,7 +442,7 @@ function AvailabilityPopover({
   function resetToWeekly() {
     startTransition(async () => {
       try {
-        await setDayAvailability(isoDate, null, null);
+        await setDayAvailability(isoDate, { unset: true });
         toast.success("Auf Wochenregel zurückgesetzt");
         router.refresh();
         onClose();
@@ -376,9 +454,9 @@ function AvailabilityPopover({
 
   return (
     <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="card max-w-sm w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="h-1.5" style={{ background: max > 0 ? "rgb(120, 167, 119)" : "var(--taupe)" }} />
-        <div className="p-6 space-y-4">
+      <div className="card max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="h-1.5" style={{ background: isAvailable ? "rgb(120, 167, 119)" : "var(--taupe)" }} />
+        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="eyebrow eyebrow-muted">Verfügbarkeit</div>
@@ -394,82 +472,193 @@ function AvailabilityPopover({
             </button>
           </div>
 
-          <div className="flex items-center justify-between gap-3 p-3 rounded-lg border" style={{
-            borderColor: "var(--stone)",
-            background: max > 0 ? "rgba(120, 167, 119, 0.10)" : "var(--linen)",
-          }}>
+          {/* Verfügbar-Toggle */}
+          <div
+            className="flex items-center justify-between gap-3 p-3 rounded-lg border"
+            style={{
+              borderColor: "var(--stone)",
+              background: isAvailable ? "rgba(120, 167, 119, 0.10)" : "var(--linen)",
+            }}
+          >
             <div>
-              <div className="text-xs text-smoke">Slots</div>
-              <div className="font-serif text-2xl tabular-nums leading-none mt-0.5">
-                {max === 0 ? "zu" : max}
+              <div className="text-sm font-medium">
+                {isAvailable ? "Verfügbar" : "Nicht verfügbar"}
+              </div>
+              <div className="text-xs text-smoke mt-0.5">
+                {isAvailable
+                  ? "Termine können an diesem Tag gebucht werden"
+                  : "Tag gesperrt — z.B. Urlaub, Familienfeier"}
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={pending || max === 0}
-                onClick={() => save(max - 1)}
-                className="w-9 h-9 rounded-md border border-stone hover:bg-linen disabled:opacity-30"
-                aria-label="Weniger"
-              >−</button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => save(max + 1)}
-                className="w-9 h-9 rounded-md border border-stone hover:bg-linen"
-                aria-label="Mehr"
-              >+</button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              disabled={pending}
-              onClick={() => save(0)}
-              className="btn-secondary text-xs h-9"
-              title="Tag sperren"
+              role="switch"
+              aria-checked={isAvailable}
+              onClick={() => setIsAvailable((v) => !v)}
+              className="relative inline-flex h-6 w-11 items-center rounded-full transition"
+              style={{
+                background: isAvailable ? "rgb(120, 167, 119)" : "var(--stone)",
+              }}
             >
-              <CalendarOff size={12} /> Sperren
+              <span
+                className="inline-block h-5 w-5 transform rounded-full bg-white transition"
+                style={{ transform: isAvailable ? "translateX(22px)" : "translateX(2px)" }}
+              />
             </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => save(1)}
-              className="btn-secondary text-xs h-9"
-            >1 Slot</button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => save(2)}
-              className="btn-secondary text-xs h-9"
-            >2 Slots</button>
           </div>
 
+          {/* Zeitfenster-Editor — nur wenn verfügbar */}
+          {isAvailable && (
+            <div className="space-y-3">
+              {/* Mode-Toggle */}
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-lg border border-stone bg-linen/50">
+                <button
+                  type="button"
+                  onClick={() => setUseDefault(true)}
+                  className="text-xs h-8 rounded transition"
+                  style={{
+                    background: useDefault ? "var(--paper)" : "transparent",
+                    color: useDefault ? "var(--ink)" : "var(--smoke)",
+                    boxShadow: useDefault ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+                  }}
+                >
+                  Ganzer Tag
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseDefault(false);
+                    if (windows.length === 0) {
+                      // Hilfreich: initial ein Fenster anlegen
+                      setWindows([{ start: 9 * 60, end: 13 * 60 }]);
+                    }
+                  }}
+                  className="text-xs h-8 rounded transition"
+                  style={{
+                    background: !useDefault ? "var(--paper)" : "transparent",
+                    color: !useDefault ? "var(--ink)" : "var(--smoke)",
+                    boxShadow: !useDefault ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+                  }}
+                >
+                  Eigene Zeitfenster
+                </button>
+              </div>
+
+              {useDefault ? (
+                <div className="text-xs text-smoke px-1">
+                  Verfügbar wie dein Standard-Tagesfenster.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {windows.map((w, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={minutesToHHMM(w.start)}
+                        onChange={(e) => updateWindow(i, "start", e.target.value)}
+                        step={900}
+                        className="input h-9 text-sm tabular-nums w-28"
+                      />
+                      <span className="text-smoke text-xs">–</span>
+                      <input
+                        type="time"
+                        value={minutesToHHMM(w.end)}
+                        onChange={(e) => updateWindow(i, "end", e.target.value)}
+                        step={900}
+                        className="input h-9 text-sm tabular-nums w-28"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeWindow(i)}
+                        className="btn-icon shrink-0"
+                        aria-label="Zeitfenster entfernen"
+                        title="Entfernen"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={addWindow}
+                      disabled={windows.length >= 6}
+                      className="btn-secondary text-xs h-8"
+                    >
+                      <Plus size={12} /> Fenster
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => quickAdd(9 * 60, 13 * 60)}
+                      className="btn-ghost text-xs h-8"
+                      title="09:00–13:00 hinzufügen"
+                    >
+                      + Vormittag (09–13)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => quickAdd(14 * 60, 18 * 60)}
+                      className="btn-ghost text-xs h-8"
+                      title="14:00–18:00 hinzufügen"
+                    >
+                      + Nachmittag (14–18)
+                    </button>
+                  </div>
+                  {windows.length === 0 && (
+                    <div className="text-xs text-taupe">
+                      Keine Zeitfenster — füge mindestens eins hinzu, sonst wird der Tag als geschlossen behandelt.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Notiz */}
           <div>
             <label className="text-xs text-smoke">Notiz</label>
             <input
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              onBlur={() => { if (max !== availability?.maxShootings || note !== (availability?.note ?? "")) save(max); }}
               placeholder="z.B. Urlaub, Familienfeier …"
               className="input h-9 text-sm mt-1"
             />
           </div>
 
-          {availability?.isOverride && (
-            <div className="pt-3 border-t border-stone/60">
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-stone/60">
+            <div>
+              {availability?.isOverride && (
+                <button
+                  type="button"
+                  onClick={resetToWeekly}
+                  disabled={pending}
+                  className="btn-ghost text-xs h-8 text-smoke"
+                >
+                  Wieder Wochenregel verwenden
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={resetToWeekly}
+                onClick={onClose}
                 disabled={pending}
-                className="btn-ghost text-xs h-8 text-smoke"
+                className="btn-ghost text-sm"
               >
-                Wieder Wochenregel verwenden
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={save}
+                disabled={pending}
+                className="btn-primary text-sm"
+              >
+                <Save size={13} /> {pending ? "Speichern…" : "Speichern"}
               </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
@@ -522,6 +711,7 @@ function FreeSlotsPanel({
         {nextFreeDays.map((d) => {
           const date = new Date(d.date + "T00:00:00");
           const dayLabel = date.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long" });
+          const busyMinutes = d.busyWindows.reduce((s, w) => s + (w.end - w.start), 0);
           return (
             <li key={d.date} className="px-6 py-3 flex items-center gap-4 hover:bg-linen/40 transition">
               <div className="w-12 text-center shrink-0">
@@ -532,9 +722,10 @@ function FreeSlotsPanel({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium">{dayLabel}</div>
-                <div className="text-xs text-smoke mt-0.5">
-                  {d.freeSlots} von {d.maxShootings} frei
-                  {d.bookedCount > 0 && ` · ${d.bookedCount} bereits gebucht`}
+                <div className="text-xs text-smoke mt-0.5 truncate">
+                  {formatHours(d.freeMinutes)} frei
+                  {d.freeWindows.length > 0 && ` · ${formatRanges(d.freeWindows)}`}
+                  {busyMinutes > 0 && ` · ${formatHours(busyMinutes)} belegt`}
                   {d.note && ` · ${d.note}`}
                 </div>
               </div>
@@ -573,22 +764,23 @@ function DayCell({
   const { isOver, setNodeRef } = useDroppable({ id: dayKey });
 
   // Verfügbarkeits-Status für die Tag-Hintergrund-Farbe.
-  // — hasFreeSlots:  Tag hat Kapazität und ist noch nicht voll → grünlich
-  // — isFull:        Tag hat Kapazität, aber voll belegt → neutral
-  // — isClosed:      maxShootings = 0 (geschlossen / Urlaub) → grau, Plus-Button aus
-  // — undefined av:  nicht in Range (sollte nicht passieren) → neutral
-  const hasFreeSlots = !!(availability && availability.maxShootings > 0 && availability.freeSlots > 0);
-  const isFull = !!(availability && availability.maxShootings > 0 && availability.freeSlots === 0);
-  const isClosed = !!(availability && availability.maxShootings === 0);
+  // — hasFreeTime:   Tag hat noch freie Zeit → grünlich
+  // — isFull:        Tag offen, aber komplett belegt → neutral
+  // — isClosed:      Tag nicht verfügbar (Wochenregel oder Override) → grau
+  const isClosed = !availability || (!availability.isAvailable);
+  const totalMins = availability ? availability.windows.reduce((s, w) => s + (w.end - w.start), 0) : 0;
+  const freeMins = availability?.freeMinutes ?? 0;
+  const hasFreeTime = !!(availability?.isAvailable && freeMins > 0);
+  const isFull = !!(availability?.isAvailable && totalMins > 0 && freeMins === 0);
 
   let baseBg: string;
   if (!inMonth) baseBg = "var(--linen)";
   else if (isClosed) baseBg = "rgba(236, 235, 232, 0.65)";
-  else if (hasFreeSlots) baseBg = "rgba(120, 167, 119, 0.16)";  // klares aber dezentes Grün
+  else if (hasFreeTime) baseBg = "rgba(120, 167, 119, 0.16)";  // klares aber dezentes Grün
   else if (isWeekend) baseBg = "rgba(236, 235, 232, 0.45)";
   else baseBg = "var(--paper)";
 
-  const dimmed = dimNonFree && inMonth && !hasFreeSlots;
+  const dimmed = dimNonFree && inMonth && !hasFreeTime;
   const isOverride = !!availability?.isOverride;
 
   return (
@@ -604,7 +796,7 @@ function DayCell({
         opacity: inMonth ? (dimmed ? 0.35 : 1) : 0.55,
         outline: isOver
           ? "2px solid var(--accent)"
-          : (hasFreeSlots && inMonth ? "1px solid rgba(120, 167, 119, 0.45)" : "none"),
+          : (hasFreeTime && inMonth ? "1px solid rgba(120, 167, 119, 0.45)" : "none"),
         outlineOffset: -1,
       }}
     >
@@ -635,22 +827,32 @@ function DayCell({
           {date.getDate()}
         </button>
         <div className="flex items-center gap-1">
-          {inMonth && availability && availability.maxShootings > 0 && (
+          {inMonth && hasFreeTime && availability && (
             <button
               type="button"
               onClick={onEditAvailability}
               className="text-[9px] tabular-nums px-1.5 py-0.5 rounded font-medium hover:ring-1 hover:ring-stone transition"
               style={{
-                background: hasFreeSlots ? "rgba(120, 167, 119, 0.26)" : "rgba(0,0,0,0.06)",
-                color: hasFreeSlots ? "rgb(60, 105, 60)" : "var(--smoke)",
+                background: "rgba(120, 167, 119, 0.26)",
+                color: "rgb(60, 105, 60)",
               }}
-              title={
-                hasFreeSlots
-                  ? `${availability.freeSlots} von ${availability.maxShootings} frei · klicken zum Anpassen`
-                  : `Voll belegt (${availability.bookedCount}/${availability.maxShootings}) · klicken zum Anpassen`
-              }
+              title={`Frei: ${availability.freeMinutes} Min · ${formatRanges(availability.freeWindows)}`}
             >
-              {hasFreeSlots ? `${availability.freeSlots}/${availability.maxShootings}` : "voll"}
+              {formatHours(availability.freeMinutes)}
+            </button>
+          )}
+          {inMonth && isFull && availability && (
+            <button
+              type="button"
+              onClick={onEditAvailability}
+              className="text-[9px] tabular-nums px-1.5 py-0.5 rounded font-medium hover:ring-1 hover:ring-stone transition"
+              style={{
+                background: "rgba(0,0,0,0.06)",
+                color: "var(--smoke)",
+              }}
+              title={`Voll belegt · ${formatRanges(availability.windows)} · klicken zum Anpassen`}
+            >
+              voll
             </button>
           )}
           {inMonth && isClosed && (
@@ -778,6 +980,18 @@ function fmtMin(min: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+// Formatiert Minuten als kompaktes Label: 45min, 5h, 5,5h
+function formatHours(min: number): string {
+  if (min < 60) return `${min}min`;
+  const h = min / 60;
+  return `${h % 1 === 0 ? h : h.toFixed(1).replace(".", ",")}h`;
+}
+
+// Formatiert Zeitfenster als „09:00–13:00 · 14:30–18:00"
+function formatRanges(windows: TimeWindow[]): string {
+  return windows.map((w) => `${fmtMin(w.start)}–${fmtMin(w.end)}`).join(" · ");
+}
+
 function CalendarLink({ basePath, year, month, label, icon }: { basePath: string; year: number; month: number; label: string; icon: React.ReactNode }) {
   const param = `${year}-${String(month).padStart(2, "0")}`;
   const sep = basePath.includes("?") ? "&" : "?";
@@ -789,33 +1003,18 @@ function CalendarLink({ basePath, year, month, label, icon }: { basePath: string
 }
 
 // Schlägt eine sinnvolle Start-Uhrzeit vor.
-// Priorität: 30 Min nach letztem Termin (wenn in Zeitfenster), sonst Zeitfenster-Start,
-// sonst 10:00 als Default.
-function suggestStartTime(existing: CalendarShooting[], availability: AvailabilityDay | null): string {
-  const fenceStart = availability?.startMinutes ?? null;
-  const fenceEnd = availability?.endMinutes ?? null;
-
-  if (existing.length > 0) {
-    const last = existing
-      .map((s) => {
-        const start = new Date(s.scheduledAt);
-        return new Date(start.getTime() + (s.durationMin ?? 60) * 60_000);
-      })
-      .sort((a, b) => b.getTime() - a.getTime())[0];
-    const next = new Date(last.getTime() + 30 * 60_000);
-    next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15);
-    const nextMin = next.getHours() * 60 + next.getMinutes();
-    // Wenn Vorschlag im Zeitfenster bleibt → übernehmen
-    if (fenceEnd == null || nextMin < fenceEnd) {
-      if (next.getHours() < 21) {
-        return `${String(next.getHours()).padStart(2, "0")}:${String(next.getMinutes()).padStart(2, "0")}`;
-      }
+// Priorität: erstes freies Fenster (Anfang aufgerundet auf 15-Min-Raster),
+// sonst Anfang des ersten Tagesfensters, sonst 10:00.
+function suggestStartTime(availability: AvailabilityDay | null): string {
+  if (availability && availability.isAvailable) {
+    if (availability.freeWindows.length > 0) {
+      const first = availability.freeWindows[0]!.start;
+      const rounded = Math.ceil(first / 15) * 15;
+      return minutesToHHMM(rounded);
     }
-  }
-  if (fenceStart != null) {
-    const h = Math.floor(fenceStart / 60);
-    const m = fenceStart % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    if (availability.windows.length > 0) {
+      return minutesToHHMM(availability.windows[0]!.start);
+    }
   }
   return "10:00";
 }
@@ -834,16 +1033,39 @@ function QuickCreateModal({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [time, setTime] = useState(() => suggestStartTime(existingShootings, availability));
+  const [time, setTime] = useState(() => suggestStartTime(availability));
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
   const [packageId, setPackageId] = useState("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState<string>("");
   const [durationMin, setDurationMin] = useState<string>("");
 
+  // Verhindert TS-warning über "unused" während Refactor (existingShootings könnte
+  // später wieder gebraucht werden, aber suggestStartTime nutzt es nicht mehr).
+  void existingShootings;
+
   const dateLabel = new Date(isoDate + "T00:00:00").toLocaleDateString("de-DE", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
+
+  // Paket-Daten für Dauer + Buffer (für valide Start-Time-Chips)
+  const selectedPackage = packages.find((p) => p.id === packageId) ?? null;
+  const effectiveDurationMin = selectedPackage?.durationMin
+    ?? (durationMin ? Number(durationMin) : 60);
+  const bufferBefore = selectedPackage?.bookingBufferBeforeMin ?? 0;
+  const bufferAfter = selectedPackage?.bookingBufferAfterMin ?? 0;
+
+  // Mögliche Start-Zeiten an diesem Tag (15-Min-Raster)
+  const validStartTimes = useMemo(() => {
+    if (!availability || !availability.isAvailable) return [];
+    return findStartTimesInDay(
+      availability,
+      Math.max(15, effectiveDurationMin || 60),
+      bufferBefore,
+      bufferAfter,
+      15,
+    );
+  }, [availability, effectiveDurationMin, bufferBefore, bufferAfter]);
 
   // Wenn Lisa ein Paket wählt: Preis + Dauer + Titel-Vorschlag aus Paket übernehmen,
   // sofern die Felder noch leer sind.
@@ -935,7 +1157,7 @@ function QuickCreateModal({
             </button>
           </div>
 
-          {availability && availability.maxShootings === 0 && (
+          {availability && !availability.isAvailable && (
             <div
               className="flex items-start gap-3 p-3 rounded-lg border text-sm"
               style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
@@ -946,12 +1168,12 @@ function QuickCreateModal({
                   Tag eigentlich nicht verfügbar
                 </div>
                 <div className="text-xs text-smoke mt-0.5">
-                  {availability.note ?? "Wochenregel/Ausnahme sagt: kein Slot."} Du kannst den Termin trotzdem anlegen.
+                  {availability.note ?? "Wochenregel/Ausnahme sagt: geschlossen."} Du kannst den Termin trotzdem anlegen.
                 </div>
               </div>
             </div>
           )}
-          {availability && availability.maxShootings > 0 && availability.freeSlots === 0 && (
+          {availability && availability.isAvailable && availability.freeMinutes === 0 && (
             <div
               className="flex items-start gap-3 p-3 rounded-lg border text-sm"
               style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "var(--linen)" }}
@@ -960,22 +1182,22 @@ function QuickCreateModal({
               <div>
                 <div className="font-medium">Tag bereits voll belegt</div>
                 <div className="text-xs text-smoke mt-0.5">
-                  {availability.bookedCount} von {availability.maxShootings} Slots vergeben — über-buchen ist möglich, prüfe vorher.
+                  Keine freie Zeit im Tagesfenster — über-buchen ist möglich, prüfe vorher.
                 </div>
               </div>
             </div>
           )}
-          {availability && availability.maxShootings > 0 && availability.freeSlots > 0 && (
-            <div className="text-xs text-smoke flex items-center gap-1.5">
+          {availability && availability.isAvailable && availability.freeMinutes > 0 && (
+            <div className="text-xs text-smoke flex items-center gap-1.5 flex-wrap">
               <Sparkles size={11} style={{ color: "rgb(80, 130, 80)" }} />
-              {availability.freeSlots} von {availability.maxShootings} Slots noch frei.
-              {availability.startMinutes != null && availability.endMinutes != null && (
-                <span className="opacity-70"> · Empfohlen {fmtMin(availability.startMinutes)}–{fmtMin(availability.endMinutes)}</span>
+              <span>{formatHours(availability.freeMinutes)} frei</span>
+              {availability.freeWindows.length > 0 && (
+                <span className="opacity-70">· {formatRanges(availability.freeWindows)}</span>
               )}
               {availability.note && <span className="opacity-70"> · {availability.note}</span>}
             </div>
           )}
-          {availability && (availability.maxShootings === 0 || availability.freeSlots === 0) && quickPicks.length > 0 && (
+          {availability && (!availability.isAvailable || availability.freeMinutes === 0) && quickPicks.length > 0 && (
             <div className="rounded-lg border border-stone bg-paper p-3 space-y-2">
               <div className="text-xs text-smoke flex items-center gap-1.5">
                 <Sparkles size={11} style={{ color: "rgb(80, 130, 80)" }} /> Stattdessen ein freier Tag?
@@ -989,13 +1211,59 @@ function QuickCreateModal({
                       type="button"
                       onClick={() => onSwitchDate(d.date)}
                       className="text-xs px-2 py-1 rounded border border-stone hover:bg-linen transition tabular-nums"
-                      title={`${d.freeSlots} von ${d.maxShootings} frei`}
+                      title={`${formatHours(d.freeMinutes)} frei · ${formatRanges(d.freeWindows)}`}
                     >
                       {dt.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" })}
-                      <span className="ml-1.5 text-[10px] text-smoke">{d.freeSlots}/{d.maxShootings}</span>
+                      <span className="ml-1.5 text-[10px] text-smoke">{formatHours(d.freeMinutes)}</span>
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Valide Start-Zeit-Chips (basierend auf Paket-Dauer + Buffer) */}
+          {availability && availability.isAvailable && validStartTimes.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="text-xs text-smoke">Passende Startzeiten</div>
+              <div className="flex flex-wrap gap-1.5">
+                {validStartTimes.slice(0, 12).map((min) => {
+                  const hhmm = minutesToHHMM(min);
+                  const active = time === hhmm;
+                  return (
+                    <button
+                      key={min}
+                      type="button"
+                      onClick={() => setTime(hhmm)}
+                      className="text-xs h-7 px-2 rounded border tabular-nums transition"
+                      style={{
+                        borderColor: active ? "var(--accent)" : "var(--stone)",
+                        background: active ? "var(--accent-soft)" : "var(--paper)",
+                        color: active ? "var(--accent)" : "var(--ink)",
+                        fontWeight: active ? 500 : 400,
+                      }}
+                    >
+                      {hhmm}
+                    </button>
+                  );
+                })}
+                {validStartTimes.length > 12 && (
+                  <span className="text-[11px] text-smoke self-center">+{validStartTimes.length - 12}</span>
+                )}
+              </div>
+            </div>
+          )}
+          {availability && availability.isAvailable && validStartTimes.length === 0 && packageId && (
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg border text-sm"
+              style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "var(--linen)" }}
+            >
+              <AlertTriangle size={16} className="shrink-0 mt-0.5 text-taupe" />
+              <div>
+                <div className="font-medium">Paket-Dauer passt in keine freie Zeit an diesem Tag.</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  Wähle ein kürzeres Paket, einen anderen Tag oder lege den Termin trotzdem an (manuelle Uhrzeit unten).
+                </div>
               </div>
             </div>
           )}
@@ -1023,6 +1291,16 @@ function QuickCreateModal({
               />
             </Field>
           </FormRow>
+
+          {/* Paket-Dauer-Hinweis */}
+          {(selectedPackage || effectiveDurationMin) && (
+            <div className="text-[11px] text-smoke -mt-1">
+              Paket benötigt: {formatHours(effectiveDurationMin)}
+              {(bufferBefore > 0 || bufferAfter > 0) && (
+                <> (+ {bufferBefore + bufferAfter} Min Puffer)</>
+              )}
+            </div>
+          )}
 
           <Field label="Kundin *">
             <select

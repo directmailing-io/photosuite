@@ -14,6 +14,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Sun,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Field } from "@/components/form/Field";
@@ -166,6 +167,12 @@ type WeeklyDayState = {
 
 const QUICK_MORNING: TimeWindow = { start: 9 * 60, end: 13 * 60 };
 const QUICK_AFTERNOON: TimeWindow = { start: 14 * 60, end: 18 * 60 };
+const QUICK_EVENING: TimeWindow = { start: 18 * 60, end: 22 * 60 };
+const QUICK_PRESETS: { key: string; label: string; range: TimeWindow }[] = [
+  { key: "morning", label: "Vormittag", range: QUICK_MORNING },
+  { key: "afternoon", label: "Nachmittag", range: QUICK_AFTERNOON },
+  { key: "evening", label: "Abend", range: QUICK_EVENING },
+];
 
 function initialWeeklyState(weekly: WeeklyRow[]): Map<number, WeeklyDayState> {
   const m = new Map<number, WeeklyDayState>();
@@ -222,10 +229,22 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
       const cur = next.get(weekday);
       if (!cur) return prev;
       if (cur.windows.length >= MAX_WINDOWS) return prev;
-      const candidate = win ?? { start: 10 * 60, end: 14 * 60 };
-      // Doppelte vermeiden
-      if (cur.windows.some((w) => w.start === candidate.start && w.end === candidate.end)) {
-        return prev;
+      // Quick-Add (win explizit übergeben): doppelte vermeiden.
+      // Manuelles „+ Fenster" (win = undefined): IMMER neues Fenster anlegen,
+      // Default smart anhand des letzten Endpunkts plus 1h Pause.
+      let candidate: TimeWindow;
+      if (win) {
+        if (cur.windows.some((w) => w.start === win.start && w.end === win.end)) {
+          return prev;
+        }
+        candidate = win;
+      } else {
+        const lastEnd = cur.windows.length
+          ? Math.max(...cur.windows.map((w) => w.end))
+          : 9 * 60;
+        const start = Math.min(22 * 60, lastEnd + 60);
+        const end = Math.min(23 * 60, start + 3 * 60);
+        candidate = end > start ? { start, end } : { start: 10 * 60, end: 14 * 60 };
       }
       next.set(weekday, {
         ...cur,
@@ -242,6 +261,26 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
       const cur = next.get(weekday);
       if (!cur) return prev;
       next.set(weekday, { ...cur, windows: cur.windows.filter((_, i) => i !== idx) });
+      return next;
+    });
+  }
+
+  // Kopiert die Konfiguration eines Tages auf alle anderen Tage (außer So) —
+  // klassische „Mo-Fr gleich"-Geste. Vorhandene Werte werden überschrieben.
+  function copyToWeekdays(fromWeekday: number) {
+    setState((prev) => {
+      const src = prev.get(fromWeekday);
+      if (!src) return prev;
+      const next = new Map(prev);
+      // Mo..Fr (1..5) als „Werktage" — kann auf den Quell-Tag selbst keine Wirkung haben.
+      for (let w = 1; w <= 5; w++) {
+        if (w === fromWeekday) continue;
+        next.set(w, {
+          isAvailable: src.isAvailable,
+          useDefault: src.useDefault,
+          windows: src.windows.map((win) => ({ ...win })),
+        });
+      }
       return next;
     });
   }
@@ -283,11 +322,11 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
       </div>
 
       <div className="px-6 py-5">
-        <ul className="divide-y divide-stone/60">
+        <ul className="space-y-2">
           {WEEKDAY_ORDER.map((w) => {
             const day = state.get(w) ?? { isAvailable: false, useDefault: true, windows: [] };
             return (
-              <li key={w} className="py-4 first:pt-0 last:pb-0">
+              <li key={w}>
                 <WeeklyDayRow
                   weekday={w}
                   state={day}
@@ -296,6 +335,7 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
                   onSetWindow={(i, patch) => setWindow(w, i, patch)}
                   onAddWindow={(win) => addWindow(w, win)}
                   onRemoveWindow={(i) => removeWindow(w, i)}
+                  onCopyToWeekdays={() => copyToWeekdays(w)}
                 />
               </li>
             );
@@ -323,6 +363,7 @@ function WeeklyDayRow({
   onSetWindow,
   onAddWindow,
   onRemoveWindow,
+  onCopyToWeekdays,
 }: {
   weekday: number;
   state: WeeklyDayState;
@@ -331,21 +372,38 @@ function WeeklyDayRow({
   onSetWindow: (idx: number, patch: Partial<TimeWindow>) => void;
   onAddWindow: (win?: TimeWindow) => void;
   onRemoveWindow: (idx: number) => void;
+  onCopyToWeekdays: () => void;
 }) {
   const sortedIdx = useMemo(() => {
-    // Indizes nach Startzeit sortiert ANZEIGEN, ohne den state zu mutieren.
     return state.windows
       .map((w, i) => ({ w, i }))
       .sort((a, b) => a.w.start - b.w.start)
       .map((x) => x.i);
   }, [state.windows]);
 
+  const isWorkday = weekday >= 1 && weekday <= 5;
+  // Total-Minuten: bei useDefault nutzen wir Platzhalter „—" (echte Berechnung
+  // bräuchte die props.defaultDayStart/End, hier dezente Anzeige reicht).
+  const totalMin = state.useDefault ? null : totalMinutes(state.windows);
+
+  // Card-Background: subtil hervorheben je nach Zustand
+  const cardBg = state.isAvailable
+    ? "rgba(120, 167, 119, 0.05)"
+    : "var(--paper)";
+  const cardBorder = state.isAvailable
+    ? "rgba(120, 167, 119, 0.35)"
+    : "var(--stone)";
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="w-24 shrink-0">
-          <div className="text-sm font-medium">{WEEKDAY_LONG[weekday]}</div>
-          <div className="text-xs text-smoke">{WEEKDAY_SHORT[weekday]}</div>
+    <div
+      className="rounded-xl border transition-all"
+      style={{ background: cardBg, borderColor: cardBorder }}
+    >
+      {/* Header: immer sichtbar, kompakt */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="w-20 shrink-0">
+          <div className="text-sm font-medium leading-tight">{WEEKDAY_LONG[weekday]}</div>
+          <div className="text-[10px] uppercase tracking-wider text-smoke">{WEEKDAY_SHORT[weekday]}</div>
         </div>
 
         <ToggleButton
@@ -355,46 +413,170 @@ function WeeklyDayRow({
         />
 
         {state.isAvailable && (
-          <div className="flex items-center gap-1 ml-auto">
-            <ModeChip
-              active={state.useDefault}
-              onClick={() => onSetMode(true)}
-              icon={<Sun size={11} />}
-              label="Ganzer Tag"
-            />
-            <ModeChip
-              active={!state.useDefault}
-              onClick={() => onSetMode(false)}
-              icon={<Clock size={11} />}
-              label="Eigene Zeitfenster"
-            />
+          <div className="ml-auto flex items-center gap-3">
+            {totalMin !== null && totalMin > 0 && (
+              <div className="text-xs tabular-nums" style={{ color: "rgb(70, 115, 70)" }}>
+                {formatHoursShort(totalMin)}
+              </div>
+            )}
+            {state.useDefault && (
+              <div className="text-xs text-smoke italic">ganzer Tag</div>
+            )}
+            {isWorkday && (
+              <button
+                type="button"
+                onClick={onCopyToWeekdays}
+                className="text-[10px] uppercase tracking-wider text-smoke hover:text-ink transition-colors flex items-center gap-1"
+                title="Diese Einstellung auf Mo–Fr übernehmen"
+              >
+                <Copy size={9} /> Mo–Fr
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {state.isAvailable && !state.useDefault && (
-        <div className="pl-28">
-          <WindowList
-            windows={state.windows}
-            order={sortedIdx}
-            onSet={onSetWindow}
-            onRemove={onRemoveWindow}
-            onAdd={() => onAddWindow()}
-            canAdd={state.windows.length < MAX_WINDOWS}
-          />
-          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs text-smoke mr-1">Schnell:</span>
-            <QuickWindowChip
-              onClick={() => onAddWindow(QUICK_MORNING)}
-              label="Vormittag 09:00–13:00"
+      {/* Wenn verfügbar: Quick-Adds + Timeline + ggf. Window-Liste */}
+      {state.isAvailable && (
+        <div className="px-4 pb-4 space-y-3">
+          {/* Quick-Add-Buttons als zentrale Aktion */}
+          <div className="flex flex-wrap gap-1.5">
+            <QuickPresetButton
+              active={state.useDefault}
+              icon={<Sun size={11} />}
+              label="Ganzer Tag"
+              onClick={() => onSetMode(true)}
             />
-            <QuickWindowChip
-              onClick={() => onAddWindow(QUICK_AFTERNOON)}
-              label="Nachmittag 14:00–18:00"
-            />
+            {QUICK_PRESETS.map((p) => {
+              const present = !state.useDefault && state.windows.some(
+                (w) => w.start === p.range.start && w.end === p.range.end,
+              );
+              return (
+                <QuickPresetButton
+                  key={p.key}
+                  active={present}
+                  icon={<Plus size={11} />}
+                  label={`${p.label} ${minutesToHHMM(p.range.start)}–${minutesToHHMM(p.range.end)}`}
+                  onClick={() => onAddWindow(p.range)}
+                />
+              );
+            })}
+            {!state.useDefault && state.windows.length < MAX_WINDOWS && (
+              <QuickPresetButton
+                active={false}
+                icon={<Clock size={11} />}
+                label="Eigenes Fenster"
+                onClick={() => onAddWindow()}
+              />
+            )}
           </div>
+
+          {/* Window-Cards: nur wenn eigene Fenster */}
+          {!state.useDefault && state.windows.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sortedIdx.map((i) => {
+                const w = state.windows[i];
+                return (
+                  <WindowCard
+                    key={i}
+                    window={w}
+                    onSet={(patch) => onSetWindow(i, patch)}
+                    onRemove={() => onRemoveWindow(i)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Total in Min → kompaktes Label „4h 30min" / „6h" / „45min"
+function formatHoursShort(min: number): string {
+  if (min <= 0) return "—";
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
+function QuickPresetButton({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all"
+      style={{
+        borderColor: active ? "rgb(70, 115, 70)" : "var(--stone)",
+        background: active ? "rgb(70, 115, 70)" : "var(--paper)",
+        color: active ? "#fff" : "var(--smoke)",
+      }}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+// Kompakte Window-Card: Zeit-Inputs nebeneinander, X oben rechts
+function WindowCard({
+  window: w,
+  onSet,
+  onRemove,
+}: {
+  window: TimeWindow;
+  onSet: (patch: Partial<TimeWindow>) => void;
+  onRemove: () => void;
+}) {
+  const duration = w.end - w.start;
+  return (
+    <div
+      className="relative rounded-lg border bg-paper px-3 py-2 flex items-center gap-2 shadow-sm"
+      style={{ borderColor: "var(--stone)" }}
+    >
+      <input
+        type="time"
+        value={minutesToHHMM(w.start)}
+        onChange={(e) => {
+          const v = hhmmToMinutes(e.target.value);
+          if (v != null) onSet({ start: v });
+        }}
+        className="bg-transparent text-sm tabular-nums font-medium w-16 border-0 focus:outline-none focus:ring-0 p-0"
+      />
+      <span className="text-xs text-smoke">–</span>
+      <input
+        type="time"
+        value={minutesToHHMM(w.end)}
+        onChange={(e) => {
+          const v = hhmmToMinutes(e.target.value);
+          if (v != null) onSet({ end: v });
+        }}
+        className="bg-transparent text-sm tabular-nums font-medium w-16 border-0 focus:outline-none focus:ring-0 p-0"
+      />
+      <span className="text-[10px] text-smoke tabular-nums ml-1">
+        {duration > 0 ? formatHoursShort(duration) : ""}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="ml-1 rounded-full hover:bg-linen p-0.5 transition-colors"
+        title="Fenster entfernen"
+        aria-label="Fenster entfernen"
+      >
+        <X size={12} className="text-smoke" />
+      </button>
     </div>
   );
 }

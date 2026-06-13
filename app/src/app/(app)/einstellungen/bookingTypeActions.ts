@@ -84,6 +84,11 @@ export async function createBookingType(formData: FormData): Promise<{ id: strin
       location: s(formData.get("location")) ?? null,
       locationsJson: jsonField(formData.get("locationsJson")),
       requiredFieldsJson: jsonField(formData.get("requiredFieldsJson")),
+      videoProvider: (() => {
+        const v = s(formData.get("videoProvider"));
+        if (!v) return null;
+        return ["zoom", "google_meet", "teams", "whereby", "manual"].includes(v) ? v : null;
+      })(),
       autoConfirm: formData.get("autoConfirm") === "on",
       requirePhone: formData.get("requirePhone") === "on",
       requireMessage: formData.get("requireMessage") === "on",
@@ -122,6 +127,11 @@ export async function updateBookingType(id: string, formData: FormData): Promise
       location: s(formData.get("location")) ?? null,
       locationsJson: jsonField(formData.get("locationsJson")),
       requiredFieldsJson: jsonField(formData.get("requiredFieldsJson")),
+      videoProvider: (() => {
+        const v = s(formData.get("videoProvider"));
+        if (!v) return null;
+        return ["zoom", "google_meet", "teams", "whereby", "manual"].includes(v) ? v : null;
+      })(),
       autoConfirm: formData.get("autoConfirm") === "on",
       requirePhone: formData.get("requirePhone") === "on",
       requireMessage: formData.get("requireMessage") === "on",

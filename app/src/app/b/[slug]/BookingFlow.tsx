@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, Clock, MapPin, Calendar as CalendarIcon,
   CheckCircle2, ArrowLeft, Mail, Phone, MessageSquare, User as UserIcon,
-  AlertCircle, Loader2,
+  AlertCircle, Loader2, Video, ExternalLink,
 } from "lucide-react";
 import { Field } from "@/components/form/Field";
 import { submitBooking } from "./actions";
@@ -100,6 +100,16 @@ function fmtPrice(cents: number) {
   return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
+function providerLabel(provider: string | null): string {
+  switch (provider) {
+    case "zoom": return "Zoom";
+    case "google_meet": return "Google Meet";
+    case "teams": return "Microsoft Teams";
+    case "whereby": return "Whereby";
+    default: return "Online";
+  }
+}
+
 // Locale-Datums-Helfer ohne TZ-Stolperfallen.
 function fmtLongDate(date: string /* YYYY-MM-DD */) {
   const [y, m, d] = date.split("-").map(Number);
@@ -131,6 +141,7 @@ export function BookingFlow({
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<BookableSlot | null>(null);
   const [doneFirstName, setDoneFirstName] = useState<string>("");
+  const [doneMeeting, setDoneMeeting] = useState<{ url: string | null; provider: string | null }>({ url: null, provider: null });
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [dynamicValues, setDynamicValues] = useState<Record<string, string>>({});
@@ -243,8 +254,9 @@ export function BookingFlow({
     const firstName = String(formData.get("customerName") ?? "").trim().split(/\s+/)[0] ?? "";
     startTransition(async () => {
       try {
-        await submitBooking(type.slug, formData);
+        const result = await submitBooking(type.slug, formData);
         setDoneFirstName(firstName);
+        setDoneMeeting({ url: result.meetingUrl, provider: result.meetingProvider });
         setStep("done");
         if (typeof window !== "undefined") {
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -356,6 +368,8 @@ export function BookingFlow({
             firstName={doneFirstName}
             studio={studio}
             locations={locations}
+            meetingUrl={doneMeeting.url}
+            meetingProvider={doneMeeting.provider}
           />
         )}
       </main>
@@ -980,12 +994,16 @@ function DoneStep({
   firstName,
   studio,
   locations,
+  meetingUrl,
+  meetingProvider,
 }: {
   type: BookingTypeForClient;
   slot: BookableSlot;
   firstName: string;
   studio: Studio;
   locations: LocationItem[];
+  meetingUrl: string | null;
+  meetingProvider: string | null;
 }) {
   return (
     <div className="max-w-2xl mx-auto text-center">
@@ -1043,6 +1061,40 @@ function DoneStep({
           ))}
         </div>
       </section>
+
+      {/* Online-Meeting-Link */}
+      {meetingUrl && (
+        <section
+          className="card p-6 sm:p-7 mt-6 text-left"
+          style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "var(--ink)", color: "var(--linen)" }}
+            >
+              <Video size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="eyebrow">{providerLabel(meetingProvider)} Meeting</div>
+              <div className="font-serif mt-1" style={{ fontSize: "18px" }}>Dein Meeting-Link</div>
+              <a
+                href={meetingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm mt-2 break-all underline hover:no-underline"
+                style={{ color: "var(--accent)" }}
+              >
+                {meetingUrl}
+                <ExternalLink size={12} className="shrink-0" />
+              </a>
+              <div className="text-xs mt-3" style={{ color: "var(--smoke)" }}>
+                Speichere den Link — wir senden ihn dir auch per E-Mail.
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {(studio?.studioEmail || studio?.studioPhone) && (
         <p className="mt-8 text-sm" style={{ color: "var(--smoke)" }}>

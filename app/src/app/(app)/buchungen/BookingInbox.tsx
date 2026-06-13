@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Calendar, Clock, Mail, Phone, MessageSquare, Check, X, Trash2, ExternalLink, CheckCircle2, XCircle,
+  Calendar, Clock, Mail, Phone, MessageSquare, Check, X, Trash2, ExternalLink, CheckCircle2, XCircle, Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import { acceptBooking, cancelBooking, deleteBooking } from "./actions";
@@ -24,14 +24,28 @@ type Booking = {
   cancelReason: string | null;
   shootingId: string | null;
   customerId: string | null;
+  meetingUrl: string | null;
+  meetingProvider: string | null;
   bookingType: {
     id: string;
     name: string;
     durationMin: number;
     priceCents: number;
     color: string;
+    videoProvider: string | null;
   };
 };
+
+function providerName(key: string | null): string {
+  switch (key) {
+    case "zoom": return "Zoom";
+    case "google_meet": return "Google Meet";
+    case "teams": return "Teams";
+    case "whereby": return "Whereby";
+    case "manual": return "Manuell";
+    default: return "Online";
+  }
+}
 
 export function BookingInbox({ bookings }: { bookings: Booking[] }) {
   return (
@@ -154,6 +168,41 @@ function BookingCard({ booking }: { booking: Booking }) {
               <div className="mt-2 p-3 rounded-lg bg-linen/50 text-sm flex gap-2">
                 <MessageSquare size={13} className="text-smoke shrink-0 mt-0.5" />
                 <span className="italic" style={{ color: "var(--ink)" }}>„{booking.message}"</span>
+              </div>
+            )}
+
+            {/* Online-Meeting-Link */}
+            {booking.meetingProvider && booking.meetingUrl && (
+              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start" style={{ background: "rgba(120, 167, 119, 0.10)", border: "1px solid rgba(120, 167, 119, 0.3)" }}>
+                <Video size={13} className="text-smoke shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-smoke">{providerName(booking.meetingProvider)} Meeting</div>
+                  <a
+                    href={booking.meetingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs underline break-all hover:no-underline"
+                    style={{ color: "rgb(70, 115, 70)" }}
+                  >
+                    {booking.meetingUrl}
+                  </a>
+                </div>
+              </div>
+            )}
+            {booking.bookingType.videoProvider && !booking.meetingUrl && booking.status !== "CANCELLED" && (
+              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)" }}>
+                <Video size={13} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+                <div className="flex-1 min-w-0 text-xs">
+                  <div className="font-medium" style={{ color: "var(--accent)" }}>
+                    {providerName(booking.bookingType.videoProvider)}-Link fehlt
+                  </div>
+                  <div className="text-smoke mt-0.5">
+                    Im Buchungstyp ist {providerName(booking.bookingType.videoProvider)} gewählt, aber dein persönlicher Link ist noch nicht hinterlegt.{" "}
+                    <a href="/einstellungen?tab=kalender" className="underline hover:text-ink">
+                      Jetzt einrichten →
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
 

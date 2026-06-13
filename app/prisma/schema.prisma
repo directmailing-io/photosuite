@@ -76,6 +76,14 @@ model User {
   // Auch der "Ganzer Tag"-Quick-Button im Kalender füllt diese Range ein.
   defaultDayStartMinutes Int @default(540)   // 09:00
   defaultDayEndMinutes   Int @default(1080)  // 18:00
+  // Persönliche Meeting-Räume pro Provider. Wenn ein BookingType `videoProvider` gesetzt hat,
+  // wird der hier hinterlegte Link beim Buchen automatisch in Booking.meetingUrl kopiert.
+  // OAuth-Auto-Create-Meeting pro Buchung folgt in einer späteren Iteration —
+  // aktuell ist der persönliche Link der schnellste und zuverlässigste Weg.
+  zoomPersonalLink       String?
+  googleMeetPersonalLink String?
+  teamsPersonalLink      String?
+  wherebyPersonalLink    String?
   createdAt    DateTime @default(now())
 }
 
@@ -798,6 +806,9 @@ model BookingType {
   // JSON-Array von Termin-Orten: [{ "key": "studio"|"phone"|"video"|"home"|"custom", "label": "..." }]
   // Multiple möglich — Kundin sieht alle als Info auf der Buchungsseite.
   locationsJson     String?
+  // Wenn „video" als Ort aktiv ist: welcher Provider liefert den Meeting-Link?
+  // Werte: "zoom" | "google_meet" | "teams" | "whereby" | "manual" | null
+  videoProvider     String?
   // JSON-Array von zusätzlichen Pflicht-/Optional-Feldern für die Buchungs-Form.
   // Format: [{ "id", "type", "label", "placeholder"?, "required" }]
   // type: "text"|"textarea"|"phone"|"email"|"select"|"checkbox"
@@ -840,6 +851,10 @@ model Booking {
   customerId      String?
   shooting        Shooting?     @relation(fields: [shootingId], references: [id], onDelete: SetNull)
   shootingId      String?
+  // Online-Meeting-Link, falls BookingType.videoProvider gesetzt war beim Anlegen.
+  // Snapshot — bleibt stabil auch wenn Lisa später ihren persönlichen Link ändert.
+  meetingUrl      String?
+  meetingProvider String?
   // Audit
   confirmedAt     DateTime?
   cancelledAt     DateTime?

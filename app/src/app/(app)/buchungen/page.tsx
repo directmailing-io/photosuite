@@ -109,12 +109,15 @@ export default async function BuchungenPage({
             cancelReason: b.cancelReason,
             shootingId: b.shootingId,
             customerId: b.customerId,
+            meetingUrl: b.meetingUrl,
+            meetingProvider: b.meetingProvider,
             bookingType: {
               id: b.bookingType.id,
               name: b.bookingType.name,
               durationMin: b.bookingType.durationMin,
               priceCents: b.bookingType.priceCents,
               color: b.bookingType.color,
+              videoProvider: b.bookingType.videoProvider,
             },
           }))}
         />

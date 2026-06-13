@@ -7,7 +7,10 @@ import {
   Plus, Trash2, Pencil, Save, X, Eye, EyeOff, Copy, CalendarCheck, Clock, ExternalLink,
   ChevronLeft, ChevronRight, Sparkles, Settings as SettingsIcon, Check, Phone, MessageSquare, Zap,
   MapPin, Video, Home, Code2, GripVertical, AlignLeft, Type as TypeIcon, Mail, ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
+import Link from "next/link";
+import { VIDEO_PROVIDER_ORDER, VIDEO_PROVIDERS, type VideoProviderKey } from "@/lib/videoProviders";
 import { toast } from "sonner";
 import { createBookingType, updateBookingType, deleteBookingType } from "./bookingTypeActions";
 
@@ -25,6 +28,7 @@ export type BookingTypeRow = {
   slotIntervalMin: number;
   location: string | null;
   locationsJson: string | null;
+  videoProvider: string | null;
   requiredFieldsJson: string | null;
   autoConfirm: boolean;
   requirePhone: boolean;
@@ -402,6 +406,7 @@ type FormState = {
   maxAheadDays: number;
   locations: LocationKey[];
   customLocation: string;     // freier Text bei "Andere…"
+  videoProvider: VideoProviderKey | null;
   dynamicFields: DynamicField[];
   autoConfirm: boolean;
   isActive: boolean;
@@ -447,6 +452,10 @@ function BookingTypeForm({
       maxAheadDays: type?.maxAheadDays ?? 60,
       locations: storedLocations,
       customLocation: type?.location ?? "",
+      videoProvider:
+        type?.videoProvider && (VIDEO_PROVIDER_ORDER as string[]).includes(type.videoProvider)
+          ? (type.videoProvider as VideoProviderKey)
+          : null,
       dynamicFields,
       autoConfirm: type?.autoConfirm ?? false,
       isActive: type?.isActive ?? true,
@@ -479,6 +488,12 @@ function BookingTypeForm({
 
     // Dynamische Form-Felder als JSON
     fd.set("requiredFieldsJson", JSON.stringify(state.dynamicFields));
+    // videoProvider nur senden wenn „Online-Meeting" als Ort aktiv ist
+    if (state.locations.includes("video") && state.videoProvider) {
+      fd.set("videoProvider", state.videoProvider);
+    } else {
+      fd.set("videoProvider", "");
+    }
     // Kein Toggle mehr für requirePhone/requireMessage — wird durch JSON ersetzt.
 
     if (state.autoConfirm) fd.set("autoConfirm", "on");
@@ -921,6 +936,14 @@ function Step3Options({
         </div>
       </div>
 
+      {/* Section: Video-Provider (nur wenn „Online-Meeting" gewählt) */}
+      {state.locations.includes("video") && (
+        <VideoProviderSection
+          provider={state.videoProvider}
+          onChange={(p) => update("videoProvider", p)}
+        />
+      )}
+
       {/* Section: Form-Builder */}
       <div>
         <div className="label mb-2">Was brauchst du von der Kundin?</div>
@@ -1021,6 +1044,59 @@ function Step3Options({
 }
 
 /* -------------------- Location & Field Builder Sub-Components -------------------- */
+
+function VideoProviderSection({
+  provider,
+  onChange,
+}: {
+  provider: VideoProviderKey | null;
+  onChange: (p: VideoProviderKey | null) => void;
+}) {
+  return (
+    <div>
+      <div className="label mb-2 flex items-center gap-2">
+        <Video size={12} /> Welches Tool für Online-Meetings?
+      </div>
+      <div className="text-xs text-smoke mb-3">
+        Der hinterlegte persönliche Meeting-Link landet automatisch in der Bestätigung an die Kundin.
+        Tipp: Links pflegst du unter{" "}
+        <Link href="/einstellungen?tab=kalender" className="underline hover:text-ink">
+          Kalender → Online-Meeting-Tools
+        </Link>.
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+        {VIDEO_PROVIDER_ORDER.map((key) => {
+          const def = VIDEO_PROVIDERS[key];
+          const active = provider === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(active ? null : key)}
+              className="flex flex-col items-center gap-1.5 rounded-lg border p-3 transition-all"
+              style={{
+                borderColor: active ? def.brandColor : "var(--stone)",
+                background: active ? `${def.brandColor}12` : "var(--paper)",
+              }}
+            >
+              <div
+                className="w-9 h-9 rounded-md flex items-center justify-center font-medium text-sm"
+                style={{
+                  background: active ? def.brandColor : "var(--linen)",
+                  color: active ? "#fff" : "var(--smoke)",
+                }}
+              >
+                {key === "manual" ? <Mail size={14} /> : def.name.slice(0, 1)}
+              </div>
+              <div className="text-[11px] font-medium text-center leading-tight">{def.name}</div>
+              {active && <Check size={10} style={{ color: def.brandColor }} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function locationIcon(iconKey: string): React.ReactNode {
   switch (iconKey) {

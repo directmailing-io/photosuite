@@ -7,6 +7,7 @@ import { InvoiceProfile } from "./InvoiceProfile";
 import { StripeProfile } from "./StripeProfile";
 import { CalendarSettings } from "./CalendarSettings";
 import { AvailabilityManager } from "./AvailabilityManager";
+import { VideoMeetingSettings } from "./VideoMeetingSettings";
 import { ensureWeeklyDefaults } from "./availabilityActions";
 import { AddonManager } from "./AddonManager";
 import { BookingTypeManager } from "./BookingTypeManager";
@@ -170,6 +171,7 @@ async function BuchungSection() {
         slotIntervalMin: t.slotIntervalMin,
         location: t.location,
         locationsJson: t.locationsJson,
+        videoProvider: t.videoProvider,
         requiredFieldsJson: t.requiredFieldsJson,
         autoConfirm: t.autoConfirm,
         requirePhone: t.requirePhone,
@@ -210,7 +212,14 @@ async function CalendarSection({ userId }: { userId: string }) {
     prisma.availabilityOverride.findMany({ orderBy: { date: "asc" } }),
     prisma.user.findUnique({
       where: { id: userId },
-      select: { defaultDayStartMinutes: true, defaultDayEndMinutes: true },
+      select: {
+        defaultDayStartMinutes: true,
+        defaultDayEndMinutes: true,
+        zoomPersonalLink: true,
+        googleMeetPersonalLink: true,
+        teamsPersonalLink: true,
+        wherebyPersonalLink: true,
+      },
     }),
   ]);
   return (
@@ -230,6 +239,14 @@ async function CalendarSection({ userId }: { userId: string }) {
           slotsJson: o.slotsJson,
           note: o.note,
         }))}
+      />
+      <VideoMeetingSettings
+        initial={{
+          zoomPersonalLink: user?.zoomPersonalLink ?? null,
+          googleMeetPersonalLink: user?.googleMeetPersonalLink ?? null,
+          teamsPersonalLink: user?.teamsPersonalLink ?? null,
+          wherebyPersonalLink: user?.wherebyPersonalLink ?? null,
+        }}
       />
       <CalendarSettings
         connections={conns.map((c) => ({

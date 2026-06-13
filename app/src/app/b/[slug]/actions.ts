@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { isSlotStillAvailable } from "@/lib/bookingSlots";
+import { resolveMeetingLink, isValidProviderKey } from "@/lib/videoProviders";
 import { revalidatePath } from "next/cache";
 
 function s(v: FormDataEntryValue | null): string | undefined {
@@ -12,7 +13,11 @@ function s(v: FormDataEntryValue | null): string | undefined {
 
 // Erzeugt eine Booking aus dem Public-Form. Race-Safe: prüft Verfügbarkeit nochmals
 // in einer Transaction, sonst könnten zwei Kundinnen denselben Slot bekommen.
-export async function submitBooking(slug: string, formData: FormData): Promise<{ id: string }> {
+export async function submitBooking(slug: string, formData: FormData): Promise<{
+  id: string;
+  meetingUrl: string | null;
+  meetingProvider: string | null;
+}> {
   const type = await prisma.bookingType.findUnique({ where: { slug } });
   if (!type || !type.isActive) throw new Error("Buchungstyp nicht verfügbar.");
 
@@ -48,6 +53,23 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
 
   const endAt = new Date(startAt.getTime() + type.durationMin * 60_000);
 
+  // Meeting-Link auflösen, falls Provider gesetzt + persönlicher Link gepflegt.
+  // Snapshot zur Buchungszeit — bleibt stabil auch wenn Lisa ihren Link später ändert.
+  let meetingUrl: string | null = null;
+  let meetingProvider: string | null = null;
+  if (isValidProviderKey(type.videoProvider)) {
+    const user = await prisma.user.findFirst({
+      select: {
+        zoomPersonalLink: true,
+        googleMeetPersonalLink: true,
+        teamsPersonalLink: true,
+        wherebyPersonalLink: true,
+      },
+    });
+    meetingUrl = resolveMeetingLink(type.videoProvider, user);
+    meetingProvider = type.videoProvider;
+  }
+
   const status = type.autoConfirm ? "CONFIRMED" : "PENDING";
   const booking = await prisma.booking.create({
     data: {
@@ -59,11 +81,13 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
       startAt,
       endAt,
       status,
+      meetingUrl,
+      meetingProvider,
       confirmedAt: status === "CONFIRMED" ? new Date() : null,
     },
   });
 
   revalidatePath("/buchungen");
   revalidatePath(`/b/${slug}`);
-  return { id: booking.id };
+  return { id: booking.id, meetingUrl: booking.meetingUrl, meetingProvider: booking.meetingProvider };
 }

@@ -73,7 +73,10 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
       durationMin: booking.bookingType.durationMin,
       location: booking.bookingType.location ?? null,
       price: booking.bookingType.priceCents / 100,
-      description: booking.message ?? booking.bookingType.description ?? null,
+      description: [
+        booking.message ?? booking.bookingType.description ?? null,
+        booking.meetingUrl ? `Meeting-Link: ${booking.meetingUrl}` : null,
+      ].filter(Boolean).join("\n\n") || null,
       // Auto-Termin für die Detail-Ansicht
       dates: {
         create: [{

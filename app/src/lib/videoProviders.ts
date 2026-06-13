@@ -100,3 +100,8 @@ export function isValidProviderKey(s: string | null | undefined): s is VideoProv
   if (!s) return false;
   return (VIDEO_PROVIDER_ORDER as string[]).includes(s);
 }
+
+// Provider, die OAuth-Auto-Create-Meeting unterstützen
+export function isOAuthProvider(provider: VideoProviderKey): boolean {
+  return provider === "zoom" || provider === "google_meet";
+}

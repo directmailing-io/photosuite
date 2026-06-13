@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { isSlotStillAvailable } from "@/lib/bookingSlots";
-import { resolveMeetingLink, isValidProviderKey } from "@/lib/videoProviders";
+import { resolveMeetingLink, isValidProviderKey, isOAuthProvider } from "@/lib/videoProviders";
+import { createMeetingForBooking } from "@/lib/videoMeetingServer";
 import { revalidatePath } from "next/cache";
 
 function s(v: FormDataEntryValue | null): string | undefined {
@@ -53,21 +54,36 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
 
   const endAt = new Date(startAt.getTime() + type.durationMin * 60_000);
 
-  // Meeting-Link auflösen, falls Provider gesetzt + persönlicher Link gepflegt.
-  // Snapshot zur Buchungszeit — bleibt stabil auch wenn Lisa ihren Link später ändert.
+  // Meeting-Link auflösen:
+  // 1. Wenn OAuth-Provider + Connection → unique Meeting via API erstellen (Tier 2)
+  // 2. Sonst: persönlicher Fallback-Link (Tier 1)
+  // Snapshot zur Buchungszeit — bleibt stabil, auch wenn Lisa später Links ändert.
   let meetingUrl: string | null = null;
   let meetingProvider: string | null = null;
   if (isValidProviderKey(type.videoProvider)) {
+    meetingProvider = type.videoProvider;
     const user = await prisma.user.findFirst({
       select: {
+        id: true,
         zoomPersonalLink: true,
         googleMeetPersonalLink: true,
         teamsPersonalLink: true,
         wherebyPersonalLink: true,
       },
     });
-    meetingUrl = resolveMeetingLink(type.videoProvider, user);
-    meetingProvider = type.videoProvider;
+    if (user && isOAuthProvider(type.videoProvider as any)) {
+      meetingUrl = await createMeetingForBooking(type.videoProvider as any, user.id, {
+        topic: `${type.name} — ${customerName}`,
+        startAt,
+        durationMin: type.durationMin,
+        customerEmail,
+        customerName,
+      });
+    }
+    // Fallback: persönlicher Link, wenn kein Auto-Meeting entstand
+    if (!meetingUrl) {
+      meetingUrl = resolveMeetingLink(type.videoProvider, user);
+    }
   }
 
   const status = type.autoConfirm ? "CONFIRMED" : "PENDING";

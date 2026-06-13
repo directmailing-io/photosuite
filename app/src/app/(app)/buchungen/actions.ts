@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateSlug } from "@/lib/slug";
+import { isOAuthProvider, isValidProviderKey } from "@/lib/videoProviders";
+import { createMeetingForBooking } from "@/lib/videoMeetingServer";
 
 async function requireSession() {
   const session = await auth();
@@ -26,6 +28,29 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
   });
   if (!booking) throw new Error("Buchung nicht gefunden");
   if (booking.status === "CANCELLED") throw new Error("Buchung wurde bereits abgesagt");
+
+  // Wenn beim Submit kein OAuth-Meeting erstellt wurde (z.B. weil Lisa damals
+  // nicht verbunden war): jetzt nachholen.
+  let resolvedMeetingUrl = booking.meetingUrl;
+  if (!resolvedMeetingUrl && isValidProviderKey(booking.bookingType.videoProvider) && isOAuthProvider(booking.bookingType.videoProvider as any)) {
+    const user = await prisma.user.findFirst({ select: { id: true } });
+    if (user) {
+      const url = await createMeetingForBooking(booking.bookingType.videoProvider as any, user.id, {
+        topic: `${booking.bookingType.name} — ${booking.customerName}`,
+        startAt: booking.startAt,
+        durationMin: booking.bookingType.durationMin,
+        customerEmail: booking.customerEmail,
+        customerName: booking.customerName,
+      });
+      if (url) {
+        resolvedMeetingUrl = url;
+        await prisma.booking.update({
+          where: { id },
+          data: { meetingUrl: url, meetingProvider: booking.bookingType.videoProvider },
+        });
+      }
+    }
+  }
 
   // Customer-Match per Email (case-insensitive auf application level)
   const emailLower = booking.customerEmail.trim().toLowerCase();
@@ -75,7 +100,7 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
       price: booking.bookingType.priceCents / 100,
       description: [
         booking.message ?? booking.bookingType.description ?? null,
-        booking.meetingUrl ? `Meeting-Link: ${booking.meetingUrl}` : null,
+        resolvedMeetingUrl ? `Meeting-Link: ${resolvedMeetingUrl}` : null,
       ].filter(Boolean).join("\n\n") || null,
       // Auto-Termin für die Detail-Ansicht
       dates: {

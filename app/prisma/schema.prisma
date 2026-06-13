@@ -76,14 +76,23 @@ model User {
   // Auch der "Ganzer Tag"-Quick-Button im Kalender füllt diese Range ein.
   defaultDayStartMinutes Int @default(540)   // 09:00
   defaultDayEndMinutes   Int @default(1080)  // 18:00
-  // Persönliche Meeting-Räume pro Provider. Wenn ein BookingType `videoProvider` gesetzt hat,
-  // wird der hier hinterlegte Link beim Buchen automatisch in Booking.meetingUrl kopiert.
-  // OAuth-Auto-Create-Meeting pro Buchung folgt in einer späteren Iteration —
-  // aktuell ist der persönliche Link der schnellste und zuverlässigste Weg.
+  // Persönliche Meeting-Räume pro Provider (Tier-1-Fallback). Wenn OAuth-Verbindung
+  // existiert, wird stattdessen pro Buchung ein eigenes Meeting erstellt.
   zoomPersonalLink       String?
   googleMeetPersonalLink String?
   teamsPersonalLink      String?
   wherebyPersonalLink    String?
+  // OAuth-Tokens (Tier 2): AES-256-GCM verschlüsselt via lib/crypto.ts.
+  // Bei vorhandenem Token wird pro Buchung ein unique Meeting via Provider-API erstellt.
+  zoomAccessTokenEnc      String?
+  zoomRefreshTokenEnc     String?
+  zoomTokenExpiresAt      DateTime?
+  zoomAccountEmail        String?
+  zoomUserId              String?
+  googleAccessTokenEnc    String?
+  googleRefreshTokenEnc   String?
+  googleTokenExpiresAt    DateTime?
+  googleAccountEmail      String?
   createdAt    DateTime @default(now())
 }
 

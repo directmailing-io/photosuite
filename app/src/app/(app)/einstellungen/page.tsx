@@ -235,6 +235,10 @@ async function CalendarSection({ userId }: { userId: string }) {
         googleMeetPersonalLink: true,
         teamsPersonalLink: true,
         wherebyPersonalLink: true,
+        zoomAccessTokenEnc: true,
+        zoomAccountEmail: true,
+        googleAccessTokenEnc: true,
+        googleAccountEmail: true,
       },
     }),
   ]);
@@ -262,6 +266,10 @@ async function CalendarSection({ userId }: { userId: string }) {
           googleMeetPersonalLink: user?.googleMeetPersonalLink ?? null,
           teamsPersonalLink: user?.teamsPersonalLink ?? null,
           wherebyPersonalLink: user?.wherebyPersonalLink ?? null,
+          zoomConnected: !!user?.zoomAccessTokenEnc,
+          zoomAccountEmail: user?.zoomAccountEmail ?? null,
+          googleConnected: !!user?.googleAccessTokenEnc,
+          googleAccountEmail: user?.googleAccountEmail ?? null,
         }}
       />
       <CalendarSettings

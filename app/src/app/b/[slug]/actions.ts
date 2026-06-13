@@ -23,9 +23,12 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
     throw new Error("Bitte eine gültige E-Mail-Adresse angeben.");
   }
   const customerPhone = s(formData.get("customerPhone"));
-  if (type.requirePhone && !customerPhone) throw new Error("Bitte deine Telefonnummer angeben.");
+  // Wenn neue dynamicFieldsJson-Validierung aktiv ist, übernimmt diese die Pflicht-Logik
+  // — alte Toggles werden dann ignoriert (Client validiert vor dem Submit).
+  const usingDynamic = !!type.requiredFieldsJson;
+  if (!usingDynamic && type.requirePhone && !customerPhone) throw new Error("Bitte deine Telefonnummer angeben.");
   const message = s(formData.get("message"));
-  if (type.requireMessage && !message) throw new Error("Bitte eine kurze Nachricht hinzufügen.");
+  if (!usingDynamic && type.requireMessage && !message) throw new Error("Bitte eine kurze Nachricht hinzufügen.");
 
   const startISO = s(formData.get("startAt"));
   if (!startISO) throw new Error("Kein Termin ausgewählt.");

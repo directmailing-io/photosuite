@@ -6,6 +6,7 @@ import { Field, FormRow } from "@/components/form/Field";
 import {
   Plus, Trash2, Pencil, Save, X, Eye, EyeOff, Copy, CalendarCheck, Clock, ExternalLink,
   ChevronLeft, ChevronRight, Sparkles, Settings as SettingsIcon, Check, Phone, MessageSquare, Zap,
+  MapPin, Video, Home, Code2, GripVertical, AlignLeft, Type as TypeIcon, Mail, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createBookingType, updateBookingType, deleteBookingType } from "./bookingTypeActions";
@@ -23,6 +24,8 @@ export type BookingTypeRow = {
   maxAheadDays: number;
   slotIntervalMin: number;
   location: string | null;
+  locationsJson: string | null;
+  requiredFieldsJson: string | null;
   autoConfirm: boolean;
   requirePhone: boolean;
   requireMessage: boolean;
@@ -134,6 +137,19 @@ function BookingTypeRowView({
     );
   }
 
+  function onCopyEmbed() {
+    const link = `${buildLink()}?embed=1`;
+    const code = `<iframe src="${link}" width="100%" height="780" frameborder="0" style="border:0;max-width:680px;display:block;margin:0 auto;" loading="lazy"></iframe>`;
+    if (!navigator?.clipboard) {
+      toast.error("Zwischenablage nicht verfügbar");
+      return;
+    }
+    navigator.clipboard.writeText(code).then(
+      () => toast.success("Einbettungs-Code kopiert"),
+      () => toast.error("Konnte Code nicht kopieren"),
+    );
+  }
+
   function onOpenLink() {
     const link = buildLink();
     if (typeof window !== "undefined") window.open(link, "_blank", "noopener,noreferrer");
@@ -227,6 +243,14 @@ function BookingTypeRowView({
           <Copy size={13} />
         </button>
         <button
+          onClick={onCopyEmbed}
+          className="btn-icon"
+          disabled={pending}
+          title="Einbettungs-Code kopieren (iframe für deine Website)"
+        >
+          <Code2 size={13} />
+        </button>
+        <button
           onClick={onOpenLink}
           className="btn-icon"
           disabled={pending}
@@ -279,13 +303,92 @@ const LEAD_HOUR_PICKS = [
   { val: 168, label: "1 Woche" },
 ];
 const HORIZON_PICKS = [
+  { val: 7, label: "1 Woche" },
   { val: 14, label: "2 Wochen" },
   { val: 30, label: "1 Monat" },
   { val: 60, label: "2 Monate" },
   { val: 90, label: "3 Monate" },
   { val: 180, label: "6 Monate" },
+  { val: 365, label: "1 Jahr" },
 ];
 const COLOR_PRESETS = ["#9F877F", "#C8102E", "#5C7A6A", "#A37B4F", "#3F4E5F", "#7E5378"];
+
+// Vordefinierte Termin-Orte: Lisa wählt 1+ aus. Die Public-Page zeigt alle als Info.
+type LocationKey = "studio" | "phone" | "video" | "home" | "custom";
+type LocationPreset = { key: LocationKey; label: string; iconKey: string };
+const LOCATION_PRESETS: LocationPreset[] = [
+  { key: "studio", label: "Studio / Vor Ort", iconKey: "MapPin" },
+  { key: "phone", label: "Telefon", iconKey: "Phone" },
+  { key: "video", label: "Online-Meeting", iconKey: "Video" },
+  { key: "home", label: "Bei der Kundin", iconKey: "Home" },
+];
+
+// Form-Builder: dynamische Felder, die Lisa für die Buchungsseite definiert.
+type FormFieldType = "text" | "textarea" | "phone" | "email" | "select" | "checkbox";
+type DynamicField = {
+  id: string;
+  type: FormFieldType;
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[]; // nur für type=select
+};
+const FIELD_TYPE_LABELS: Record<FormFieldType, string> = {
+  text: "Kurzer Text",
+  textarea: "Mehrzeiliger Text",
+  phone: "Telefon",
+  email: "E-Mail",
+  select: "Auswahl-Liste",
+  checkbox: "Checkbox",
+};
+
+// Quick-Add-Vorlagen für häufige Felder. Lisa klickt einmal → Feld wird angelegt.
+const FIELD_QUICK_PRESETS: { label: string; field: Omit<DynamicField, "id"> }[] = [
+  { label: "Telefon", field: { type: "phone", label: "Telefonnummer", required: true } },
+  { label: "Nachricht", field: { type: "textarea", label: "Deine Nachricht", placeholder: "Wünsche, Fragen, Anliegen…", required: false } },
+  { label: "Anliegen", field: { type: "textarea", label: "Worum geht's?", placeholder: "Erzähl mir kurz, was du dir wünschst.", required: true } },
+  { label: "Wohnort", field: { type: "text", label: "Wohnort", required: false } },
+  { label: "Geburtsdatum", field: { type: "text", label: "Geburtsdatum (TT.MM.JJJJ)", placeholder: "z.B. 14.05.1991", required: false } },
+];
+
+function makeFieldId(): string {
+  return `f_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function safeParseLocations(json: string | null): LocationKey[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((p) => p && typeof p.key === "string")
+      .map((p) => p.key as LocationKey)
+      .filter((k) => ["studio", "phone", "video", "home", "custom"].includes(k));
+  } catch {
+    return [];
+  }
+}
+
+function safeParseFields(json: string | null): DynamicField[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((f) => f && typeof f.id === "string" && typeof f.type === "string" && typeof f.label === "string")
+      .map((f) => ({
+        id: f.id,
+        type: f.type as FormFieldType,
+        label: f.label,
+        placeholder: typeof f.placeholder === "string" ? f.placeholder : undefined,
+        required: !!f.required,
+        options: Array.isArray(f.options) ? f.options.filter((o: any) => typeof o === "string") : undefined,
+      }))
+      .filter((f) => ["text", "textarea", "phone", "email", "select", "checkbox"].includes(f.type));
+  } catch {
+    return [];
+  }
+}
 
 type FormState = {
   name: string;
@@ -297,10 +400,10 @@ type FormState = {
   bufferAfterMin: number;
   minLeadHours: number;
   maxAheadDays: number;
-  location: string;
+  locations: LocationKey[];
+  customLocation: string;     // freier Text bei "Andere…"
+  dynamicFields: DynamicField[];
   autoConfirm: boolean;
-  requirePhone: boolean;
-  requireMessage: boolean;
   isActive: boolean;
 };
 
@@ -315,22 +418,40 @@ function BookingTypeForm({
   const [pending, startTransition] = useTransition();
   const [deleting, startDeleteTransition] = useTransition();
   const [step, setStep] = useState(1);
-  const [state, setState] = useState<FormState>(() => ({
-    name: type?.name ?? "",
-    description: type?.description ?? "",
-    durationMin: type?.durationMin ?? 30,
-    color: type?.color ?? "#9F877F",
-    slotIntervalMin: type?.slotIntervalMin ?? 30,
-    bufferBeforeMin: type?.bufferBeforeMin ?? 0,
-    bufferAfterMin: type?.bufferAfterMin ?? 15,
-    minLeadHours: type?.minLeadHours ?? 24,
-    maxAheadDays: type?.maxAheadDays ?? 60,
-    location: type?.location ?? "",
-    autoConfirm: type?.autoConfirm ?? false,
-    requirePhone: type?.requirePhone ?? false,
-    requireMessage: type?.requireMessage ?? false,
-    isActive: type?.isActive ?? true,
-  }));
+  const [state, setState] = useState<FormState>(() => {
+    // Migration: alte requirePhone/requireMessage in DynamicFields umwandeln,
+    // falls noch kein requiredFieldsJson gepflegt wurde.
+    const storedFields = safeParseFields(type?.requiredFieldsJson ?? null);
+    const dynamicFields = storedFields.length > 0 ? storedFields : (() => {
+      const arr: DynamicField[] = [];
+      if (type?.requirePhone) {
+        arr.push({ id: makeFieldId(), type: "phone", label: "Telefonnummer", required: true });
+      }
+      if (type?.requireMessage) {
+        arr.push({ id: makeFieldId(), type: "textarea", label: "Deine Nachricht", required: true });
+      }
+      return arr;
+    })();
+
+    const storedLocations = safeParseLocations(type?.locationsJson ?? null);
+
+    return {
+      name: type?.name ?? "",
+      description: type?.description ?? "",
+      durationMin: type?.durationMin ?? 30,
+      color: type?.color ?? "#9F877F",
+      slotIntervalMin: type?.slotIntervalMin ?? 30,
+      bufferBeforeMin: type?.bufferBeforeMin ?? 0,
+      bufferAfterMin: type?.bufferAfterMin ?? 15,
+      minLeadHours: type?.minLeadHours ?? 24,
+      maxAheadDays: type?.maxAheadDays ?? 60,
+      locations: storedLocations,
+      customLocation: type?.location ?? "",
+      dynamicFields,
+      autoConfirm: type?.autoConfirm ?? false,
+      isActive: type?.isActive ?? true,
+    };
+  });
 
   function update<K extends keyof FormState>(key: K, val: FormState[K]) {
     setState((prev) => ({ ...prev, [key]: val }));
@@ -346,13 +467,51 @@ function BookingTypeForm({
     fd.set("bufferAfterMin", String(state.bufferAfterMin));
     fd.set("minLeadHours", String(state.minLeadHours));
     fd.set("maxAheadDays", String(state.maxAheadDays));
-    fd.set("location", state.location);
+    // Location als JSON-Liste + Backward-Compat-Feld
+    const locationObjs = state.locations.map((k) => {
+      if (k === "custom") return { key: "custom", label: state.customLocation.trim() || "Andere" };
+      const p = LOCATION_PRESETS.find((p) => p.key === k);
+      return { key: k, label: p?.label ?? k };
+    });
+    fd.set("locationsJson", JSON.stringify(locationObjs));
+    fd.set("location", state.customLocation.trim() || locationObjs[0]?.label || "");
     fd.set("color", state.color);
+
+    // Dynamische Form-Felder als JSON
+    fd.set("requiredFieldsJson", JSON.stringify(state.dynamicFields));
+    // Kein Toggle mehr für requirePhone/requireMessage — wird durch JSON ersetzt.
+
     if (state.autoConfirm) fd.set("autoConfirm", "on");
-    if (state.requirePhone) fd.set("requirePhone", "on");
-    if (state.requireMessage) fd.set("requireMessage", "on");
     if (state.isActive) fd.set("isActive", "on");
     return fd;
+  }
+
+  function addDynamicField(f: Omit<DynamicField, "id">) {
+    setState((prev) => ({
+      ...prev,
+      dynamicFields: [...prev.dynamicFields, { ...f, id: makeFieldId() }],
+    }));
+  }
+  function updateDynamicField(id: string, patch: Partial<DynamicField>) {
+    setState((prev) => ({
+      ...prev,
+      dynamicFields: prev.dynamicFields.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    }));
+  }
+  function removeDynamicField(id: string) {
+    setState((prev) => ({
+      ...prev,
+      dynamicFields: prev.dynamicFields.filter((f) => f.id !== id),
+    }));
+  }
+  function toggleLocation(k: LocationKey) {
+    setState((prev) => {
+      const has = prev.locations.includes(k);
+      return {
+        ...prev,
+        locations: has ? prev.locations.filter((x) => x !== k) : [...prev.locations, k],
+      };
+    });
   }
 
   function onSave() {
@@ -418,6 +577,10 @@ function BookingTypeForm({
         <Step3Options
           state={state}
           update={update}
+          onToggleLocation={toggleLocation}
+          onAddField={addDynamicField}
+          onUpdateField={updateDynamicField}
+          onRemoveField={removeDynamicField}
         />
       )}
 
@@ -625,9 +788,9 @@ function Step2Timing({
   update: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-7">
       <div className="text-xs text-smoke">
-        <span className="opacity-75">Schritt 2 von 3 —</span> Wann sind die Termine buchbar und wie weit in der Zukunft?
+        <span className="opacity-75">Schritt 2 von 3 —</span> Wann sind die Termine buchbar?
       </div>
 
       <PickerSection label="Slot-Raster" hint="In welchen Schritten werden Startzeiten angeboten?">
@@ -641,7 +804,7 @@ function Step2Timing({
         ))}
       </PickerSection>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
         <PickerSection label="Puffer davor" hint="Vorbereitungszeit">
           {BUFFER_PICKS.map((v) => (
             <PickerChip
@@ -675,7 +838,7 @@ function Step2Timing({
         ))}
       </PickerSection>
 
-      <PickerSection label="Wie weit in die Zukunft?" hint="Buchungsfenster">
+      <PickerSection label="Wie weit in die Zukunft?" hint="Buchungsfenster · letzte Option = Custom">
         {HORIZON_PICKS.map((p) => (
           <PickerChip
             key={p.val}
@@ -684,6 +847,15 @@ function Step2Timing({
             label={p.label}
           />
         ))}
+        <CustomNumberInput
+          value={state.maxAheadDays}
+          onChange={(v) => update("maxAheadDays", Math.max(1, Math.min(730, v)))}
+          unit="Tage"
+          isCustom={!HORIZON_PICKS.some((p) => p.val === state.maxAheadDays)}
+          min={1}
+          max={730}
+          step={1}
+        />
       </PickerSection>
     </div>
   );
@@ -694,46 +866,125 @@ function Step2Timing({
 function Step3Options({
   state,
   update,
+  onToggleLocation,
+  onAddField,
+  onUpdateField,
+  onRemoveField,
 }: {
   state: FormState;
   update: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
+  onToggleLocation: (k: LocationKey) => void;
+  onAddField: (f: Omit<DynamicField, "id">) => void;
+  onUpdateField: (id: string, patch: Partial<DynamicField>) => void;
+  onRemoveField: (id: string) => void;
 }) {
+  const hasCustom = state.locations.includes("custom");
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-7">
       <div className="text-xs text-smoke">
-        <span className="opacity-75">Schritt 3 von 3 —</span> Fast geschafft. Wo findet er statt und was brauchst du von der Kundin?
+        <span className="opacity-75">Schritt 3 von 3 —</span> Fast geschafft. Wo findet er statt und was brauchst du?
       </div>
 
-      <Field label="Wo findet der Termin statt?" hint={'optional · z.B. „Studio Köln", „Video-Call", „Vor-Ort"'}>
-        <input
-          type="text"
-          value={state.location}
-          onChange={(e) => update("location", e.target.value)}
-          className="input"
-          placeholder="z.B. Studio · Video-Call · bei der Kundin"
-        />
-      </Field>
-
+      {/* Section: Ort */}
       <div>
-        <div className="label mb-2">Was brauchst du von der Kundin?</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <ToggleCard
-            active={state.requirePhone}
-            onClick={() => update("requirePhone", !state.requirePhone)}
-            icon={<Phone size={16} />}
-            title="Telefonnummer"
-            subtitle="Pflichtfeld beim Buchen"
+        <div className="label mb-2">Wo findet der Termin statt?</div>
+        <div className="text-xs text-smoke mb-3">Wähle eine oder mehrere Optionen — wird der Kundin angezeigt.</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {LOCATION_PRESETS.map((p) => (
+            <LocationCheckCard
+              key={p.key}
+              active={state.locations.includes(p.key)}
+              onClick={() => onToggleLocation(p.key)}
+              iconKey={p.iconKey}
+              label={p.label}
+            />
+          ))}
+        </div>
+        <div className="mt-2">
+          <LocationCheckCard
+            active={hasCustom}
+            onClick={() => onToggleLocation("custom")}
+            iconKey="Plus"
+            label="Anderer Ort…"
+            wide
           />
-          <ToggleCard
-            active={state.requireMessage}
-            onClick={() => update("requireMessage", !state.requireMessage)}
-            icon={<MessageSquare size={16} />}
-            title="Nachricht"
-            subtitle="z.B. Wünsche, Fragen"
-          />
+          {hasCustom && (
+            <input
+              type="text"
+              value={state.customLocation}
+              onChange={(e) => update("customLocation", e.target.value)}
+              className="input mt-2"
+              placeholder={'z.B. „Im Park", „Im Schloss Reichenbach"…'}
+            />
+          )}
         </div>
       </div>
 
+      {/* Section: Form-Builder */}
+      <div>
+        <div className="label mb-2">Was brauchst du von der Kundin?</div>
+        <div className="text-xs text-smoke mb-3">
+          Name und E-Mail werden immer abgefragt. Hier kannst du eigene Felder hinzufügen — schnell über Vorlagen oder selbst gestaltet.
+        </div>
+
+        {/* Vorlagen */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {FIELD_QUICK_PRESETS.map((p) => {
+            const already = state.dynamicFields.some(
+              (f) => f.type === p.field.type && f.label.toLowerCase() === p.field.label.toLowerCase(),
+            );
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => !already && onAddField(p.field)}
+                disabled={already}
+                className="text-[11px] rounded-full border px-2.5 py-1 transition-colors flex items-center gap-1"
+                style={{
+                  borderColor: already ? "rgba(120, 167, 119, 0.4)" : "var(--stone)",
+                  background: already ? "rgba(120, 167, 119, 0.10)" : "var(--paper)",
+                  color: already ? "rgb(70, 115, 70)" : "var(--smoke)",
+                  cursor: already ? "default" : "pointer",
+                }}
+              >
+                {already ? <Check size={10} /> : <Plus size={10} />} {p.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Field-Liste */}
+        {state.dynamicFields.length === 0 ? (
+          <div className="text-xs text-smoke italic px-3 py-4 border border-dashed border-stone/60 rounded-lg text-center">
+            Noch keine zusätzlichen Felder. Klick eine Vorlage oben oder „+ Eigenes Feld" unten.
+          </div>
+        ) : (
+          <ul className="space-y-1.5">
+            {state.dynamicFields.map((f) => (
+              <li key={f.id}>
+                <FieldEditorRow
+                  field={f}
+                  onChange={(patch) => onUpdateField(f.id, patch)}
+                  onRemove={() => onRemoveField(f.id)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          onClick={() =>
+            onAddField({ type: "text", label: "Neues Feld", required: false })
+          }
+          className="btn-ghost text-xs h-8 mt-2"
+        >
+          <Plus size={12} /> Eigenes Feld
+        </button>
+      </div>
+
+      {/* Section: Bestätigung */}
       <div>
         <div className="label mb-2">Wie soll bestätigt werden?</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -754,6 +1005,7 @@ function Step3Options({
         </div>
       </div>
 
+      {/* Section: Aktiv */}
       <div>
         <div className="label mb-2">Aktiv?</div>
         <ToggleCard
@@ -764,6 +1016,175 @@ function Step3Options({
           subtitle="Jederzeit umschaltbar"
         />
       </div>
+    </div>
+  );
+}
+
+/* -------------------- Location & Field Builder Sub-Components -------------------- */
+
+function locationIcon(iconKey: string): React.ReactNode {
+  switch (iconKey) {
+    case "MapPin": return <MapPin size={16} />;
+    case "Phone": return <Phone size={16} />;
+    case "Video": return <Video size={16} />;
+    case "Home": return <Home size={16} />;
+    case "Plus": return <Plus size={16} />;
+    default: return <MapPin size={16} />;
+  }
+}
+
+function LocationCheckCard({
+  active,
+  onClick,
+  iconKey,
+  label,
+  wide,
+}: {
+  active: boolean;
+  onClick: () => void;
+  iconKey: string;
+  label: string;
+  wide?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all ${wide ? "w-full" : ""}`}
+      style={{
+        borderColor: active ? "var(--ink)" : "var(--stone)",
+        background: active ? "var(--linen)" : "var(--paper)",
+      }}
+    >
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+        style={{
+          background: active ? "var(--ink)" : "transparent",
+          color: active ? "var(--linen)" : "var(--smoke)",
+          border: `1px solid ${active ? "var(--ink)" : "var(--stone)"}`,
+        }}
+      >
+        {locationIcon(iconKey)}
+      </div>
+      <div className="text-sm font-medium leading-tight flex-1">{label}</div>
+      {active && <Check size={14} className="shrink-0" style={{ color: "var(--ink)" }} />}
+    </button>
+  );
+}
+
+function fieldTypeIcon(t: FormFieldType): React.ReactNode {
+  switch (t) {
+    case "text": return <TypeIcon size={12} />;
+    case "textarea": return <AlignLeft size={12} />;
+    case "phone": return <Phone size={12} />;
+    case "email": return <Mail size={12} />;
+    case "select": return <ChevronDown size={12} />;
+    case "checkbox": return <Check size={12} />;
+  }
+}
+
+function FieldEditorRow({
+  field,
+  onChange,
+  onRemove,
+}: {
+  field: DynamicField;
+  onChange: (patch: Partial<DynamicField>) => void;
+  onRemove: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div
+      className="rounded-lg border bg-paper transition-colors"
+      style={{ borderColor: "var(--stone)" }}
+    >
+      <div className="flex items-center gap-2 px-3 py-2">
+        <GripVertical size={14} className="text-smoke shrink-0 opacity-50" />
+        <div
+          className="w-6 h-6 rounded shrink-0 flex items-center justify-center"
+          style={{ background: "var(--linen)", color: "var(--smoke)" }}
+        >
+          {fieldTypeIcon(field.type)}
+        </div>
+        <input
+          type="text"
+          value={field.label}
+          onChange={(e) => onChange({ label: e.target.value })}
+          className="flex-1 bg-transparent text-sm font-medium border-0 focus:outline-none focus:ring-0 p-0"
+          placeholder="Feld-Beschriftung"
+        />
+        <label className="flex items-center gap-1 text-[10px] text-smoke cursor-pointer">
+          <input
+            type="checkbox"
+            checked={field.required}
+            onChange={(e) => onChange({ required: e.target.checked })}
+            className="w-3 h-3"
+          />
+          Pflicht
+        </label>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="btn-icon"
+          title="Details"
+        >
+          <ChevronDown
+            size={13}
+            style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+          />
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="btn-icon"
+          style={{ color: "var(--accent)" }}
+          title="Feld entfernen"
+        >
+          <X size={13} />
+        </button>
+      </div>
+      {expanded && (
+        <div className="px-3 pb-3 border-t border-stone/60 pt-2 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-smoke">Typ</label>
+              <select
+                value={field.type}
+                onChange={(e) => onChange({ type: e.target.value as FormFieldType })}
+                className="select h-8 text-sm mt-0.5"
+              >
+                {(Object.entries(FIELD_TYPE_LABELS) as [FormFieldType, string][]).map(([k, lbl]) => (
+                  <option key={k} value={k}>{lbl}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-smoke">Platzhalter</label>
+              <input
+                type="text"
+                value={field.placeholder ?? ""}
+                onChange={(e) => onChange({ placeholder: e.target.value })}
+                className="input h-8 text-sm mt-0.5"
+                placeholder={'z.B. „Optional, falls bekannt"…'}
+              />
+            </div>
+          </div>
+          {field.type === "select" && (
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-smoke">Optionen (eine pro Zeile)</label>
+              <textarea
+                value={(field.options ?? []).join("\n")}
+                onChange={(e) => onChange({
+                  options: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                })}
+                rows={3}
+                className="textarea text-sm mt-0.5"
+                placeholder={"Boudoir\nFamily\nBusiness"}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

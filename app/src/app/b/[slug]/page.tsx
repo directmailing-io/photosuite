@@ -28,10 +28,11 @@ export default async function PublicBookingPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; embed?: string }>;
 }) {
   const { slug } = await params;
-  const { month: monthParam } = await searchParams;
+  const { month: monthParam, embed: embedParam } = await searchParams;
+  const embed = embedParam === "1" || embedParam === "true";
 
   const type = await prisma.bookingType.findUnique({ where: { slug } });
   if (!type || !type.isActive) return notFound();
@@ -73,6 +74,8 @@ export default async function PublicBookingPage({
     durationMin: type.durationMin,
     priceCents: type.priceCents,
     location: type.location,
+    locationsJson: type.locationsJson,
+    requiredFieldsJson: type.requiredFieldsJson,
     autoConfirm: type.autoConfirm,
     requirePhone: type.requirePhone,
     requireMessage: type.requireMessage,
@@ -86,6 +89,7 @@ export default async function PublicBookingPage({
       days={days}
       year={year}
       month={month}
+      embed={embed}
     />
   );
 }

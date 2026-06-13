@@ -18,11 +18,63 @@ type BookingTypeForClient = {
   durationMin: number;
   priceCents: number;
   location: string | null;
+  locationsJson: string | null;
+  requiredFieldsJson: string | null;
   autoConfirm: boolean;
   requirePhone: boolean;
   requireMessage: boolean;
   color: string;
 };
+
+type LocationItem = { key: string; label: string };
+type DynamicField = {
+  id: string;
+  type: "text" | "textarea" | "phone" | "email" | "select" | "checkbox";
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[];
+};
+
+function parseLocations(json: string | null, fallback: string | null): LocationItem[] {
+  if (json) {
+    try {
+      const arr = JSON.parse(json);
+      if (Array.isArray(arr)) {
+        const valid = arr
+          .filter((p) => p && typeof p.label === "string")
+          .map((p) => ({ key: String(p.key ?? "custom"), label: String(p.label) }));
+        if (valid.length > 0) return valid;
+      }
+    } catch { /* fallthrough */ }
+  }
+  return fallback ? [{ key: "custom", label: fallback }] : [];
+}
+
+function parseFields(json: string | null, fallback: { requirePhone: boolean; requireMessage: boolean }): DynamicField[] {
+  if (json) {
+    try {
+      const arr = JSON.parse(json);
+      if (Array.isArray(arr)) {
+        return arr
+          .filter((f) => f && typeof f.id === "string" && typeof f.type === "string" && typeof f.label === "string")
+          .map((f) => ({
+            id: f.id,
+            type: f.type,
+            label: f.label,
+            placeholder: typeof f.placeholder === "string" ? f.placeholder : undefined,
+            required: !!f.required,
+            options: Array.isArray(f.options) ? f.options.filter((o: any) => typeof o === "string") : undefined,
+          }));
+      }
+    } catch { /* fallthrough */ }
+  }
+  // Legacy fallback aus den alten Booleans
+  const arr: DynamicField[] = [];
+  if (fallback.requirePhone) arr.push({ id: "_phone", type: "phone", label: "Telefonnummer", required: true });
+  if (fallback.requireMessage) arr.push({ id: "_msg", type: "textarea", label: "Deine Nachricht", required: true });
+  return arr;
+}
 
 type Studio = {
   studioName: string | null;
@@ -66,12 +118,14 @@ export function BookingFlow({
   days,
   year,
   month,
+  embed = false,
 }: {
   type: BookingTypeForClient;
   studio: Studio;
   days: DayWithSlots[];
   year: number;
   month: number; // 0-basiert
+  embed?: boolean;
 }) {
   const [step, setStep] = useState<Step>("calendar");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -79,6 +133,16 @@ export function BookingFlow({
   const [doneFirstName, setDoneFirstName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [dynamicValues, setDynamicValues] = useState<Record<string, string>>({});
+
+  const locations = useMemo(
+    () => parseLocations(type.locationsJson, type.location),
+    [type.locationsJson, type.location],
+  );
+  const dynamicFields = useMemo(
+    () => parseFields(type.requiredFieldsJson, { requirePhone: type.requirePhone, requireMessage: type.requireMessage }),
+    [type.requiredFieldsJson, type.requirePhone, type.requireMessage],
+  );
 
   // Map: date → DayWithSlots für O(1)-Lookup beim Rendern des Kalenders.
   const daysByDate = useMemo(() => {
@@ -157,8 +221,25 @@ export function BookingFlow({
       setError("Kein Termin ausgewählt.");
       return;
     }
-    // startAt aus selectedSlot anhängen (das Formular kennt es nicht).
     formData.set("startAt", selectedSlot.startISO);
+
+    // Validierung der dynamischen Pflichtfelder + Snapshot der Werte als JSON in `dynamicFieldsJson` —
+    // server liest das raus + speichert ins Booking.message (Fallback) oder ein extra Feld.
+    const valuesOut: Record<string, string> = {};
+    for (const f of dynamicFields) {
+      const v = (dynamicValues[f.id] ?? "").trim();
+      if (f.required && !v) {
+        setError(`Bitte „${f.label}" ausfüllen.`);
+        return;
+      }
+      if (v) valuesOut[f.id] = v;
+      // Legacy: Phone und Nachricht ins jeweilige Standard-Feld kopieren,
+      // damit der Inbox/CRM weiter die wichtigsten Daten zentral hat.
+      if (f.type === "phone" && v) formData.set("customerPhone", v);
+      if (f.type === "textarea" && v && !formData.get("message")) formData.set("message", v);
+    }
+    formData.set("dynamicFieldsJson", JSON.stringify({ values: valuesOut, fields: dynamicFields }));
+
     const firstName = String(formData.get("customerName") ?? "").trim().split(/\s+/)[0] ?? "";
     startTransition(async () => {
       try {
@@ -224,15 +305,21 @@ export function BookingFlow({
   );
 
   // ===== Inhalt pro Step =====
+  // Im Embed-Modus: Studio-Header, Außenabstände und Footer kompakter (das Widget
+  // soll möglichst nahtlos in eine fremde Webseite eingebettet wirken).
+  const mainPad = embed ? "py-6 sm:py-8" : "py-10 sm:py-16";
+  const wrapperMaxW = embed ? "max-w-3xl" : "max-w-5xl";
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      {studioHeader}
+    <div className={embed ? "" : "min-h-screen"} style={{ background: embed ? "transparent" : "var(--bg)" }}>
+      {!embed && studioHeader}
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+      <main className={`${wrapperMaxW} mx-auto px-4 sm:px-6 ${mainPad}`}>
         {step === "calendar" && (
           <CalendarStep
             type={type}
             studio={studio}
+            locations={locations}
+            embed={embed}
             calendarCells={calendarCells}
             daysByDate={daysByDate}
             todayKey={todayKey}
@@ -251,6 +338,10 @@ export function BookingFlow({
           <FormStep
             type={type}
             slot={selectedSlot}
+            locations={locations}
+            dynamicFields={dynamicFields}
+            dynamicValues={dynamicValues}
+            setDynamicValues={setDynamicValues}
             error={error}
             isPending={isPending}
             onBack={backToCalendar}
@@ -264,15 +355,18 @@ export function BookingFlow({
             slot={selectedSlot}
             firstName={doneFirstName}
             studio={studio}
+            locations={locations}
           />
         )}
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 pb-10 text-center text-xs text-smoke">
-        <span style={{ color: "var(--smoke)" }}>
-          {studio?.studioName ?? "Studio"} · Online-Terminbuchung
-        </span>
-      </footer>
+      {!embed && (
+        <footer className="max-w-5xl mx-auto px-6 pb-10 text-center text-xs text-smoke">
+          <span style={{ color: "var(--smoke)" }}>
+            {studio?.studioName ?? "Studio"} · Online-Terminbuchung
+          </span>
+        </footer>
+      )}
     </div>
   );
 }
@@ -282,6 +376,8 @@ export function BookingFlow({
 function CalendarStep({
   type,
   studio,
+  locations,
+  embed,
   calendarCells,
   daysByDate,
   todayKey,
@@ -296,6 +392,8 @@ function CalendarStep({
 }: {
   type: BookingTypeForClient;
   studio: Studio;
+  locations: LocationItem[];
+  embed: boolean;
   calendarCells: { date: Date; inMonth: boolean; key: string }[];
   daysByDate: Map<string, DayWithSlots>;
   todayKey: string;
@@ -342,12 +440,12 @@ function CalendarStep({
             <Clock size={14} style={{ color: "var(--accent)" }} />
             {type.durationMin} Minuten
           </span>
-          {type.location && (
-            <span className="inline-flex items-center gap-1.5">
+          {locations.map((loc) => (
+            <span key={loc.key + loc.label} className="inline-flex items-center gap-1.5">
               <MapPin size={14} style={{ color: "var(--accent)" }} />
-              {type.location}
+              {loc.label}
             </span>
-          )}
+          ))}
           {type.priceCents > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
@@ -355,6 +453,8 @@ function CalendarStep({
             </span>
           )}
         </div>
+        {/* embed unused intentional — silence */}
+        {embed ? null : null}
       </section>
 
       {/* Kalender + Slot-Liste */}
@@ -595,6 +695,10 @@ function CalendarStep({
 function FormStep({
   type,
   slot,
+  locations,
+  dynamicFields,
+  dynamicValues,
+  setDynamicValues,
   error,
   isPending,
   onBack,
@@ -602,11 +706,18 @@ function FormStep({
 }: {
   type: BookingTypeForClient;
   slot: BookableSlot;
+  locations: LocationItem[];
+  dynamicFields: DynamicField[];
+  dynamicValues: Record<string, string>;
+  setDynamicValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   error: string | null;
   isPending: boolean;
   onBack: () => void;
   onSubmit: (fd: FormData) => void;
 }) {
+  function setVal(id: string, val: string) {
+    setDynamicValues((prev) => ({ ...prev, [id]: val }));
+  }
   return (
     <div className="max-w-2xl mx-auto">
       {/* Summary-Header */}
@@ -632,12 +743,12 @@ function FormStep({
                 <Clock size={14} style={{ color: "var(--accent)" }} />
                 {slot.label} Uhr · {type.durationMin} Min
               </div>
-              {type.location && (
-                <div className="flex items-center gap-2">
+              {locations.map((loc) => (
+                <div key={loc.key + loc.label} className="flex items-center gap-2">
                   <MapPin size={14} style={{ color: "var(--accent)" }} />
-                  {type.location}
+                  {loc.label}
                 </div>
-              )}
+              ))}
               {type.priceCents > 0 && (
                 <div className="text-sm mt-2 pt-2 border-t" style={{ borderColor: "var(--accent)" }}>
                   <span className="eyebrow eyebrow-muted">Preis: </span>
@@ -711,52 +822,14 @@ function FormStep({
             </div>
           </Field>
 
-          <Field label={`Telefon${type.requirePhone ? " *" : " (optional)"}`}>
-            <div className="relative">
-              <Phone
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--smoke)" }}
-              />
-              <input
-                name="customerPhone"
-                type="tel"
-                required={type.requirePhone}
-                className="input"
-                style={{ paddingLeft: 38 }}
-                placeholder="+49 …"
-                autoComplete="tel"
-              />
-            </div>
-          </Field>
-
-          <Field
-            label={`Nachricht${type.requireMessage ? " *" : " (optional)"}`}
-            hint={
-              type.requireMessage
-                ? "Erzähl uns kurz, worum es geht."
-                : "Worauf sollen wir uns einstellen? (Anlass, Wünsche, Fragen)"
-            }
-          >
-            <div className="relative">
-              <MessageSquare
-                size={16}
-                className="absolute left-3 top-3 pointer-events-none"
-                style={{ color: "var(--smoke)" }}
-              />
-              <textarea
-                name="message"
-                required={type.requireMessage}
-                className="textarea"
-                style={{ paddingLeft: 38, minHeight: 110 }}
-                placeholder={
-                  type.requireMessage
-                    ? "Was hast du dir überlegt?"
-                    : "Optional — alles, was du uns mitgeben magst."
-                }
-              />
-            </div>
-          </Field>
+          {dynamicFields.map((f) => (
+            <DynamicFieldInput
+              key={f.id}
+              field={f}
+              value={dynamicValues[f.id] ?? ""}
+              onChange={(v) => setVal(f.id, v)}
+            />
+          ))}
 
           {error && (
             <div
@@ -808,6 +881,97 @@ function FormStep({
   );
 }
 
+// Dynamic-Field-Render-Helper für die öffentliche Buchungsseite.
+function DynamicFieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: DynamicField;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const labelText = `${field.label}${field.required ? " *" : " (optional)"}`;
+  const placeholder = field.placeholder ?? "";
+
+  if (field.type === "textarea") {
+    return (
+      <Field label={labelText}>
+        <div className="relative">
+          <MessageSquare
+            size={16}
+            className="absolute left-3 top-3 pointer-events-none"
+            style={{ color: "var(--smoke)" }}
+          />
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            required={field.required}
+            className="textarea"
+            style={{ paddingLeft: 38, minHeight: 110 }}
+            placeholder={placeholder}
+          />
+        </div>
+      </Field>
+    );
+  }
+  if (field.type === "select" && field.options && field.options.length > 0) {
+    return (
+      <Field label={labelText}>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={field.required}
+          className="select"
+        >
+          <option value="">— bitte wählen —</option>
+          {field.options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </Field>
+    );
+  }
+  if (field.type === "checkbox") {
+    return (
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input
+          type="checkbox"
+          checked={value === "on"}
+          onChange={(e) => onChange(e.target.checked ? "on" : "")}
+          className="w-4 h-4"
+          required={field.required}
+        />
+        <span>{field.label}{field.required ? " *" : ""}</span>
+      </label>
+    );
+  }
+  // text, phone, email
+  const Icon = field.type === "phone" ? Phone : field.type === "email" ? Mail : UserIcon;
+  const inputType = field.type === "phone" ? "tel" : field.type === "email" ? "email" : "text";
+  return (
+    <Field label={labelText}>
+      <div className="relative">
+        <Icon
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: "var(--smoke)" }}
+        />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          type={inputType}
+          required={field.required}
+          className="input"
+          style={{ paddingLeft: 38 }}
+          placeholder={placeholder}
+          autoComplete={field.type === "phone" ? "tel" : field.type === "email" ? "email" : "off"}
+        />
+      </div>
+    </Field>
+  );
+}
+
 // =================== STEP 3: CONFIRMATION ===================
 
 function DoneStep({
@@ -815,11 +979,13 @@ function DoneStep({
   slot,
   firstName,
   studio,
+  locations,
 }: {
   type: BookingTypeForClient;
   slot: BookableSlot;
   firstName: string;
   studio: Studio;
+  locations: LocationItem[];
 }) {
   return (
     <div className="max-w-2xl mx-auto text-center">
@@ -869,12 +1035,12 @@ function DoneStep({
             <Clock size={14} style={{ color: "var(--accent)" }} />
             {slot.label} Uhr · {type.durationMin} Min
           </div>
-          {type.location && (
-            <div className="flex items-center gap-2">
+          {locations.map((loc) => (
+            <div key={loc.key + loc.label} className="flex items-center gap-2">
               <MapPin size={14} style={{ color: "var(--accent)" }} />
-              {type.location}
+              {loc.label}
             </div>
-          )}
+          ))}
         </div>
       </section>
 

@@ -22,6 +22,18 @@ function num(v: FormDataEntryValue | null, fallback = 0): number {
   return isNaN(n) ? fallback : n;
 }
 
+// JSON-Felder aus FormData lesen + sanity-checken. Bei ungültigem JSON: null.
+function jsonField(v: FormDataEntryValue | null): string | null {
+  const str = s(v);
+  if (!str) return null;
+  try {
+    JSON.parse(str);
+    return str;
+  } catch {
+    return null;
+  }
+}
+
 // Slug-Sanitizer: aus „Erstgespräch 30 Min" wird „erstgespraech-30-min".
 function slugify(input: string): string {
   return input
@@ -70,6 +82,8 @@ export async function createBookingType(formData: FormData): Promise<{ id: strin
       maxAheadDays: Math.max(1, Math.min(365, num(formData.get("maxAheadDays"), 60))),
       slotIntervalMin: Math.max(5, Math.min(120, num(formData.get("slotIntervalMin"), 30))),
       location: s(formData.get("location")) ?? null,
+      locationsJson: jsonField(formData.get("locationsJson")),
+      requiredFieldsJson: jsonField(formData.get("requiredFieldsJson")),
       autoConfirm: formData.get("autoConfirm") === "on",
       requirePhone: formData.get("requirePhone") === "on",
       requireMessage: formData.get("requireMessage") === "on",
@@ -106,6 +120,8 @@ export async function updateBookingType(id: string, formData: FormData): Promise
       maxAheadDays: Math.max(1, Math.min(365, num(formData.get("maxAheadDays"), existing.maxAheadDays))),
       slotIntervalMin: Math.max(5, Math.min(120, num(formData.get("slotIntervalMin"), existing.slotIntervalMin))),
       location: s(formData.get("location")) ?? null,
+      locationsJson: jsonField(formData.get("locationsJson")),
+      requiredFieldsJson: jsonField(formData.get("requiredFieldsJson")),
       autoConfirm: formData.get("autoConfirm") === "on",
       requirePhone: formData.get("requirePhone") === "on",
       requireMessage: formData.get("requireMessage") === "on",

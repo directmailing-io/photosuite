@@ -169,6 +169,8 @@ async function BuchungSection() {
         maxAheadDays: t.maxAheadDays,
         slotIntervalMin: t.slotIntervalMin,
         location: t.location,
+        locationsJson: t.locationsJson,
+        requiredFieldsJson: t.requiredFieldsJson,
         autoConfirm: t.autoConfirm,
         requirePhone: t.requirePhone,
         requireMessage: t.requireMessage,

@@ -794,7 +794,15 @@ model BookingType {
   maxAheadDays      Int      @default(60)
   // Slot-Raster: in welchen Intervallen werden Slots angeboten (15, 30, 60 Min).
   slotIntervalMin   Int      @default(30)
-  location          String?  // z.B. "Lisa Studio, Berlin" oder "Online via Zoom"
+  location          String?  // Legacy-Fallback; neue UI nutzt locationsJson
+  // JSON-Array von Termin-Orten: [{ "key": "studio"|"phone"|"video"|"home"|"custom", "label": "..." }]
+  // Multiple möglich — Kundin sieht alle als Info auf der Buchungsseite.
+  locationsJson     String?
+  // JSON-Array von zusätzlichen Pflicht-/Optional-Feldern für die Buchungs-Form.
+  // Format: [{ "id", "type", "label", "placeholder"?, "required" }]
+  // type: "text"|"textarea"|"phone"|"email"|"select"|"checkbox"
+  // Wenn null: Fallback auf alte requirePhone/requireMessage Toggles.
+  requiredFieldsJson String?
   // Auto-Confirm: PENDING springt sofort auf CONFIRMED beim Buchen.
   // Sonst muss Lisa in der Inbox manuell annehmen.
   autoConfirm       Boolean  @default(false)

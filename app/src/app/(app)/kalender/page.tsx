@@ -33,7 +33,7 @@ export default async function KalenderPage({
   const calRangeStart = new Date(monthStart); calRangeStart.setDate(calRangeStart.getDate() - 7);
   const calRangeEnd = new Date(monthEnd); calRangeEnd.setDate(calRangeEnd.getDate() + 7);
 
-  const [shootings, customers, packages, externalEvents, availabilityDays, nextFreeDays] = await Promise.all([
+  const [shootings, customers, packages, externalEvents, availabilityDays, nextFreeDays, calendarBookings] = await Promise.all([
     prisma.shooting.findMany({
       where: { scheduledAt: { gte: calRangeStart, lt: calRangeEnd } },
       include: { customer: true, package: true, status: true },
@@ -60,6 +60,17 @@ export default async function KalenderPage({
     }),
     getAvailability(calRangeStart, calRangeEnd),
     findNextFreeDays(new Date(), 10, 90),
+    // Online-Buchungen ohne Shooting (PENDING + CONFIRMED) im Range —
+    // damit Lisa sieht, dass da Anfragen liegen, bevor sie annimmt.
+    prisma.booking.findMany({
+      where: {
+        status: { not: "CANCELLED" },
+        shootingId: null,
+        startAt: { gte: calRangeStart, lt: calRangeEnd },
+      },
+      include: { bookingType: { select: { name: true, color: true } } },
+      orderBy: { startAt: "asc" },
+    }),
   ]);
 
   return (
@@ -81,6 +92,18 @@ export default async function KalenderPage({
         packages={packages}
         availability={availabilityDays}
         nextFreeDays={nextFreeDays}
+        bookings={calendarBookings.map((b) => ({
+          id: b.id,
+          customerName: b.customerName,
+          customerEmail: b.customerEmail,
+          startAt: b.startAt.toISOString(),
+          endAt: b.endAt.toISOString(),
+          status: b.status as "PENDING" | "CONFIRMED",
+          bookingTypeName: b.bookingType.name,
+          bookingTypeColor: b.bookingType.color,
+          meetingUrl: b.meetingUrl,
+          meetingProvider: b.meetingProvider,
+        }))}
         externalEvents={externalEvents.map((e) => ({
           id: e.id,
           startAt: e.startAt.toISOString(),

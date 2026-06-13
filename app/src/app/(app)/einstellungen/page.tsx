@@ -153,10 +153,26 @@ export default async function EinstellungenPage({
 }
 
 async function BuchungSection() {
-  const types = await prisma.bookingType.findMany({ orderBy: { position: "asc" } });
+  const [types, user] = await Promise.all([
+    prisma.bookingType.findMany({ orderBy: { position: "asc" } }),
+    prisma.user.findFirst({
+      select: {
+        zoomPersonalLink: true,
+        googleMeetPersonalLink: true,
+        teamsPersonalLink: true,
+        wherebyPersonalLink: true,
+      },
+    }),
+  ]);
   return (
     <BookingTypeManager
       appBaseUrl={process.env.APP_BASE_URL ?? ""}
+      videoLinks={{
+        zoom: !!user?.zoomPersonalLink,
+        google_meet: !!user?.googleMeetPersonalLink,
+        teams: !!user?.teamsPersonalLink,
+        whereby: !!user?.wherebyPersonalLink,
+      }}
       types={types.map((t) => ({
         id: t.id,
         slug: t.slug,

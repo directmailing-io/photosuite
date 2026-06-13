@@ -166,7 +166,7 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
-  const [user, weekly, overrides, shootings] = await Promise.all([
+  const [user, weekly, overrides, shootings, bookings] = await Promise.all([
     prisma.user.findFirst({
       select: { defaultDayStartMinutes: true, defaultDayEndMinutes: true },
     }),
@@ -188,6 +188,21 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
         },
       },
     }),
+    // PENDING + CONFIRMED Bookings ohne verknüpftes Shooting blockieren ebenfalls
+    // den Tag — sonst zeigt der Kalender freie Zeit, in der eigentlich Anfragen liegen.
+    // shootingId=null: angenommene Bookings sind bereits Shootings, doppelt zählen wäre falsch.
+    prisma.booking.findMany({
+      where: {
+        status: { not: "CANCELLED" },
+        shootingId: null,
+        startAt: { gte: start, lt: end },
+      },
+      select: {
+        startAt: true,
+        endAt: true,
+        bookingType: { select: { bufferBeforeMin: true, bufferAfterMin: true } },
+      },
+    }),
   ]);
 
   const userDefault: TimeWindow = {
@@ -203,8 +218,22 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
     id: o.id, isAvailable: o.isAvailable, slotsJson: o.slotsJson, note: o.note,
   });
 
-  // Shootings nach Datum gruppieren mit ihrem effektiven Zeitblock (inkl. Buffer)
+  // Shootings + Bookings nach Datum gruppieren mit ihrem effektiven Zeitblock (inkl. Buffer)
   const busyByDay = new Map<string, TimeWindow[]>();
+  for (const bk of bookings) {
+    const key = ymdLocal(bk.startAt);
+    const bufBefore = bk.bookingType?.bufferBeforeMin ?? 0;
+    const bufAfter = bk.bookingType?.bufferAfterMin ?? 0;
+    const startMin = bk.startAt.getHours() * 60 + bk.startAt.getMinutes();
+    const endMin = bk.endAt.getHours() * 60 + bk.endAt.getMinutes();
+    const blocked: TimeWindow = {
+      start: Math.max(0, startMin - bufBefore),
+      end: Math.min(24 * 60, endMin + bufAfter),
+    };
+    const arr = busyByDay.get(key);
+    if (arr) arr.push(blocked);
+    else busyByDay.set(key, [blocked]);
+  }
   for (const sh of shootings) {
     if (!sh.scheduledAt) continue;
     const key = ymdLocal(sh.scheduledAt);

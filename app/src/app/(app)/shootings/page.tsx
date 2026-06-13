@@ -77,13 +77,22 @@ export default async function ShootingsPage({
     (s) => s.scheduledAt && s.scheduledAt >= calRangeStart && s.scheduledAt < calRangeEnd,
   );
 
-  // Verfügbarkeit fürs angezeigte Grid + nächste freie Tage für den „Freie Termine"-Panel
-  const [availabilityDays, nextFreeDays] = view === "calendar"
+  // Verfügbarkeit fürs angezeigte Grid + nächste freie Tage + Online-Buchungen
+  const [availabilityDays, nextFreeDays, calendarBookings] = view === "calendar"
     ? await Promise.all([
         getAvailability(calRangeStart, calRangeEnd),
         findNextFreeDays(new Date(), 10, 90),
+        prisma.booking.findMany({
+          where: {
+            status: { not: "CANCELLED" },
+            shootingId: null,
+            startAt: { gte: calRangeStart, lt: calRangeEnd },
+          },
+          include: { bookingType: { select: { name: true, color: true } } },
+          orderBy: { startAt: "asc" },
+        }),
       ])
-    : [[], []];
+    : [[], [], []];
 
   return (
     <>
@@ -137,6 +146,18 @@ export default async function ShootingsPage({
           packages={packages}
           availability={availabilityDays}
           nextFreeDays={nextFreeDays}
+          bookings={calendarBookings.map((b) => ({
+            id: b.id,
+            customerName: b.customerName,
+            customerEmail: b.customerEmail,
+            startAt: b.startAt.toISOString(),
+            endAt: b.endAt.toISOString(),
+            status: b.status as "PENDING" | "CONFIRMED",
+            bookingTypeName: b.bookingType.name,
+            bookingTypeColor: b.bookingType.color,
+            meetingUrl: b.meetingUrl,
+            meetingProvider: b.meetingProvider,
+          }))}
           externalEvents={externalEvents.map((e) => ({
             id: e.id,
             startAt: e.startAt.toISOString(),

@@ -43,6 +43,17 @@ function formatEUR(cents: number) {
   return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
+function providerLabel(key: string | null): string {
+  switch (key) {
+    case "zoom": return "Zoom";
+    case "google_meet": return "Google Meet";
+    case "teams": return "Microsoft Teams";
+    case "whereby": return "Whereby";
+    case "manual": return "Manuell";
+    default: return "Online";
+  }
+}
+
 function formatDuration(min: number) {
   if (min < 60) return `${min} Min`;
   const h = Math.floor(min / 60);
@@ -50,15 +61,32 @@ function formatDuration(min: number) {
   return m === 0 ? `${h} Std` : `${h} Std ${m} Min`;
 }
 
+export type VideoLinksAvailable = {
+  zoom: boolean;
+  google_meet: boolean;
+  teams: boolean;
+  whereby: boolean;
+};
+
 export function BookingTypeManager({
   types,
   appBaseUrl,
+  videoLinks,
 }: {
   types: BookingTypeRow[];
   appBaseUrl: string;
+  videoLinks: VideoLinksAvailable;
 }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Warnung: aktive Typen mit Provider, deren persönlicher Link fehlt.
+  const orphanProviderTypes = types.filter((t) => {
+    if (!t.isActive || !t.videoProvider) return false;
+    if (t.videoProvider === "manual") return false;
+    const key = t.videoProvider as keyof VideoLinksAvailable;
+    return !videoLinks[key];
+  });
 
   return (
     <div className="card">
@@ -79,9 +107,28 @@ export function BookingTypeManager({
         )}
       </div>
 
+      {orphanProviderTypes.length > 0 && (
+        <div
+          className="px-6 py-3 flex items-start gap-2 border-b border-stone/60"
+          style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+        >
+          <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+          <div className="text-xs flex-1">
+            <span className="font-medium">
+              {orphanProviderTypes.length === 1
+                ? `„${orphanProviderTypes[0].name}" nutzt ${providerLabel(orphanProviderTypes[0].videoProvider)}, aber dein persönlicher Link fehlt noch.`
+                : `${orphanProviderTypes.length} aktive Buchungstypen nutzen Online-Meetings, deren persönlicher Link noch fehlt.`}
+            </span>{" "}
+            <Link href="/einstellungen?tab=kalender" className="underline hover:no-underline" style={{ color: "var(--accent)" }}>
+              Jetzt einrichten →
+            </Link>
+          </div>
+        </div>
+      )}
+
       {adding && (
         <div className="px-6 py-5 bg-linen/40 border-b border-stone/60">
-          <BookingTypeForm onClose={() => setAdding(false)} />
+          <BookingTypeForm onClose={() => setAdding(false)} videoLinks={videoLinks} />
         </div>
       )}
 
@@ -96,6 +143,7 @@ export function BookingTypeManager({
               {editingId === t.id ? (
                 <BookingTypeForm
                   type={t}
+                  videoLinks={videoLinks}
                   onClose={() => setEditingId(null)}
                 />
               ) : (
@@ -415,9 +463,11 @@ type FormState = {
 
 function BookingTypeForm({
   type,
+  videoLinks,
   onClose,
 }: {
   type?: BookingTypeRow;
+  videoLinks: VideoLinksAvailable;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -593,6 +643,7 @@ function BookingTypeForm({
         <Step3Options
           state={state}
           update={update}
+          videoLinks={videoLinks}
           onToggleLocation={toggleLocation}
           onAddField={addDynamicField}
           onUpdateField={updateDynamicField}
@@ -882,6 +933,7 @@ function Step2Timing({
 function Step3Options({
   state,
   update,
+  videoLinks,
   onToggleLocation,
   onAddField,
   onUpdateField,
@@ -889,6 +941,7 @@ function Step3Options({
 }: {
   state: FormState;
   update: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
+  videoLinks: VideoLinksAvailable;
   onToggleLocation: (k: LocationKey) => void;
   onAddField: (f: Omit<DynamicField, "id">) => void;
   onUpdateField: (id: string, patch: Partial<DynamicField>) => void;
@@ -941,6 +994,7 @@ function Step3Options({
       {state.locations.includes("video") && (
         <VideoProviderSection
           provider={state.videoProvider}
+          videoLinks={videoLinks}
           onChange={(p) => update("videoProvider", p)}
         />
       )}
@@ -1048,11 +1102,15 @@ function Step3Options({
 
 function VideoProviderSection({
   provider,
+  videoLinks,
   onChange,
 }: {
   provider: VideoProviderKey | null;
+  videoLinks: VideoLinksAvailable;
   onChange: (p: VideoProviderKey | null) => void;
 }) {
+  // Ist für den gewählten Provider ein persönlicher Link gepflegt?
+  const linkMissing = provider && provider !== "manual" && !videoLinks[provider as keyof VideoLinksAvailable];
   return (
     <div>
       <div className="label mb-2 flex items-center gap-2">
@@ -1099,6 +1157,21 @@ function VideoProviderSection({
           );
         })}
       </div>
+      {linkMissing && (
+        <div
+          className="mt-2 text-xs p-2 rounded flex items-start gap-2"
+          style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+        >
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+          <div>
+            Für <strong>{providerLabel(provider)}</strong> ist noch kein persönlicher Meeting-Link hinterlegt —
+            die Bestätigung wird ohne Link versandt.{" "}
+            <Link href="/einstellungen?tab=kalender" className="underline hover:no-underline">
+              Jetzt einrichten →
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

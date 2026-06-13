@@ -9,13 +9,14 @@ import {
 } from "@dnd-kit/core";
 import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin,
-  X, ExternalLink, User, Package as PackageIcon, Euro, Plus, Save,
+  X, ExternalLink, User, Package as PackageIcon, Euro, Plus, Save, Mail, Video,
   Sparkles, AlertTriangle, CalendarOff, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatEUR } from "@/lib/utils";
 import { Field, FormRow } from "@/components/form/Field";
 import { moveShootingToDate, createShooting } from "./actions";
+import { acceptBooking, cancelBooking } from "../buchungen/actions";
 import { setDayAvailability } from "../einstellungen/availabilityActions";
 import {
   findStartTimesInDay, minutesToHHMM, hhmmToMinutes,
@@ -62,6 +63,21 @@ export type ExternalEvent = {
   provider: string;
 };
 
+// Online-Buchung (Calendly-Style) — noch nicht zu Shooting transformiert.
+// Wird im Kalender als eigene Tile mit grünem Akzent dargestellt.
+export type CalendarBooking = {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  startAt: string;     // ISO
+  endAt: string;
+  status: "PENDING" | "CONFIRMED";
+  bookingTypeName: string;
+  bookingTypeColor: string;
+  meetingUrl: string | null;
+  meetingProvider: string | null;
+};
+
 // Spiegelt DayStatus aus lib/availability — als serialisierbarer Plain-Object.
 export type AvailabilityDay = {
   date: string;          // YYYY-MM-DD
@@ -79,6 +95,7 @@ export type AvailabilityDay = {
 type Props = {
   shootings: CalendarShooting[];
   externalEvents: ExternalEvent[];
+  bookings?: CalendarBooking[];
   year: number;
   month: number;
   customers: CalendarCustomer[];
@@ -104,10 +121,11 @@ function addMonths(year: number, month: number, delta: number): { year: number; 
   return { year: newYear, month: newMonth };
 }
 
-export function CalendarView({ shootings: initialShootings, externalEvents, year, month, customers, packages, availability, nextFreeDays, basePath = "/shootings?view=calendar" }: Props) {
+export function CalendarView({ shootings: initialShootings, externalEvents, bookings = [], year, month, customers, packages, availability, nextFreeDays, basePath = "/shootings?view=calendar" }: Props) {
   const router = useRouter();
   const [shootings, setShootings] = useState(initialShootings);
   const [selected, setSelected] = useState<CalendarShooting | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null);
   const [createForDate, setCreateForDate] = useState<string | null>(null); // YYYY-MM-DD
   const [editAvailabilityFor, setEditAvailabilityFor] = useState<string | null>(null);
   const [activeDrag, setActiveDrag] = useState<CalendarShooting | null>(null);
@@ -162,6 +180,21 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
     }
     return map;
   }, [externalEvents]);
+
+  // Online-Buchungen nach Tag indexiert
+  const bookingsByDay = useMemo(() => {
+    const map = new Map<string, CalendarBooking[]>();
+    for (const b of bookings) {
+      const key = ymd(new Date(b.startAt));
+      const arr = map.get(key);
+      if (arr) arr.push(b);
+      else map.set(key, [b]);
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    }
+    return map;
+  }, [bookings]);
 
   const today = new Date();
   const prev = addMonths(year, month, -1);
@@ -276,6 +309,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
               const dayKey = ymd(d);
               const dayShootings = byDay.get(dayKey) ?? [];
               const dayExternal = externalByDay.get(dayKey) ?? [];
+              const dayBookings = bookingsByDay.get(dayKey) ?? [];
               const isLastRow = i >= 35;
               const isLastCol = i % 7 === 6;
               const dayAvailability = availabilityByDay.get(dayKey) ?? null;
@@ -291,9 +325,11 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
                   isLastCol={isLastCol}
                   shootings={dayShootings}
                   externalEvents={dayExternal}
+                  bookings={dayBookings}
                   availability={dayAvailability}
                   dimNonFree={showOnlyFree}
                   onSelect={(s) => setSelected(s)}
+                  onSelectBooking={(b) => setSelectedBooking(b)}
                   onCreate={() => setCreateForDate(dayKey)}
                   onEditAvailability={() => setEditAvailabilityFor(dayKey)}
                 />
@@ -312,6 +348,13 @@ export function CalendarView({ shootings: initialShootings, externalEvents, year
         <ShootingModal
           shooting={selected}
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {selectedBooking && (
+        <BookingDetailModal
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
         />
       )}
 
@@ -744,7 +787,7 @@ function FreeSlotsPanel({
 }
 
 function DayCell({
-  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, availability, dimNonFree, onSelect, onCreate, onEditAvailability,
+  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, bookings, availability, dimNonFree, onSelect, onSelectBooking, onCreate, onEditAvailability,
 }: {
   date: Date;
   dayKey: string;
@@ -755,9 +798,11 @@ function DayCell({
   isLastCol: boolean;
   shootings: CalendarShooting[];
   externalEvents: ExternalEvent[];
+  bookings: CalendarBooking[];
   availability: AvailabilityDay | null;
   dimNonFree: boolean;
   onSelect: (s: CalendarShooting) => void;
+  onSelectBooking: (b: CalendarBooking) => void;
   onCreate: () => void;
   onEditAvailability: () => void;
 }) {
@@ -881,24 +926,67 @@ function DayCell({
       </div>
 
       <ul className="space-y-1">
-        {shootings.slice(0, 4).map((s) => (
+        {shootings.slice(0, 3).map((s) => (
           <li key={s.id}>
             <DraggableShootingTile shooting={s} onClick={() => onSelect(s)} />
           </li>
         ))}
-        {/* Externe Events: gedämpft, nicht draggable, nicht klickbar (read-only Konflikt-Anzeige) */}
-        {externalEvents.slice(0, Math.max(0, 5 - Math.min(shootings.length, 4))).map((e) => (
+        {/* Online-Buchungen: eigenes Tile mit grünem Akzent, klickbar */}
+        {bookings.slice(0, Math.max(0, 5 - Math.min(shootings.length, 3))).map((b) => (
+          <li key={b.id}>
+            <BookingTile booking={b} onClick={() => onSelectBooking(b)} />
+          </li>
+        ))}
+        {/* Externe Events: read-only Konflikt-Anzeige */}
+        {externalEvents.slice(0, Math.max(0, 5 - Math.min(shootings.length, 3) - Math.min(bookings.length, 2))).map((e) => (
           <li key={e.id}>
             <ExternalEventTile event={e} />
           </li>
         ))}
-        {(shootings.length + externalEvents.length) > 5 && (
+        {(shootings.length + bookings.length + externalEvents.length) > 5 && (
           <li className="text-[11px] text-smoke px-1.5">
-            +{(shootings.length + externalEvents.length) - 5} weitere
+            +{(shootings.length + bookings.length + externalEvents.length) - 5} weitere
           </li>
         )}
       </ul>
     </div>
+  );
+}
+
+// Online-Buchung-Tile: grünlicher Akzent, gestrichelt bei PENDING, solid bei CONFIRMED.
+// Klick → öffnet das BookingDetailModal mit Quick-Annehmen/Ablehnen.
+function BookingTile({ booking, onClick }: { booking: CalendarBooking; onClick: () => void }) {
+  const time = new Date(booking.startAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const isPending = booking.status === "PENDING";
+  const color = isPending ? "rgb(80, 130, 80)" : "rgb(70, 115, 70)";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left rounded-md px-2 py-1.5 transition hover:brightness-105"
+      style={{
+        background: "rgba(120, 167, 119, 0.12)",
+        borderLeft: `3px ${isPending ? "dashed" : "solid"} ${color}`,
+      }}
+      title={`Online-Buchung: ${booking.customerName} · ${booking.bookingTypeName} · ${isPending ? "Anfrage" : "Bestätigt"}`}
+    >
+      <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "var(--ink)" }}>
+        <Clock size={9} className="shrink-0 opacity-70" />
+        <span className="font-medium">{time}</span>
+        <span
+          className="text-[8px] uppercase tracking-wider px-1 rounded ml-auto"
+          style={{
+            background: isPending ? color : `${color}30`,
+            color: isPending ? "#fff" : color,
+          }}
+        >
+          {isPending ? "Neu" : "✓"}
+        </span>
+      </div>
+      <div className="text-xs mt-0.5 truncate" style={{ color: "var(--ink)" }}>
+        {booking.customerName}
+      </div>
+    </button>
   );
 }
 
@@ -1443,6 +1531,112 @@ function ShootingModal({ shooting, onClose }: { shooting: CalendarShooting; onCl
             <Link href={`/shootings/${shooting.id}`} className="btn-primary text-sm">
               <ExternalLink size={13} /> Zur Detailansicht
             </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =================== BOOKING-DETAIL-MODAL ===================
+
+function BookingDetailModal({ booking, onClose }: { booking: CalendarBooking; onClose: () => void }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const date = new Date(booking.startAt);
+  const end = new Date(booking.endAt);
+  const dateStr = date.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const timeStr = `${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+  const isPending = booking.status === "PENDING";
+
+  function onAccept() {
+    startTransition(async () => {
+      try {
+        const { shootingId } = await acceptBooking(booking.id);
+        toast.success("Buchung angenommen — Shooting angelegt");
+        router.push(`/shootings/${shootingId}`);
+      } catch (err: any) {
+        toast.error(err?.message ?? "Konnte nicht annehmen");
+      }
+    });
+  }
+  function onReject() {
+    if (!confirm("Buchung wirklich ablehnen?")) return;
+    startTransition(async () => {
+      try {
+        await cancelBooking(booking.id);
+        toast.success("Buchung abgelehnt");
+        router.refresh();
+        onClose();
+      } catch (err: any) {
+        toast.error(err?.message ?? "Konnte nicht ablehnen");
+      }
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="card max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="h-1.5" style={{ background: "rgb(70, 115, 70)" }} />
+        <div className="p-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex-1 min-w-0">
+              <div className="badge mb-2" style={{ background: "rgba(120, 167, 119, 0.15)", color: "rgb(70, 115, 70)" }}>
+                {isPending ? "Neue Anfrage" : "Bestätigt"}
+              </div>
+              <div className="font-serif text-2xl leading-tight">{booking.bookingTypeName}</div>
+              <div className="text-sm text-smoke mt-1">Online-Buchung</div>
+            </div>
+            <button onClick={onClose} className="btn-icon shrink-0" aria-label="Schließen">
+              <X size={15} />
+            </button>
+          </div>
+
+          <ul className="space-y-2.5 text-sm border-t border-stone/60 pt-4">
+            <li className="flex items-start gap-3">
+              <CalendarIcon size={15} className="text-smoke shrink-0 mt-0.5" />
+              <span>{dateStr}<span className="text-smoke"> · {timeStr}</span></span>
+            </li>
+            <li className="flex items-center gap-3">
+              <User size={15} className="text-smoke shrink-0" />
+              <span>{booking.customerName}</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Mail size={15} className="text-smoke shrink-0" />
+              <a href={`mailto:${booking.customerEmail}`} className="hover:underline">{booking.customerEmail}</a>
+            </li>
+            {booking.meetingUrl && (
+              <li className="flex items-start gap-3 pt-2 border-t border-stone/40">
+                <Video size={15} className="text-smoke shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-smoke">{booking.meetingProvider ?? "Online"} Meeting</div>
+                  <a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer" className="text-xs underline break-all hover:no-underline" style={{ color: "rgb(70, 115, 70)" }}>
+                    {booking.meetingUrl}
+                  </a>
+                </div>
+              </li>
+            )}
+          </ul>
+
+          <div className="flex justify-between items-center gap-2 mt-5 pt-4 border-t border-stone/60">
+            <Link href="/buchungen" className="btn-ghost text-sm">
+              Zur Inbox
+            </Link>
+            <div className="flex gap-2">
+              {isPending && (
+                <>
+                  <button onClick={onReject} disabled={pending} className="btn-secondary text-sm">
+                    Ablehnen
+                  </button>
+                  <button onClick={onAccept} disabled={pending} className="btn-primary text-sm">
+                    Annehmen
+                  </button>
+                </>
+              )}
+              {!isPending && (
+                <button onClick={onClose} className="btn-ghost text-sm">Schließen</button>
+              )}
+            </div>
           </div>
         </div>
       </div>

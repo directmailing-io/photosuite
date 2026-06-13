@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { VIDEO_PROVIDER_ORDER, VIDEO_PROVIDERS, type VideoProviderKey } from "@/lib/videoProviders";
+import { ProviderLogo } from "@/components/icons/VideoProviderLogos";
 import { toast } from "sonner";
 import { createBookingType, updateBookingType, deleteBookingType } from "./bookingTypeActions";
 
@@ -1080,13 +1081,17 @@ function VideoProviderSection({
               }}
             >
               <div
-                className="w-9 h-9 rounded-md flex items-center justify-center font-medium text-sm"
+                className="w-9 h-9 rounded-md flex items-center justify-center overflow-hidden"
                 style={{
-                  background: active ? def.brandColor : "var(--linen)",
-                  color: active ? "#fff" : "var(--smoke)",
+                  background: "var(--paper)",
+                  border: `1px solid ${active ? def.brandColor + "80" : "var(--stone)"}`,
                 }}
               >
-                {key === "manual" ? <Mail size={14} /> : def.name.slice(0, 1)}
+                {key === "manual" ? (
+                  <Mail size={14} style={{ color: "var(--smoke)" }} />
+                ) : (
+                  <ProviderLogo provider={key} size={24} />
+                )}
               </div>
               <div className="text-[11px] font-medium text-center leading-tight">{def.name}</div>
               {active && <Check size={10} style={{ color: def.brandColor }} />}

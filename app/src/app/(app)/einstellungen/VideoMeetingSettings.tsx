@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Save, Video, ExternalLink, Check, Info } from "lucide-react";
 import { VIDEO_PROVIDER_ORDER, VIDEO_PROVIDERS, type VideoProviderKey } from "@/lib/videoProviders";
+import { ProviderLogo } from "@/components/icons/VideoProviderLogos";
 import { saveVideoLinks } from "./videoMeetingActions";
 
 export type VideoLinks = {
@@ -87,13 +88,13 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
             >
               <div className="flex items-start gap-3">
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-medium text-sm"
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
                   style={{
-                    background: hasValue ? def.brandColor : "var(--linen)",
-                    color: hasValue ? "#fff" : "var(--smoke)",
+                    background: hasValue ? "var(--paper)" : "var(--linen)",
+                    border: `1px solid ${hasValue ? def.brandColor + "60" : "var(--stone)"}`,
                   }}
                 >
-                  {def.name.slice(0, 1)}
+                  <ProviderLogo provider={key} size={28} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 flex-wrap">

@@ -61,7 +61,9 @@ export async function createBookingType(formData: FormData): Promise<{ id: strin
       name,
       description: s(formData.get("description")),
       durationMin: Math.max(5, Math.min(720, num(formData.get("durationMin"), 30))),
-      priceCents: Math.max(0, Math.round(num(formData.get("price"), 0) * 100)),
+      // Termine sind aktuell immer kostenlos. Falls Bezahl-Buchung kommt, hier
+      // wieder Form-Wert lesen.
+      priceCents: 0,
       bufferBeforeMin: Math.max(0, Math.min(240, num(formData.get("bufferBeforeMin"), 0))),
       bufferAfterMin: Math.max(0, Math.min(240, num(formData.get("bufferAfterMin"), 15))),
       minLeadHours: Math.max(0, Math.min(168, num(formData.get("minLeadHours"), 24))),
@@ -97,7 +99,7 @@ export async function updateBookingType(id: string, formData: FormData): Promise
       name,
       description: s(formData.get("description")) ?? null,
       durationMin: Math.max(5, Math.min(720, num(formData.get("durationMin"), existing.durationMin))),
-      priceCents: Math.max(0, Math.round(num(formData.get("price"), existing.priceCents / 100) * 100)),
+      priceCents: 0,
       bufferBeforeMin: Math.max(0, Math.min(240, num(formData.get("bufferBeforeMin"), existing.bufferBeforeMin))),
       bufferAfterMin: Math.max(0, Math.min(240, num(formData.get("bufferAfterMin"), existing.bufferAfterMin))),
       minLeadHours: Math.max(0, Math.min(168, num(formData.get("minLeadHours"), existing.minLeadHours))),

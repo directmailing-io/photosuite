@@ -530,7 +530,8 @@ function QuickPresetButton({
   );
 }
 
-// Kompakte Window-Card: Zeit-Inputs nebeneinander, X oben rechts
+// Kompakte Window-Card: Zeit-Inputs nebeneinander, X oben rechts.
+// Browser-Default-Uhrsymbol versteckt — das macht die Inputs viel ruhiger.
 function WindowCard({
   window: w,
   onSet,
@@ -543,7 +544,7 @@ function WindowCard({
   const duration = w.end - w.start;
   return (
     <div
-      className="relative rounded-lg border bg-paper px-3 py-2 flex items-center gap-2 shadow-sm"
+      className="relative rounded-lg border bg-paper px-3 py-2 flex items-center gap-2 shadow-sm time-card"
       style={{ borderColor: "var(--stone)" }}
     >
       <input
@@ -553,7 +554,8 @@ function WindowCard({
           const v = hhmmToMinutes(e.target.value);
           if (v != null) onSet({ start: v });
         }}
-        className="bg-transparent text-sm tabular-nums font-medium w-16 border-0 focus:outline-none focus:ring-0 p-0"
+        className="time-bare bg-transparent text-sm tabular-nums font-medium border-0 focus:outline-none focus:ring-0 p-0"
+        style={{ width: "4.5rem" }}
       />
       <span className="text-xs text-smoke">–</span>
       <input
@@ -563,7 +565,8 @@ function WindowCard({
           const v = hhmmToMinutes(e.target.value);
           if (v != null) onSet({ end: v });
         }}
-        className="bg-transparent text-sm tabular-nums font-medium w-16 border-0 focus:outline-none focus:ring-0 p-0"
+        className="time-bare bg-transparent text-sm tabular-nums font-medium border-0 focus:outline-none focus:ring-0 p-0"
+        style={{ width: "4.5rem" }}
       />
       <span className="text-[10px] text-smoke tabular-nums ml-1">
         {duration > 0 ? formatHoursShort(duration) : ""}
@@ -577,6 +580,16 @@ function WindowCard({
       >
         <X size={12} className="text-smoke" />
       </button>
+      <style jsx>{`
+        .time-card :global(input[type="time"].time-bare::-webkit-calendar-picker-indicator) {
+          display: none;
+          -webkit-appearance: none;
+        }
+        .time-card :global(input[type="time"].time-bare) {
+          -webkit-appearance: none;
+          appearance: none;
+        }
+      `}</style>
     </div>
   );
 }

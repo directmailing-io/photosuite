@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Field, FormRow } from "@/components/form/Field";
 import {
   Plus, Trash2, Pencil, Save, X, Eye, EyeOff, Copy, CalendarCheck, Clock, ExternalLink,
+  ChevronLeft, ChevronRight, Sparkles, Settings as SettingsIcon, Check, Phone, MessageSquare, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createBookingType, updateBookingType, deleteBookingType } from "./bookingTypeActions";
@@ -160,10 +161,8 @@ function BookingTypeRowView({
   function onToggleActive() {
     const fd = new FormData();
     fd.set("name", type.name);
-    fd.set("slug", type.slug);
     fd.set("description", type.description ?? "");
     fd.set("durationMin", String(type.durationMin));
-    fd.set("price", String(type.priceCents / 100));
     fd.set("bufferBeforeMin", String(type.bufferBeforeMin));
     fd.set("bufferAfterMin", String(type.bufferAfterMin));
     fd.set("minLeadHours", String(type.minLeadHours));
@@ -212,9 +211,7 @@ function BookingTypeRowView({
             <Clock size={11} strokeWidth={1.5} /> {formatDuration(type.durationMin)}
           </span>
           <span className="opacity-40">·</span>
-          <span>{type.priceCents === 0 ? "kostenlos" : formatEUR(type.priceCents)}</span>
-          <span className="opacity-40">·</span>
-          <span className="truncate">/b/{type.slug}</span>
+          <span className="truncate font-mono opacity-75">/b/{type.slug}</span>
         </div>
         {type.description && (
           <div className="text-xs text-smoke mt-1 line-clamp-1 opacity-80">{type.description}</div>
@@ -262,6 +259,51 @@ function BookingTypeRowView({
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * 3-Step-Wizard für Anlegen/Bearbeiten eines Buchungstyps.
+ * Step 1: Was bietest du an? (Name, Beschreibung, Dauer, Farbe)
+ * Step 2: Wann ist es buchbar? (Slot-Raster, Puffer, Vorlauf, Horizont)
+ * Step 3: Buchungs-Optionen (Ort, Pflichtfelder, Auto-Bestätigung, Aktiv)
+ * ------------------------------------------------------------------ */
+
+// Zentrale Quick-Picks für die Schritte 1+2. Bei Bedarf erweiterbar.
+const DURATION_PICKS = [15, 30, 45, 60, 90, 120];
+const SLOT_INTERVAL_PICKS = [15, 30, 60];
+const BUFFER_PICKS = [0, 15, 30, 60];
+const LEAD_HOUR_PICKS = [
+  { val: 1, label: "1 Stunde" },
+  { val: 12, label: "12 Stunden" },
+  { val: 24, label: "1 Tag" },
+  { val: 48, label: "2 Tage" },
+  { val: 72, label: "3 Tage" },
+  { val: 168, label: "1 Woche" },
+];
+const HORIZON_PICKS = [
+  { val: 14, label: "2 Wochen" },
+  { val: 30, label: "1 Monat" },
+  { val: 60, label: "2 Monate" },
+  { val: 90, label: "3 Monate" },
+  { val: 180, label: "6 Monate" },
+];
+const COLOR_PRESETS = ["#9F877F", "#C8102E", "#5C7A6A", "#A37B4F", "#3F4E5F", "#7E5378"];
+
+type FormState = {
+  name: string;
+  description: string;
+  durationMin: number;
+  color: string;
+  slotIntervalMin: number;
+  bufferBeforeMin: number;
+  bufferAfterMin: number;
+  minLeadHours: number;
+  maxAheadDays: number;
+  location: string;
+  autoConfirm: boolean;
+  requirePhone: boolean;
+  requireMessage: boolean;
+  isActive: boolean;
+};
+
 function BookingTypeForm({
   type,
   onClose,
@@ -271,13 +313,50 @@ function BookingTypeForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [color, setColor] = useState<string>(type?.color ?? "#9F877F");
   const [deleting, startDeleteTransition] = useTransition();
+  const [step, setStep] = useState(1);
+  const [state, setState] = useState<FormState>(() => ({
+    name: type?.name ?? "",
+    description: type?.description ?? "",
+    durationMin: type?.durationMin ?? 30,
+    color: type?.color ?? "#9F877F",
+    slotIntervalMin: type?.slotIntervalMin ?? 30,
+    bufferBeforeMin: type?.bufferBeforeMin ?? 0,
+    bufferAfterMin: type?.bufferAfterMin ?? 15,
+    minLeadHours: type?.minLeadHours ?? 24,
+    maxAheadDays: type?.maxAheadDays ?? 60,
+    location: type?.location ?? "",
+    autoConfirm: type?.autoConfirm ?? false,
+    requirePhone: type?.requirePhone ?? false,
+    requireMessage: type?.requireMessage ?? false,
+    isActive: type?.isActive ?? true,
+  }));
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+  function update<K extends keyof FormState>(key: K, val: FormState[K]) {
+    setState((prev) => ({ ...prev, [key]: val }));
+  }
 
+  function buildFormData(): FormData {
+    const fd = new FormData();
+    fd.set("name", state.name);
+    fd.set("description", state.description);
+    fd.set("durationMin", String(state.durationMin));
+    fd.set("slotIntervalMin", String(state.slotIntervalMin));
+    fd.set("bufferBeforeMin", String(state.bufferBeforeMin));
+    fd.set("bufferAfterMin", String(state.bufferAfterMin));
+    fd.set("minLeadHours", String(state.minLeadHours));
+    fd.set("maxAheadDays", String(state.maxAheadDays));
+    fd.set("location", state.location);
+    fd.set("color", state.color);
+    if (state.autoConfirm) fd.set("autoConfirm", "on");
+    if (state.requirePhone) fd.set("requirePhone", "on");
+    if (state.requireMessage) fd.set("requireMessage", "on");
+    if (state.isActive) fd.set("isActive", "on");
+    return fd;
+  }
+
+  function onSave() {
+    const fd = buildFormData();
     startTransition(async () => {
       try {
         if (type) await updateBookingType(type.id, fd);
@@ -314,195 +393,38 @@ function BookingTypeForm({
   }
 
   const busy = pending || deleting;
+  const canProceedFrom1 = state.name.trim().length > 0 && state.durationMin > 0;
+  const isLastStep = step === 3;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <FormRow>
-        <Field label="Name *">
-          <input
-            name="name"
-            defaultValue={type?.name ?? ""}
-            required
-            className="input h-9 text-sm"
-            placeholder="z.B. Erstgespräch 30 Min"
-          />
-        </Field>
-        <Field label="Slug" hint="optional — wird automatisch generiert">
-          <input
-            name="slug"
-            defaultValue={type?.slug ?? ""}
-            className="input h-9 text-sm font-mono"
-            placeholder="z.B. erstgespraech"
-          />
-        </Field>
-      </FormRow>
+    <div className="space-y-4">
+      {/* Stepper */}
+      <Stepper current={step} onJump={(s) => { if (s < step) setStep(s); }} />
 
-      <Field label="Beschreibung" hint="optional, wird der Kundin auf der Buchungsseite gezeigt">
-        <textarea
-          name="description"
-          defaultValue={type?.description ?? ""}
-          rows={2}
-          className="textarea text-sm"
-          placeholder="z.B. Unverbindliches Kennenlernen per Video-Call. Wir besprechen deine Wünsche und das Konzept."
+      {/* Step content */}
+      {step === 1 && (
+        <Step1Basics
+          state={state}
+          update={update}
         />
-      </Field>
+      )}
+      {step === 2 && (
+        <Step2Timing
+          state={state}
+          update={update}
+        />
+      )}
+      {step === 3 && (
+        <Step3Options
+          state={state}
+          update={update}
+        />
+      )}
 
-      <FormRow>
-        <Field label="Dauer (Minuten) *">
-          <input
-            name="durationMin"
-            type="number"
-            min={5}
-            max={720}
-            step={5}
-            defaultValue={type?.durationMin ?? 30}
-            required
-            className="input h-9 text-sm tabular-nums"
-          />
-        </Field>
-        <Field label="Preis (€)" hint="0 = kostenlos">
-          <input
-            name="price"
-            type="number"
-            step="0.01"
-            min="0"
-            defaultValue={type ? (type.priceCents / 100).toFixed(2) : "0"}
-            className="input h-9 text-sm tabular-nums"
-          />
-        </Field>
-      </FormRow>
-
-      <FormRow>
-        <Field label="Slot-Intervall" hint="Raster, in dem Termine angeboten werden">
-          <select
-            name="slotIntervalMin"
-            defaultValue={type?.slotIntervalMin ?? 30}
-            className="select h-9 text-sm"
-          >
-            <option value={15}>15 Minuten</option>
-            <option value={30}>30 Minuten</option>
-            <option value={60}>60 Minuten</option>
-          </select>
-        </Field>
-        <Field label="Ort" hint="optional — z.B. Studio, Video-Call">
-          <input
-            name="location"
-            defaultValue={type?.location ?? ""}
-            className="input h-9 text-sm"
-            placeholder="z.B. Studio Köln · Video-Call · Vor-Ort"
-          />
-        </Field>
-      </FormRow>
-
-      <FormRow>
-        <Field label="Puffer davor (Min)" hint="Vorbereitungszeit vor dem Termin">
-          <input
-            name="bufferBeforeMin"
-            type="number"
-            min={0}
-            max={240}
-            step={5}
-            defaultValue={type?.bufferBeforeMin ?? 0}
-            className="input h-9 text-sm tabular-nums"
-          />
-        </Field>
-        <Field label="Puffer danach (Min)" hint="Nachbereitung / Reinigung">
-          <input
-            name="bufferAfterMin"
-            type="number"
-            min={0}
-            max={240}
-            step={5}
-            defaultValue={type?.bufferAfterMin ?? 15}
-            className="input h-9 text-sm tabular-nums"
-          />
-        </Field>
-      </FormRow>
-
-      <FormRow>
-        <Field label="Vorlaufzeit (Stunden)" hint="Min. Stunden zwischen Buchung und Termin">
-          <input
-            name="minLeadHours"
-            type="number"
-            min={0}
-            max={168}
-            step={1}
-            defaultValue={type?.minLeadHours ?? 24}
-            className="input h-9 text-sm tabular-nums"
-          />
-        </Field>
-        <Field label="Buchungsfenster (Tage)" hint="Wie weit in die Zukunft buchbar">
-          <input
-            name="maxAheadDays"
-            type="number"
-            min={1}
-            max={365}
-            step={1}
-            defaultValue={type?.maxAheadDays ?? 60}
-            className="input h-9 text-sm tabular-nums"
-          />
-        </Field>
-      </FormRow>
-
-      <div className="flex items-center gap-4 pt-1">
-        <Field label="Farbe">
-          <div className="flex items-center gap-2">
-            <input
-              name="color"
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="h-9 w-12 rounded border border-stone cursor-pointer bg-paper"
-              style={{ padding: 2 }}
-            />
-            <span className="text-xs text-smoke font-mono tabular-nums">{color}</span>
-          </div>
-        </Field>
-        <div className="flex-1" />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 pt-2 border-t border-stone/60">
-        <label className="flex items-center gap-2 text-xs text-smoke cursor-pointer py-1">
-          <input
-            type="checkbox"
-            name="isActive"
-            defaultChecked={type?.isActive ?? true}
-            className="w-3.5 h-3.5"
-          />
-          Aktiv (für Kundinnen sichtbar &amp; buchbar)
-        </label>
-        <label className="flex items-center gap-2 text-xs text-smoke cursor-pointer py-1">
-          <input
-            type="checkbox"
-            name="autoConfirm"
-            defaultChecked={type?.autoConfirm ?? false}
-            className="w-3.5 h-3.5"
-          />
-          Automatisch bestätigen (sonst zuerst „Anfrage")
-        </label>
-        <label className="flex items-center gap-2 text-xs text-smoke cursor-pointer py-1">
-          <input
-            type="checkbox"
-            name="requirePhone"
-            defaultChecked={type?.requirePhone ?? false}
-            className="w-3.5 h-3.5"
-          />
-          Telefonnummer verpflichtend
-        </label>
-        <label className="flex items-center gap-2 text-xs text-smoke cursor-pointer py-1">
-          <input
-            type="checkbox"
-            name="requireMessage"
-            defaultChecked={type?.requireMessage ?? false}
-            className="w-3.5 h-3.5"
-          />
-          Nachricht der Kundin verpflichtend
-        </label>
-      </div>
-
-      <div className="flex justify-between items-center gap-2 pt-3 border-t border-stone/60">
+      {/* Footer-Navigation */}
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-stone/60">
         <div>
-          {type && (
+          {type && step === 1 && (
             <button
               type="button"
               onClick={onDelete}
@@ -513,21 +435,464 @@ function BookingTypeForm({
               <Trash2 size={12} /> Löschen
             </button>
           )}
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              disabled={busy}
+              className="btn-ghost text-sm"
+            >
+              <ChevronLeft size={14} /> Zurück
+            </button>
+          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
             type="button"
             onClick={onClose}
             disabled={busy}
             className="btn-ghost text-sm"
           >
-            <X size={12} /> Abbrechen
+            Abbrechen
           </button>
-          <button type="submit" disabled={busy} className="btn-primary text-sm">
-            <Save size={12} /> {pending ? "Speichern…" : type ? "Aktualisieren" : "Anlegen"}
-          </button>
+          {!isLastStep ? (
+            <button
+              type="button"
+              onClick={() => setStep(step + 1)}
+              disabled={busy || (step === 1 && !canProceedFrom1)}
+              className="btn-primary text-sm"
+            >
+              Weiter <ChevronRight size={14} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy || !canProceedFrom1}
+              className="btn-primary text-sm"
+            >
+              <Save size={12} /> {pending ? "Speichern…" : type ? "Aktualisieren" : "Anlegen"}
+            </button>
+          )}
         </div>
       </div>
-    </form>
+    </div>
+  );
+}
+
+function Stepper({ current, onJump }: { current: number; onJump: (s: number) => void }) {
+  const steps = [
+    { num: 1, label: "Termin", icon: Sparkles },
+    { num: 2, label: "Zeit & Verfügbarkeit", icon: Clock },
+    { num: 3, label: "Optionen", icon: SettingsIcon },
+  ];
+  return (
+    <div className="flex items-center gap-2">
+      {steps.map((s, i) => {
+        const Icon = s.icon;
+        const active = s.num === current;
+        const done = s.num < current;
+        const clickable = s.num < current;
+        return (
+          <div key={s.num} className="flex items-center gap-2 flex-1">
+            <button
+              type="button"
+              onClick={() => clickable && onJump(s.num)}
+              disabled={!clickable}
+              className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                background: active ? "var(--ink)" : done ? "rgba(120, 167, 119, 0.15)" : "var(--paper)",
+                color: active ? "var(--linen)" : done ? "rgb(70, 115, 70)" : "var(--smoke)",
+                border: `1px solid ${active ? "var(--ink)" : done ? "rgba(120, 167, 119, 0.4)" : "var(--stone)"}`,
+                cursor: clickable ? "pointer" : "default",
+              }}
+            >
+              {done ? <Check size={12} /> : <Icon size={12} />}
+              <span className="hidden sm:inline">{s.label}</span>
+              <span className="sm:hidden">{s.num}</span>
+            </button>
+            {i < steps.length - 1 && (
+              <div className="h-px flex-1" style={{ background: done ? "rgba(120, 167, 119, 0.4)" : "var(--stone)" }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* -------------------- Step 1: Termin-Basics -------------------- */
+
+function Step1Basics({
+  state,
+  update,
+}: {
+  state: FormState;
+  update: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-smoke">
+        <span className="opacity-75">Schritt 1 von 3 —</span> Wie soll der Termin heißen und wie lange dauert er?
+      </div>
+
+      <Field label="Wie heißt der Termin? *">
+        <input
+          type="text"
+          value={state.name}
+          onChange={(e) => update("name", e.target.value)}
+          placeholder="z.B. Erstgespräch · Vorgespräch Boudoir · Beratung"
+          className="input"
+          autoFocus
+          required
+        />
+      </Field>
+
+      <Field label="Kurze Beschreibung" hint="optional · sieht die Kundin auf der Buchungsseite">
+        <textarea
+          value={state.description}
+          onChange={(e) => update("description", e.target.value)}
+          rows={2}
+          className="textarea text-sm"
+          placeholder="z.B. Unverbindliches Kennenlernen per Video-Call. Wir besprechen deine Wünsche und das Konzept."
+        />
+      </Field>
+
+      <div>
+        <label className="label">Wie lange dauert der Termin? *</label>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {DURATION_PICKS.map((d) => (
+            <PickerChip
+              key={d}
+              active={state.durationMin === d}
+              onClick={() => update("durationMin", d)}
+              label={formatDuration(d)}
+            />
+          ))}
+          <CustomNumberInput
+            value={state.durationMin}
+            onChange={(v) => update("durationMin", Math.max(5, Math.min(720, v)))}
+            unit="Min"
+            isCustom={!DURATION_PICKS.includes(state.durationMin)}
+            min={5}
+            max={720}
+            step={5}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="label">Farbe</label>
+        <div className="flex flex-wrap gap-1.5 mt-1.5 items-center">
+          {COLOR_PRESETS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => update("color", c)}
+              className="w-7 h-7 rounded-full border-2 transition-transform"
+              style={{
+                background: c,
+                borderColor: state.color === c ? "var(--ink)" : "transparent",
+                transform: state.color === c ? "scale(1.1)" : "scale(1)",
+              }}
+              aria-label={c}
+              title={c}
+            />
+          ))}
+          <label className="flex items-center gap-1 ml-2 cursor-pointer">
+            <input
+              type="color"
+              value={state.color}
+              onChange={(e) => update("color", e.target.value)}
+              className="w-7 h-7 rounded-full border-2 cursor-pointer"
+              style={{ borderColor: "var(--stone)", padding: 0 }}
+            />
+            <span className="text-[10px] text-smoke font-mono">eigene</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Step 2: Zeit & Verfügbarkeit -------------------- */
+
+function Step2Timing({
+  state,
+  update,
+}: {
+  state: FormState;
+  update: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-smoke">
+        <span className="opacity-75">Schritt 2 von 3 —</span> Wann sind die Termine buchbar und wie weit in der Zukunft?
+      </div>
+
+      <PickerSection label="Slot-Raster" hint="In welchen Schritten werden Startzeiten angeboten?">
+        {SLOT_INTERVAL_PICKS.map((v) => (
+          <PickerChip
+            key={v}
+            active={state.slotIntervalMin === v}
+            onClick={() => update("slotIntervalMin", v)}
+            label={`${v} Minuten`}
+          />
+        ))}
+      </PickerSection>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <PickerSection label="Puffer davor" hint="Vorbereitungszeit">
+          {BUFFER_PICKS.map((v) => (
+            <PickerChip
+              key={v}
+              active={state.bufferBeforeMin === v}
+              onClick={() => update("bufferBeforeMin", v)}
+              label={v === 0 ? "Kein" : `${v} Min`}
+            />
+          ))}
+        </PickerSection>
+        <PickerSection label="Puffer danach" hint="Nachbereitung, Reinigung">
+          {BUFFER_PICKS.map((v) => (
+            <PickerChip
+              key={v}
+              active={state.bufferAfterMin === v}
+              onClick={() => update("bufferAfterMin", v)}
+              label={v === 0 ? "Kein" : `${v} Min`}
+            />
+          ))}
+        </PickerSection>
+      </div>
+
+      <PickerSection label="Mindest-Vorlauf" hint="Wie kurzfristig kann gebucht werden?">
+        {LEAD_HOUR_PICKS.map((p) => (
+          <PickerChip
+            key={p.val}
+            active={state.minLeadHours === p.val}
+            onClick={() => update("minLeadHours", p.val)}
+            label={p.label}
+          />
+        ))}
+      </PickerSection>
+
+      <PickerSection label="Wie weit in die Zukunft?" hint="Buchungsfenster">
+        {HORIZON_PICKS.map((p) => (
+          <PickerChip
+            key={p.val}
+            active={state.maxAheadDays === p.val}
+            onClick={() => update("maxAheadDays", p.val)}
+            label={p.label}
+          />
+        ))}
+      </PickerSection>
+    </div>
+  );
+}
+
+/* -------------------- Step 3: Optionen -------------------- */
+
+function Step3Options({
+  state,
+  update,
+}: {
+  state: FormState;
+  update: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-smoke">
+        <span className="opacity-75">Schritt 3 von 3 —</span> Fast geschafft. Wo findet er statt und was brauchst du von der Kundin?
+      </div>
+
+      <Field label="Wo findet der Termin statt?" hint={'optional · z.B. „Studio Köln", „Video-Call", „Vor-Ort"'}>
+        <input
+          type="text"
+          value={state.location}
+          onChange={(e) => update("location", e.target.value)}
+          className="input"
+          placeholder="z.B. Studio · Video-Call · bei der Kundin"
+        />
+      </Field>
+
+      <div>
+        <div className="label mb-2">Was brauchst du von der Kundin?</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <ToggleCard
+            active={state.requirePhone}
+            onClick={() => update("requirePhone", !state.requirePhone)}
+            icon={<Phone size={16} />}
+            title="Telefonnummer"
+            subtitle="Pflichtfeld beim Buchen"
+          />
+          <ToggleCard
+            active={state.requireMessage}
+            onClick={() => update("requireMessage", !state.requireMessage)}
+            icon={<MessageSquare size={16} />}
+            title="Nachricht"
+            subtitle="z.B. Wünsche, Fragen"
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="label mb-2">Wie soll bestätigt werden?</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <ToggleCard
+            active={!state.autoConfirm}
+            onClick={() => update("autoConfirm", false)}
+            icon={<CalendarCheck size={16} />}
+            title="Manuell"
+            subtitle="Du prüfst jede Anfrage"
+          />
+          <ToggleCard
+            active={state.autoConfirm}
+            onClick={() => update("autoConfirm", true)}
+            icon={<Zap size={16} />}
+            title="Automatisch"
+            subtitle="Termin gilt sofort als gebucht"
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="label mb-2">Aktiv?</div>
+        <ToggleCard
+          active={state.isActive}
+          onClick={() => update("isActive", !state.isActive)}
+          icon={state.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+          title={state.isActive ? "Aktiv — Kundinnen können buchen" : "Inaktiv — Link funktioniert nicht"}
+          subtitle="Jederzeit umschaltbar"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Sub-Components -------------------- */
+
+function PickerSection({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="label flex items-baseline gap-2">
+        {label}
+        {hint && <span className="text-xs text-smoke font-normal opacity-75">· {hint}</span>}
+      </div>
+      <div className="flex flex-wrap gap-1.5 mt-1.5">{children}</div>
+    </div>
+  );
+}
+
+function PickerChip({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-all"
+      style={{
+        borderColor: active ? "var(--ink)" : "var(--stone)",
+        background: active ? "var(--ink)" : "var(--paper)",
+        color: active ? "var(--linen)" : "var(--ink)",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function CustomNumberInput({
+  value,
+  onChange,
+  unit,
+  isCustom,
+  min,
+  max,
+  step,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  unit: string;
+  isCustom: boolean;
+  min: number;
+  max: number;
+  step: number;
+}) {
+  return (
+    <label
+      className="rounded-full border flex items-center gap-1 pl-3 pr-2 py-0.5 text-xs cursor-text"
+      style={{
+        borderColor: isCustom ? "var(--ink)" : "var(--stone)",
+        background: isCustom ? "var(--paper)" : "var(--paper)",
+        color: isCustom ? "var(--ink)" : "var(--smoke)",
+      }}
+    >
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        min={min}
+        max={max}
+        step={step}
+        className="bg-transparent w-12 text-center tabular-nums focus:outline-none p-0 border-0"
+      />
+      <span className="opacity-75">{unit}</span>
+    </label>
+  );
+}
+
+function ToggleCard({
+  active,
+  onClick,
+  icon,
+  title,
+  subtitle,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-lg border p-3 text-left transition-all"
+      style={{
+        borderColor: active ? "var(--ink)" : "var(--stone)",
+        background: active ? "var(--linen)" : "var(--paper)",
+      }}
+    >
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+        style={{
+          background: active ? "var(--ink)" : "transparent",
+          color: active ? "var(--linen)" : "var(--smoke)",
+          border: `1px solid ${active ? "var(--ink)" : "var(--stone)"}`,
+        }}
+      >
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium leading-tight">{title}</div>
+        <div className="text-[11px] text-smoke mt-0.5">{subtitle}</div>
+      </div>
+      {active && <Check size={14} className="shrink-0" style={{ color: "var(--ink)" }} />}
+    </button>
   );
 }

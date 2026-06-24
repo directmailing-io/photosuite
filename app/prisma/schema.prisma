@@ -1,12 +1,14 @@
 // Lisa CRM — Datenmodell MVP
-// SQLite jetzt, Postgres-kompatibel für Production-Migration
+// Provider auf "postgresql" umgestellt für Vercel/Supabase-Deploy.
+// Lokal weiter SQLite testen: temporär `provider = "sqlite"` + `DATABASE_URL="file:./dev.db"`.
+// Mittelfristig sollte die lokale Dev-DB ebenfalls Postgres sein (Docker / Supabase local).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

@@ -9,3 +9,4 @@ public/uploads/*
 !public/uploads/.gitkeep
 prisma/*.db
 prisma/*.db-journal
+.vercel

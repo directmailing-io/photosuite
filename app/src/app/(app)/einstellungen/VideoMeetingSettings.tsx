@@ -78,13 +78,13 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
       {/* Info-Banner */}
       <div
         className="px-6 py-3 text-xs flex items-start gap-2 border-b border-stone/60"
-        style={{ background: "rgba(120, 167, 119, 0.06)", color: "var(--smoke)" }}
+        style={{ background: "rgba(120, 167, 119, 0.06)", color: "rgb(var(--smoke))" }}
       >
         <Info size={12} className="shrink-0 mt-0.5" style={{ color: "rgb(70, 115, 70)" }} />
         <div>
-          <strong style={{ color: "var(--ink)" }}>Zoom & Google Meet:</strong> Vollwertige OAuth-Verbindung — eigener Raum pro Buchung.{" "}
+          <strong style={{ color: "rgb(var(--ink))" }}>Zoom & Google Meet:</strong> Vollwertige OAuth-Verbindung — eigener Raum pro Buchung.{" "}
           <br />
-          <strong style={{ color: "var(--ink)" }}>Microsoft Teams & Whereby:</strong> persönlicher Link (du gibst einen festen Raum an, der in jede Buchung eingefügt wird).
+          <strong style={{ color: "rgb(var(--ink))" }}>Microsoft Teams & Whereby:</strong> persönlicher Link (du gibst einen festen Raum an, der in jede Buchung eingefügt wird).
         </div>
       </div>
 
@@ -107,16 +107,16 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
               key={key}
               className="rounded-lg border p-4 transition-colors"
               style={{
-                borderColor: isActive ? def.brandColor : "var(--stone)",
-                background: isActive ? `${def.brandColor}08` : "var(--paper)",
+                borderColor: isActive ? def.brandColor : "rgb(var(--stone))",
+                background: isActive ? `${def.brandColor}08` : "rgb(var(--paper))",
               }}
             >
               <div className="flex items-start gap-3">
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
                   style={{
-                    background: isActive ? "var(--paper)" : "var(--linen)",
-                    border: `1px solid ${isActive ? def.brandColor + "60" : "var(--stone)"}`,
+                    background: isActive ? "rgb(var(--paper))" : "rgb(var(--linen))",
+                    border: `1px solid ${isActive ? def.brandColor + "60" : "rgb(var(--stone))"}`,
                   }}
                 >
                   <ProviderLogo provider={key} size={28} />
@@ -142,7 +142,7 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
                     <div
                       className="mt-3 rounded-md border p-3"
                       style={{
-                        borderColor: isOAuthConnected ? def.brandColor + "60" : "var(--stone)",
+                        borderColor: isOAuthConnected ? def.brandColor + "60" : "rgb(var(--stone))",
                         background: isOAuthConnected ? `${def.brandColor}10` : "rgba(0,0,0,0.02)",
                       }}
                     >
@@ -152,7 +152,7 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
                           <div className="text-xs font-medium">Auto-Meeting pro Buchung</div>
                           <div className="text-[11px] text-smoke mt-0.5">
                             {isOAuthConnected ? (
-                              <>Verbunden als <strong style={{ color: "var(--ink)" }}>{oauthEmail ?? "(unbekannt)"}</strong></>
+                              <>Verbunden als <strong style={{ color: "rgb(var(--ink))" }}>{oauthEmail ?? "(unbekannt)"}</strong></>
                             ) : (
                               <>Verbinde dein {def.name}-Konto, damit pro Buchung ein eigener Raum entsteht.</>
                             )}
@@ -163,7 +163,7 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
                             type="button"
                             onClick={() => onDisconnect(key === "zoom" ? "zoom" : "google")}
                             className="btn-ghost text-xs h-8"
-                            style={{ color: "var(--accent)" }}
+                            style={{ color: "rgb(var(--accent))" }}
                           >
                             <X size={11} /> Trennen
                           </button>
@@ -232,7 +232,7 @@ export function VideoMeetingSettings({ initial }: { initial: VideoLinks }) {
           <div>
             Vor dem ersten „Verbinden"-Klick brauchst du Developer-Credentials in <code>.env</code>:
           </div>
-          <pre className="bg-linen p-2 rounded text-[10px] overflow-x-auto" style={{ color: "var(--ink)" }}>
+          <pre className="bg-linen p-2 rounded text-[10px] overflow-x-auto" style={{ color: "rgb(var(--ink))" }}>
 {`# Zoom (https://marketplace.zoom.us → Build App → OAuth)
 ZOOM_CLIENT_ID=...
 ZOOM_CLIENT_SECRET=...

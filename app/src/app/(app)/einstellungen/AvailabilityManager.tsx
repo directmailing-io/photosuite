@@ -389,10 +389,10 @@ function WeeklyDayRow({
   // Card-Background: subtil hervorheben je nach Zustand
   const cardBg = state.isAvailable
     ? "rgba(120, 167, 119, 0.05)"
-    : "var(--paper)";
+    : "rgb(var(--paper))";
   const cardBorder = state.isAvailable
     ? "rgba(120, 167, 119, 0.35)"
-    : "var(--stone)";
+    : "rgb(var(--stone))";
 
   return (
     <div
@@ -520,9 +520,9 @@ function QuickPresetButton({
       onClick={onClick}
       className="flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all"
       style={{
-        borderColor: active ? "rgb(70, 115, 70)" : "var(--stone)",
-        background: active ? "rgb(70, 115, 70)" : "var(--paper)",
-        color: active ? "#fff" : "var(--smoke)",
+        borderColor: active ? "rgb(70, 115, 70)" : "rgb(var(--stone))",
+        background: active ? "rgb(70, 115, 70)" : "rgb(var(--paper))",
+        color: active ? "#fff" : "rgb(var(--smoke))",
       }}
     >
       {icon} {label}
@@ -545,7 +545,7 @@ function WindowCard({
   return (
     <div
       className="relative rounded-lg border bg-paper px-3 py-2 flex items-center gap-2 shadow-sm time-card"
-      style={{ borderColor: "var(--stone)" }}
+      style={{ borderColor: "rgb(var(--stone))" }}
     >
       <input
         type="time"
@@ -609,9 +609,9 @@ function ToggleButton({
       onClick={onChange}
       className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors"
       style={{
-        borderColor: checked ? "rgba(120, 167, 119, 0.6)" : "var(--stone)",
-        background: checked ? "rgba(120, 167, 119, 0.12)" : "var(--paper)",
-        color: checked ? "rgb(70, 115, 70)" : "var(--smoke)",
+        borderColor: checked ? "rgba(120, 167, 119, 0.6)" : "rgb(var(--stone))",
+        background: checked ? "rgba(120, 167, 119, 0.12)" : "rgb(var(--paper))",
+        color: checked ? "rgb(70, 115, 70)" : "rgb(var(--smoke))",
       }}
       aria-pressed={checked}
     >
@@ -638,9 +638,9 @@ function ModeChip({
       onClick={onClick}
       className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors"
       style={{
-        borderColor: active ? "var(--ink)" : "var(--stone)",
-        background: active ? "var(--ink)" : "var(--paper)",
-        color: active ? "var(--linen)" : "var(--smoke)",
+        borderColor: active ? "rgb(var(--ink))" : "rgb(var(--stone))",
+        background: active ? "rgb(var(--ink))" : "rgb(var(--paper))",
+        color: active ? "rgb(var(--linen))" : "rgb(var(--smoke))",
       }}
       aria-pressed={active}
     >
@@ -699,7 +699,7 @@ function WindowList({
               type="button"
               onClick={() => onRemove(i)}
               className="btn-icon"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "rgb(var(--accent))" }}
               title="Fenster entfernen"
               aria-label="Fenster entfernen"
             >
@@ -855,8 +855,8 @@ function WeeklyPreview({
               className="aspect-square p-1.5 relative"
               style={{
                 background: bg,
-                borderBottom: !lastRow ? "1px solid var(--stone)" : undefined,
-                borderRight: !lastCol ? "1px solid var(--stone)" : undefined,
+                borderBottom: !lastRow ? "1px solid rgb(var(--stone))" : undefined,
+                borderRight: !lastCol ? "1px solid rgb(var(--stone))" : undefined,
               }}
               title={d.note ?? undefined}
             >
@@ -865,7 +865,7 @@ function WeeklyPreview({
                   className="text-xs tabular-nums"
                   style={{
                     fontWeight: isToday ? 700 : isFirst ? 600 : 400,
-                    color: d.isAvailable ? "var(--ink)" : "var(--smoke)",
+                    color: d.isAvailable ? "rgb(var(--ink))" : "rgb(var(--smoke))",
                   }}
                 >
                   {isFirst
@@ -992,8 +992,8 @@ function OverrideRowView({ override }: { override: OverrideRow }) {
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
         style={{
-          background: isBlocked ? "var(--linen)" : "rgba(120, 167, 119, 0.15)",
-          color: isBlocked ? "var(--smoke)" : "rgb(80, 130, 80)",
+          background: isBlocked ? "rgb(var(--linen))" : "rgba(120, 167, 119, 0.15)",
+          color: isBlocked ? "rgb(var(--smoke))" : "rgb(80, 130, 80)",
         }}
       >
         {isBlocked ? <CalendarOff size={16} /> : <Calendar size={16} />}
@@ -1041,7 +1041,7 @@ function DeleteOverrideButton({ id }: { id: string }) {
       onClick={onClick}
       disabled={pending}
       className="btn-icon"
-      style={{ color: "var(--accent)" }}
+      style={{ color: "rgb(var(--accent))" }}
       title="Entfernen"
     >
       <Trash2 size={13} />

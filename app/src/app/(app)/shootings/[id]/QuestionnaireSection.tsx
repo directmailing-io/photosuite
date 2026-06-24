@@ -98,7 +98,7 @@ export function QuestionnaireSection({
                 onClick={() => onCreateFromTemplate(t.id)}
                 disabled={busy}
                 className="w-full p-2.5 rounded-lg border text-left hover:bg-paper transition flex items-center gap-3"
-                style={{ borderColor: "var(--stone)" }}
+                style={{ borderColor: "rgb(var(--stone))" }}
               >
                 <FileQuestion size={15} className="text-taupe shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -159,7 +159,7 @@ export function QuestionnaireSection({
                     <div className="text-xs text-smoke mt-1 flex flex-wrap gap-3">
                       <span>{q.fieldCount} {q.fieldCount === 1 ? "Frage" : "Fragen"}</span>
                       {q.status === "SUBMITTED" && q.submittedAt && (
-                        <span className="flex items-center gap-1" style={{ color: "var(--ink)" }}>
+                        <span className="flex items-center gap-1" style={{ color: "rgb(var(--ink))" }}>
                           <CheckCircle2 size={11} /> {relativeDate(q.submittedAt)}
                         </span>
                       )}
@@ -182,7 +182,7 @@ export function QuestionnaireSection({
                   <div className="mt-3">
                     <div className="h-1 rounded-full bg-linen overflow-hidden">
                       <div className="h-full transition-all" style={{
-                        background: q.status === "SUBMITTED" ? "var(--ink)" : "var(--accent)",
+                        background: q.status === "SUBMITTED" ? "rgb(var(--ink))" : "rgb(var(--accent))",
                         width: `${progress}%`,
                       }} />
                     </div>

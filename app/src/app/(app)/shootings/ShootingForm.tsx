@@ -238,8 +238,8 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
                   <div
                     className="rounded-lg border overflow-hidden transition"
                     style={{
-                      borderColor: isActive ? "var(--ink)" : "var(--stone)",
-                      background: isActive ? "var(--linen)" : "var(--paper)",
+                      borderColor: isActive ? "rgb(var(--ink))" : "rgb(var(--stone))",
+                      background: isActive ? "rgb(var(--linen))" : "rgb(var(--paper))",
                     }}
                   >
                     <div className="flex items-stretch gap-3 p-3">
@@ -265,7 +265,7 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
                     {isActive ? (
                       <div
                         className="flex items-center justify-between px-3 py-2 border-t"
-                        style={{ borderColor: "var(--stone)", background: "var(--paper)" }}
+                        style={{ borderColor: "rgb(var(--stone))", background: "rgb(var(--paper))" }}
                       >
                         <div className="flex items-center gap-1">
                           <button
@@ -295,7 +295,7 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
                         type="button"
                         onClick={() => setAddonQty(a.id, 1)}
                         className="w-full px-3 py-2 border-t text-xs font-medium hover:bg-linen transition flex items-center justify-center gap-1.5"
-                        style={{ borderColor: "var(--stone)", color: "var(--smoke)" }}
+                        style={{ borderColor: "rgb(var(--stone))", color: "rgb(var(--smoke))" }}
                       >
                         <Plus size={13} /> Hinzufügen
                       </button>
@@ -346,7 +346,7 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
       <div className="flex justify-between items-center">
         <div>
           {deleteAction && (
-            <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "var(--accent)" }}>
+            <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "rgb(var(--accent))" }}>
               <Trash2 size={16} /> Löschen
             </button>
           )}

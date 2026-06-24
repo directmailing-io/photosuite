@@ -275,7 +275,7 @@ export function BookingFlow({
 
   // ===== Studio-Branding-Header =====
   const studioHeader = (
-    <header className="border-b" style={{ background: "var(--paper)", borderColor: "var(--stone)" }}>
+    <header className="border-b" style={{ background: "rgb(var(--paper))", borderColor: "rgb(var(--stone))" }}>
       <div className="max-w-5xl mx-auto px-6 h-20 flex items-center gap-4">
         {studio?.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -292,7 +292,7 @@ export function BookingFlow({
               fontStyle: "italic",
               fontWeight: 500,
               fontSize: "22px",
-              color: "var(--ink)",
+              color: "rgb(var(--ink))",
             }}
           >
             {studio?.studioName ?? "Studio"}
@@ -306,7 +306,7 @@ export function BookingFlow({
               fontStyle: "italic",
               fontWeight: 500,
               fontSize: "18px",
-              color: "var(--smoke)",
+              color: "rgb(var(--smoke))",
             }}
           >
             {studio.studioName}
@@ -322,7 +322,7 @@ export function BookingFlow({
   const mainPad = embed ? "py-6 sm:py-8" : "py-10 sm:py-16";
   const wrapperMaxW = embed ? "max-w-3xl" : "max-w-5xl";
   return (
-    <div className={embed ? "" : "min-h-screen"} style={{ background: embed ? "transparent" : "var(--bg)" }}>
+    <div className={embed ? "" : "min-h-screen"} style={{ background: embed ? "transparent" : "rgb(var(--bg))" }}>
       {!embed && studioHeader}
 
       <main className={`${wrapperMaxW} mx-auto px-4 sm:px-6 ${mainPad}`}>
@@ -376,7 +376,7 @@ export function BookingFlow({
 
       {!embed && (
         <footer className="max-w-5xl mx-auto px-6 pb-10 text-center text-xs text-smoke">
-          <span style={{ color: "var(--smoke)" }}>
+          <span style={{ color: "rgb(var(--smoke))" }}>
             {studio?.studioName ?? "Studio"} · Online-Terminbuchung
           </span>
         </footer>
@@ -430,39 +430,39 @@ function CalendarStep({
               display: "inline-block",
               width: 28,
               height: 1,
-              background: "var(--accent)",
+              background: "rgb(var(--accent))",
             }}
           />
           Termin buchen
         </div>
         <h1
           className="font-serif font-medium mt-3 leading-[1.05]"
-          style={{ fontSize: "clamp(36px, 6vw, 56px)", color: "var(--ink)" }}
+          style={{ fontSize: "clamp(36px, 6vw, 56px)", color: "rgb(var(--ink))" }}
         >
           {type.name}
         </h1>
         {type.description && (
           <p
             className="mt-5 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto"
-            style={{ color: "var(--smoke)" }}
+            style={{ color: "rgb(var(--smoke))" }}
           >
             {type.description}
           </p>
         )}
-        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "var(--smoke)" }}>
+        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "rgb(var(--smoke))" }}>
           <span className="inline-flex items-center gap-1.5">
-            <Clock size={14} style={{ color: "var(--accent)" }} />
+            <Clock size={14} style={{ color: "rgb(var(--accent))" }} />
             {type.durationMin} Minuten
           </span>
           {locations.map((loc) => (
             <span key={loc.key + loc.label} className="inline-flex items-center gap-1.5">
-              <MapPin size={14} style={{ color: "var(--accent)" }} />
+              <MapPin size={14} style={{ color: "rgb(var(--accent))" }} />
               {loc.label}
             </span>
           ))}
           {type.priceCents > 0 && (
             <span className="inline-flex items-center gap-1.5">
-              <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
+              <CalendarIcon size={14} style={{ color: "rgb(var(--accent))" }} />
               {fmtPrice(type.priceCents)}
             </span>
           )}
@@ -481,7 +481,7 @@ function CalendarStep({
                 <div className="eyebrow">Wähle einen Tag</div>
                 <div
                   className="font-serif mt-1 capitalize"
-                  style={{ fontSize: "26px", color: "var(--ink)" }}
+                  style={{ fontSize: "26px", color: "rgb(var(--ink))" }}
                 >
                   {monthLabel}
                 </div>
@@ -513,7 +513,7 @@ function CalendarStep({
                 <div
                   key={w}
                   className="text-center text-[11px] font-semibold tracking-wider uppercase py-1"
-                  style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}
+                  style={{ color: "rgb(var(--smoke))", letterSpacing: "0.12em" }}
                 >
                   {w}
                 </div>
@@ -539,7 +539,7 @@ function CalendarStep({
                       key={cell.key}
                       className={baseClass}
                       style={{
-                        color: isOtherMonth ? "transparent" : "var(--smoke)",
+                        color: isOtherMonth ? "transparent" : "rgb(var(--smoke))",
                         background: "transparent",
                         cursor: "not-allowed",
                         opacity: isOtherMonth ? 0 : 0.35,
@@ -550,7 +550,7 @@ function CalendarStep({
                       {isToday && !isOtherMonth && (
                         <span
                           className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                          style={{ background: "var(--accent)", opacity: 0.6 }}
+                          style={{ background: "rgb(var(--accent))", opacity: 0.6 }}
                         />
                       )}
                     </div>
@@ -564,9 +564,9 @@ function CalendarStep({
                     onClick={() => onSelectDay(cell.key)}
                     className={baseClass + " cursor-pointer hover:scale-[1.04]"}
                     style={{
-                      background: isSelected ? "var(--accent)" : "var(--accent-soft)",
-                      color: isSelected ? "white" : "var(--ink)",
-                      border: `1px solid ${isSelected ? "var(--accent)" : "transparent"}`,
+                      background: isSelected ? "rgb(var(--accent))" : "rgb(var(--accent-soft))",
+                      color: isSelected ? "white" : "rgb(var(--ink))",
+                      border: `1px solid ${isSelected ? "rgb(var(--accent))" : "transparent"}`,
                       fontWeight: isSelected ? 600 : 500,
                     }}
                     aria-pressed={isSelected}
@@ -576,7 +576,7 @@ function CalendarStep({
                     {isToday && !isSelected && (
                       <span
                         className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                        style={{ background: "var(--accent)" }}
+                        style={{ background: "rgb(var(--accent))" }}
                       />
                     )}
                   </button>
@@ -587,26 +587,26 @@ function CalendarStep({
             {/* Legende */}
             <div
               className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs"
-              style={{ color: "var(--smoke)" }}
+              style={{ color: "rgb(var(--smoke))" }}
             >
               <span className="inline-flex items-center gap-1.5">
                 <span
                   className="w-3 h-3 rounded-sm"
-                  style={{ background: "var(--accent-soft)" }}
+                  style={{ background: "rgb(var(--accent-soft))" }}
                 />
                 Freie Termine
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span
                   className="w-3 h-3 rounded-sm"
-                  style={{ background: "var(--accent)" }}
+                  style={{ background: "rgb(var(--accent))" }}
                 />
                 Ausgewählt
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span
                   className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: "var(--accent)" }}
+                  style={{ background: "rgb(var(--accent))" }}
                 />
                 Heute
               </span>
@@ -614,24 +614,24 @@ function CalendarStep({
           </div>
 
           {/* RECHTS: Slot-Liste */}
-          <div className="lg:border-l lg:pl-12" style={{ borderColor: "var(--stone)" }}>
+          <div className="lg:border-l lg:pl-12" style={{ borderColor: "rgb(var(--stone))" }}>
             {!selectedDate && (
               <div
                 className="rounded-xl border border-dashed p-8 text-center"
-                style={{ borderColor: "var(--stone)" }}
+                style={{ borderColor: "rgb(var(--stone))" }}
               >
                 <CalendarIcon
                   size={32}
                   className="mx-auto mb-3"
-                  style={{ color: "var(--accent)" }}
+                  style={{ color: "rgb(var(--accent))" }}
                   strokeWidth={1.4}
                 />
                 <div className="eyebrow">Noch nichts ausgewählt</div>
-                <p className="font-serif text-xl mt-2" style={{ color: "var(--ink)" }}>
+                <p className="font-serif text-xl mt-2" style={{ color: "rgb(var(--ink))" }}>
                   Wähle einen Tag aus,<br />
                   der frei ist.
                 </p>
-                <p className="text-xs mt-3" style={{ color: "var(--smoke)" }}>
+                <p className="text-xs mt-3" style={{ color: "rgb(var(--smoke))" }}>
                   Freie Tage sind rosa hinterlegt.
                 </p>
               </div>
@@ -642,7 +642,7 @@ function CalendarStep({
                 <div className="eyebrow">Verfügbare Zeiten</div>
                 <h2
                   className="font-serif mt-1 mb-5 capitalize"
-                  style={{ fontSize: "24px", color: "var(--ink)" }}
+                  style={{ fontSize: "24px", color: "rgb(var(--ink))" }}
                 >
                   {fmtLongDate(selectedDate)}
                 </h2>
@@ -651,12 +651,12 @@ function CalendarStep({
                   <div
                     className="rounded-lg border p-5 text-sm flex items-start gap-3"
                     style={{
-                      borderColor: "var(--stone)",
-                      background: "var(--linen)",
-                      color: "var(--smoke)",
+                      borderColor: "rgb(var(--stone))",
+                      background: "rgb(var(--linen))",
+                      color: "rgb(var(--smoke))",
                     }}
                   >
-                    <AlertCircle size={16} className="mt-0.5 shrink-0" style={{ color: "var(--accent)" }} />
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" style={{ color: "rgb(var(--accent))" }} />
                     <span>
                       Keine freien Slots an diesem Tag — bitte einen anderen wählen.
                     </span>
@@ -670,20 +670,20 @@ function CalendarStep({
                         className="rounded-lg font-medium transition flex items-center justify-center"
                         style={{
                           minHeight: 48,
-                          background: "var(--paper)",
-                          color: "var(--ink)",
-                          border: "1px solid var(--stone)",
+                          background: "rgb(var(--paper))",
+                          color: "rgb(var(--ink))",
+                          border: "1px solid rgb(var(--stone))",
                           fontSize: "15px",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "var(--ink)";
-                          e.currentTarget.style.color = "var(--bg)";
-                          e.currentTarget.style.borderColor = "var(--ink)";
+                          e.currentTarget.style.background = "rgb(var(--ink))";
+                          e.currentTarget.style.color = "rgb(var(--bg))";
+                          e.currentTarget.style.borderColor = "rgb(var(--ink))";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "var(--paper)";
-                          e.currentTarget.style.color = "var(--ink)";
-                          e.currentTarget.style.borderColor = "var(--stone)";
+                          e.currentTarget.style.background = "rgb(var(--paper))";
+                          e.currentTarget.style.color = "rgb(var(--ink))";
+                          e.currentTarget.style.borderColor = "rgb(var(--stone))";
                         }}
                       >
                         {slot.label}
@@ -692,7 +692,7 @@ function CalendarStep({
                   </div>
                 )}
 
-                <p className="text-xs mt-5" style={{ color: "var(--smoke)" }}>
+                <p className="text-xs mt-5" style={{ color: "rgb(var(--smoke))" }}>
                   Zeitzone Europe/Berlin · {type.durationMin} Min pro Termin
                 </p>
               </div>
@@ -737,34 +737,34 @@ function FormStep({
       {/* Summary-Header */}
       <section
         className="card p-6 sm:p-7 mb-6"
-        style={{ background: "var(--accent-soft)", borderColor: "var(--accent)" }}
+        style={{ background: "rgb(var(--accent-soft))", borderColor: "rgb(var(--accent))" }}
       >
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <div className="eyebrow">Dein Termin</div>
             <h2
               className="font-serif mt-1"
-              style={{ fontSize: "26px", color: "var(--ink)" }}
+              style={{ fontSize: "26px", color: "rgb(var(--ink))" }}
             >
               {type.name}
             </h2>
-            <div className="mt-3 space-y-1.5 text-sm" style={{ color: "var(--ink)" }}>
+            <div className="mt-3 space-y-1.5 text-sm" style={{ color: "rgb(var(--ink))" }}>
               <div className="flex items-center gap-2">
-                <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
+                <CalendarIcon size={14} style={{ color: "rgb(var(--accent))" }} />
                 <span className="capitalize">{fmtLongDate(slot.startISO.slice(0, 10))}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock size={14} style={{ color: "var(--accent)" }} />
+                <Clock size={14} style={{ color: "rgb(var(--accent))" }} />
                 {slot.label} Uhr · {type.durationMin} Min
               </div>
               {locations.map((loc) => (
                 <div key={loc.key + loc.label} className="flex items-center gap-2">
-                  <MapPin size={14} style={{ color: "var(--accent)" }} />
+                  <MapPin size={14} style={{ color: "rgb(var(--accent))" }} />
                   {loc.label}
                 </div>
               ))}
               {type.priceCents > 0 && (
-                <div className="text-sm mt-2 pt-2 border-t" style={{ borderColor: "var(--accent)" }}>
+                <div className="text-sm mt-2 pt-2 border-t" style={{ borderColor: "rgb(var(--accent))" }}>
                   <span className="eyebrow eyebrow-muted">Preis: </span>
                   <span className="font-serif text-lg tabular-nums">{fmtPrice(type.priceCents)}</span>
                 </div>
@@ -775,7 +775,7 @@ function FormStep({
             type="button"
             onClick={onBack}
             className="btn-ghost text-xs h-9 shrink-0"
-            style={{ color: "var(--ink)" }}
+            style={{ color: "rgb(var(--ink))" }}
           >
             <ArrowLeft size={13} /> Anderen Termin wählen
           </button>
@@ -786,10 +786,10 @@ function FormStep({
       <section className="card p-6 sm:p-8">
         <div className="mb-6">
           <div className="eyebrow">Deine Daten</div>
-          <h3 className="font-serif mt-1" style={{ fontSize: "22px", color: "var(--ink)" }}>
+          <h3 className="font-serif mt-1" style={{ fontSize: "22px", color: "rgb(var(--ink))" }}>
             Wer bist du?
           </h3>
-          <p className="text-sm mt-2" style={{ color: "var(--smoke)" }}>
+          <p className="text-sm mt-2" style={{ color: "rgb(var(--smoke))" }}>
             Damit wir uns gut auf dich vorbereiten können.
           </p>
         </div>
@@ -803,7 +803,7 @@ function FormStep({
               <UserIcon
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--smoke)" }}
+                style={{ color: "rgb(var(--smoke))" }}
               />
               <input
                 name="customerName"
@@ -822,7 +822,7 @@ function FormStep({
               <Mail
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--smoke)" }}
+                style={{ color: "rgb(var(--smoke))" }}
               />
               <input
                 name="customerEmail"
@@ -849,9 +849,9 @@ function FormStep({
             <div
               className="rounded-lg border p-4 text-sm flex items-start gap-3"
               style={{
-                borderColor: "var(--accent)",
-                background: "var(--accent-soft)",
-                color: "var(--accent-deep)",
+                borderColor: "rgb(var(--accent))",
+                background: "rgb(var(--accent-soft))",
+                color: "rgb(var(--accent-deep))",
               }}
               role="alert"
             >
@@ -885,7 +885,7 @@ function FormStep({
             </button>
           </div>
 
-          <p className="text-xs pt-3" style={{ color: "var(--smoke)" }}>
+          <p className="text-xs pt-3" style={{ color: "rgb(var(--smoke))" }}>
             Mit der Anfrage stimmst du zu, dass deine Daten zur Bearbeitung deiner Buchungsanfrage
             verarbeitet werden.
           </p>
@@ -915,7 +915,7 @@ function DynamicFieldInput({
           <MessageSquare
             size={16}
             className="absolute left-3 top-3 pointer-events-none"
-            style={{ color: "var(--smoke)" }}
+            style={{ color: "rgb(var(--smoke))" }}
           />
           <textarea
             value={value}
@@ -969,7 +969,7 @@ function DynamicFieldInput({
         <Icon
           size={16}
           className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ color: "var(--smoke)" }}
+          style={{ color: "rgb(var(--smoke))" }}
         />
         <input
           value={value}
@@ -1009,9 +1009,9 @@ function DoneStep({
     <div className="max-w-2xl mx-auto text-center">
       <div
         className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6"
-        style={{ background: "var(--accent-soft)" }}
+        style={{ background: "rgb(var(--accent-soft))" }}
       >
-        <CheckCircle2 size={44} style={{ color: "var(--accent)" }} strokeWidth={1.6} />
+        <CheckCircle2 size={44} style={{ color: "rgb(var(--accent))" }} strokeWidth={1.6} />
       </div>
 
       <div className="eyebrow">
@@ -1019,14 +1019,14 @@ function DoneStep({
       </div>
       <h1
         className="font-serif font-medium mt-3 leading-tight"
-        style={{ fontSize: "clamp(34px, 5vw, 48px)", color: "var(--ink)" }}
+        style={{ fontSize: "clamp(34px, 5vw, 48px)", color: "rgb(var(--ink))" }}
       >
-        Danke{firstName ? <>, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em></> : null}!
+        Danke{firstName ? <>, <em style={{ color: "rgb(var(--accent))", fontStyle: "italic" }}>{firstName}</em></> : null}!
       </h1>
 
       <p
         className="mt-5 text-base sm:text-lg leading-relaxed max-w-md mx-auto"
-        style={{ color: "var(--smoke)" }}
+        style={{ color: "rgb(var(--smoke))" }}
       >
         {type.autoConfirm
           ? "Dein Termin ist bestätigt. Du bekommst gleich eine E-Mail mit allen Details."
@@ -1035,27 +1035,27 @@ function DoneStep({
 
       <section
         className="card p-6 sm:p-7 mt-10 text-left"
-        style={{ background: "var(--paper)" }}
+        style={{ background: "rgb(var(--paper))" }}
       >
         <div className="eyebrow">Dein Termin</div>
         <div
           className="font-serif mt-1 mb-4"
-          style={{ fontSize: "22px", color: "var(--ink)" }}
+          style={{ fontSize: "22px", color: "rgb(var(--ink))" }}
         >
           {type.name}
         </div>
-        <div className="space-y-2 text-sm" style={{ color: "var(--ink)" }}>
+        <div className="space-y-2 text-sm" style={{ color: "rgb(var(--ink))" }}>
           <div className="flex items-center gap-2">
-            <CalendarIcon size={14} style={{ color: "var(--accent)" }} />
+            <CalendarIcon size={14} style={{ color: "rgb(var(--accent))" }} />
             <span className="capitalize">{fmtLongDate(slot.startISO.slice(0, 10))}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock size={14} style={{ color: "var(--accent)" }} />
+            <Clock size={14} style={{ color: "rgb(var(--accent))" }} />
             {slot.label} Uhr · {type.durationMin} Min
           </div>
           {locations.map((loc) => (
             <div key={loc.key + loc.label} className="flex items-center gap-2">
-              <MapPin size={14} style={{ color: "var(--accent)" }} />
+              <MapPin size={14} style={{ color: "rgb(var(--accent))" }} />
               {loc.label}
             </div>
           ))}
@@ -1066,12 +1066,12 @@ function DoneStep({
       {meetingUrl && (
         <section
           className="card p-6 sm:p-7 mt-6 text-left"
-          style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
+          style={{ borderColor: "rgb(var(--accent))", background: "rgb(var(--accent-soft))" }}
         >
           <div className="flex items-start gap-3">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: "var(--ink)", color: "var(--linen)" }}
+              style={{ background: "rgb(var(--ink))", color: "rgb(var(--linen))" }}
             >
               <Video size={16} />
             </div>
@@ -1083,12 +1083,12 @@ function DoneStep({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm mt-2 break-all underline hover:no-underline"
-                style={{ color: "var(--accent)" }}
+                style={{ color: "rgb(var(--accent))" }}
               >
                 {meetingUrl}
                 <ExternalLink size={12} className="shrink-0" />
               </a>
-              <div className="text-xs mt-3" style={{ color: "var(--smoke)" }}>
+              <div className="text-xs mt-3" style={{ color: "rgb(var(--smoke))" }}>
                 Speichere den Link — wir senden ihn dir auch per E-Mail.
               </div>
             </div>
@@ -1097,13 +1097,13 @@ function DoneStep({
       )}
 
       {(studio?.studioEmail || studio?.studioPhone) && (
-        <p className="mt-8 text-sm" style={{ color: "var(--smoke)" }}>
+        <p className="mt-8 text-sm" style={{ color: "rgb(var(--smoke))" }}>
           Fragen?{" "}
           {studio?.studioEmail && (
             <a
               href={`mailto:${studio.studioEmail}`}
               className="hover:underline"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "rgb(var(--accent))" }}
             >
               {studio.studioEmail}
             </a>
@@ -1113,7 +1113,7 @@ function DoneStep({
             <a
               href={`tel:${studio.studioPhone}`}
               className="hover:underline"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "rgb(var(--accent))" }}
             >
               {studio.studioPhone}
             </a>

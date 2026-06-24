@@ -141,7 +141,7 @@ export function TemplateEditor({ templateId, initial, fields, usedInPackages }: 
 
         {/* Delete */}
         <div className="flex items-center justify-between">
-          <button onClick={onDelete} className="btn-ghost" style={{ color: "var(--accent)" }}>
+          <button onClick={onDelete} className="btn-ghost" style={{ color: "rgb(var(--accent))" }}>
             <Trash2 size={15} /> Vorlage löschen
           </button>
         </div>
@@ -234,7 +234,7 @@ function FieldRow({
               {field.label}
               {field.required && <span className="text-accent ml-0.5">*</span>}
             </div>
-            <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+            <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
               {typeMeta?.label ?? field.type}
             </span>
           </div>
@@ -244,7 +244,7 @@ function FieldRow({
           {(field.type === "SELECT_SINGLE" || field.type === "SELECT_MULTI") && field.options && (
             <div className="flex flex-wrap gap-1 mt-2">
               {(JSON.parse(field.options) as string[]).map((o, i) => (
-                <span key={i} className="badge" style={{ background: "var(--bg)", color: "var(--smoke)", border: "1px solid var(--stone)" }}>
+                <span key={i} className="badge" style={{ background: "rgb(var(--bg))", color: "rgb(var(--smoke))", border: "1px solid rgb(var(--stone))" }}>
                   {o}
                 </span>
               ))}

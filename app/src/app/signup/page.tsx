@@ -6,7 +6,7 @@ export const metadata = { title: "photosuite — Account anlegen" };
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen flex" style={{ background: "rgb(var(--bg))" }}>
       <div
         className="hidden md:block flex-1 relative"
         style={{
@@ -19,7 +19,7 @@ export default function SignUpPage() {
         <div className="absolute inset-0 flex flex-col justify-end p-12 text-bg">
           <div className="leading-none" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: "52px", letterSpacing: "-0.01em" }}>
             <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.95)" }}>photo</span>
-            <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
+            <span style={{ fontStyle: "italic", fontWeight: 500, color: "rgb(var(--accent))" }}>suite</span>
           </div>
           <div className="font-serif text-5xl mt-3 leading-tight">
             Dein CRM,<br />dein Studio.

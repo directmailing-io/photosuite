@@ -181,7 +181,7 @@ export function QuestionnaireEditor({ questionnaireId, initial, fields, answers,
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <button onClick={onDelete} className="btn-ghost" style={{ color: "var(--accent)" }} disabled={busy}>
+          <button onClick={onDelete} className="btn-ghost" style={{ color: "rgb(var(--accent))" }} disabled={busy}>
             <Trash2 size={15} /> Löschen
           </button>
           <div className="flex gap-2">
@@ -228,12 +228,12 @@ export function QuestionnaireEditor({ questionnaireId, initial, fields, answers,
 }
 
 function Timeline({ label, date, active, accent, muted }: { label: string; date: string | null; active: boolean; accent?: boolean; muted?: boolean }) {
-  const color = accent ? "var(--accent)" : muted ? "var(--smoke)" : "var(--ink)";
+  const color = accent ? "rgb(var(--accent))" : muted ? "rgb(var(--smoke))" : "rgb(var(--ink))";
   return (
     <li className="flex items-start gap-3">
       <span
         className="w-2 h-2 rounded-full mt-2 shrink-0"
-        style={{ background: active ? color : "var(--stone)" }}
+        style={{ background: active ? color : "rgb(var(--stone))" }}
       />
       <div className="flex-1">
         <div className={active ? "text-ink" : "text-smoke"}>{label}</div>
@@ -290,7 +290,7 @@ function FieldRow({
               {field.label}
               {field.required && <span className="text-accent ml-0.5">*</span>}
             </div>
-            <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+            <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
               {typeMeta?.label ?? field.type}
             </span>
           </div>
@@ -298,7 +298,7 @@ function FieldRow({
           {(field.type === "SELECT_SINGLE" || field.type === "SELECT_MULTI") && field.options && (
             <div className="flex flex-wrap gap-1 mt-2">
               {(JSON.parse(field.options) as string[]).map((o, i) => (
-                <span key={i} className="badge" style={{ background: "var(--bg)", color: "var(--smoke)", border: "1px solid var(--stone)" }}>
+                <span key={i} className="badge" style={{ background: "rgb(var(--bg))", color: "rgb(var(--smoke))", border: "1px solid rgb(var(--stone))" }}>
                   {o}
                 </span>
               ))}
@@ -353,7 +353,7 @@ function AnswerPreview({ field, answer }: { field: FieldUI; answer: AnswerUI }) 
         const arr = JSON.parse(answer.jsonValue) as string[];
         display = (
           <div className="flex flex-wrap gap-1">
-            {arr.map((v, i) => <span key={i} className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>{v}</span>)}
+            {arr.map((v, i) => <span key={i} className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>{v}</span>)}
           </div>
         );
       }
@@ -368,7 +368,7 @@ function AnswerPreview({ field, answer }: { field: FieldUI; answer: AnswerUI }) 
 
   if (!display) return null;
   return (
-    <div className="mt-3 p-3 rounded-lg border-l-2 text-sm" style={{ background: "var(--accent-soft)", borderColor: "var(--accent)" }}>
+    <div className="mt-3 p-3 rounded-lg border-l-2 text-sm" style={{ background: "rgb(var(--accent-soft))", borderColor: "rgb(var(--accent))" }}>
       <div className="text-[10px] uppercase tracking-wider text-accent-deep font-semibold mb-1">Antwort</div>
       <div className="text-ink whitespace-pre-wrap">{display}</div>
     </div>

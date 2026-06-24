@@ -140,8 +140,8 @@ function FilterTab({
       href={href}
       className="px-4 py-2.5 text-sm transition flex items-center gap-2 -mb-px border-b-2"
       style={{
-        borderColor: active ? "var(--ink)" : "transparent",
-        color: active ? "var(--ink)" : "var(--smoke)",
+        borderColor: active ? "rgb(var(--ink))" : "transparent",
+        color: active ? "rgb(var(--ink))" : "rgb(var(--smoke))",
         fontWeight: active ? 500 : 400,
       }}
     >
@@ -151,9 +151,9 @@ function FilterTab({
           className="text-[10px] tabular-nums px-1.5 py-0.5 rounded font-medium"
           style={{
             background: highlight && count > 0 && !active
-              ? "var(--accent)"
-              : active ? "var(--linen)" : "var(--linen)",
-            color: highlight && count > 0 && !active ? "#fff" : "var(--smoke)",
+              ? "rgb(var(--accent))"
+              : active ? "rgb(var(--linen))" : "rgb(var(--linen))",
+            color: highlight && count > 0 && !active ? "#fff" : "rgb(var(--smoke))",
           }}
         >
           {count}

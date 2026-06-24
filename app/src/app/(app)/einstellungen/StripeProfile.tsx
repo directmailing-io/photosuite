@@ -112,7 +112,7 @@ export function StripeProfile({ initial }: { initial: Initial }) {
             </p>
           </div>
           {configured && (
-            <span className="badge shrink-0" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>
+            <span className="badge shrink-0" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
               <CheckCircle2 size={11} /> Verbunden
             </span>
           )}
@@ -175,7 +175,7 @@ export function StripeProfile({ initial }: { initial: Initial }) {
           <div>
             <div className="eyebrow eyebrow-muted flex items-center gap-2">
               Schritt 2
-              <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)", padding: "1px 8px" }}>
+              <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))", padding: "1px 8px" }}>
                 optional zum Start
               </span>
             </div>
@@ -188,7 +188,7 @@ export function StripeProfile({ initial }: { initial: Initial }) {
             </p>
           </div>
           {initial.hasWebhookSecret && (
-            <span className="badge shrink-0" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>
+            <span className="badge shrink-0" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
               <CheckCircle2 size={11} /> Eingerichtet
             </span>
           )}
@@ -307,7 +307,7 @@ function StatusBanner({
 }) {
   if (fullyReady) {
     return (
-      <div className="card p-4 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+      <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
         <CheckCircle2 size={18} className="text-accent shrink-0 mt-0.5" />
         <div className="text-sm">
           <div className="font-medium">Stripe ist einsatzbereit</div>
@@ -320,7 +320,7 @@ function StatusBanner({
   }
   if (!configured) {
     return (
-      <div className="card p-4 flex items-start gap-3" style={{ background: "var(--linen)" }}>
+      <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--linen))" }}>
         <CreditCard size={18} className="text-smoke shrink-0 mt-0.5" />
         <div className="text-sm">
           <div className="font-medium text-ink">Online-Zahlungen aktivieren</div>
@@ -334,7 +334,7 @@ function StatusBanner({
   }
   if (!hasWebhookSecret && chargesEnabled) {
     return (
-      <div className="card p-4 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+      <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
         <CheckCircle2 size={18} className="text-accent shrink-0 mt-0.5" />
         <div className="text-sm">
           <div className="font-medium">Bezahllinks funktionieren bereits</div>
@@ -348,7 +348,7 @@ function StatusBanner({
     );
   }
   return (
-    <div className="card p-4 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+    <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
       <AlertCircle size={18} className="text-accent shrink-0 mt-0.5" />
       <div className="text-sm">
         <div className="font-medium">Fast fertig</div>
@@ -390,7 +390,7 @@ function ConfiguredKeySummary({
         <button type="button" onClick={onEdit} className="btn-secondary text-xs" disabled={pending}>
           <RefreshCw size={12} /> Keys ersetzen
         </button>
-        <button type="button" onClick={onDisconnect} className="btn-ghost text-xs ml-auto" style={{ color: "var(--accent)" }} disabled={pending}>
+        <button type="button" onClick={onDisconnect} className="btn-ghost text-xs ml-auto" style={{ color: "rgb(var(--accent))" }} disabled={pending}>
           <Trash2 size={12} /> Verbindung trennen
         </button>
       </div>
@@ -404,7 +404,7 @@ function InfoCell({ label, value, mono, accent }: { label: string; value: string
       <div className="text-[10px] uppercase tracking-wider text-smoke">{label}</div>
       <div
         className={`text-sm mt-1 truncate ${mono ? "font-mono" : ""}`}
-        style={{ color: accent ? "var(--accent)" : undefined }}
+        style={{ color: accent ? "rgb(var(--accent))" : undefined }}
         title={value}
       >
         {value}

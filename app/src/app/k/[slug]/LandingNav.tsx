@@ -48,8 +48,8 @@ export function LandingNav({
       style={{
         background: scrolled ? "rgba(246,246,242,0.92)" : "rgba(25,25,26,0)",
         backdropFilter: scrolled ? "blur(8px)" : "none",
-        borderColor: scrolled ? "var(--stone)" : "transparent",
-        color: scrolled ? "var(--ink)" : "var(--bg)",
+        borderColor: scrolled ? "rgb(var(--stone))" : "transparent",
+        color: scrolled ? "rgb(var(--ink))" : "rgb(var(--bg))",
       }}
     >
       <div className="max-w-5xl mx-auto px-6 h-24 flex items-center gap-6">
@@ -89,7 +89,7 @@ export function LandingNav({
             }}
           >
             <span style={{ fontWeight: 500 }}>photo</span>
-            <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
+            <span style={{ fontStyle: "italic", fontWeight: 500, color: "rgb(var(--accent))" }}>suite</span>
           </div>
         )}
         <ul className="flex items-center gap-1 ml-auto flex-wrap justify-end">
@@ -104,11 +104,11 @@ export function LandingNav({
                     fontFamily: '"Montserrat", "Open Sans", sans-serif',
                     letterSpacing: "0.12em",
                     background: isActive
-                      ? scrolled ? "var(--ink)" : "rgba(255,255,255,0.18)"
+                      ? scrolled ? "rgb(var(--ink))" : "rgba(255,255,255,0.18)"
                       : "transparent",
                     color: isActive
-                      ? scrolled ? "var(--bg)" : "var(--bg)"
-                      : scrolled ? "var(--smoke)" : "rgba(255,255,255,0.75)",
+                      ? scrolled ? "rgb(var(--bg))" : "rgb(var(--bg))"
+                      : scrolled ? "rgb(var(--smoke))" : "rgba(255,255,255,0.75)",
                   }}
                 >
                   {s.label}

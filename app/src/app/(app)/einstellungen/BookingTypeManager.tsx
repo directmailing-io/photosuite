@@ -110,7 +110,7 @@ export function BookingTypeManager({
       {orphanProviderTypes.length > 0 && (
         <div
           className="px-6 py-3 flex items-start gap-2 border-b border-stone/60"
-          style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+          style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent))" }}
         >
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
           <div className="text-xs flex-1">
@@ -119,7 +119,7 @@ export function BookingTypeManager({
                 ? `„${orphanProviderTypes[0].name}" nutzt ${providerLabel(orphanProviderTypes[0].videoProvider)}, aber dein persönlicher Link fehlt noch.`
                 : `${orphanProviderTypes.length} aktive Buchungstypen nutzen Online-Meetings, deren persönlicher Link noch fehlt.`}
             </span>{" "}
-            <Link href="/einstellungen?tab=kalender" className="underline hover:no-underline" style={{ color: "var(--accent)" }}>
+            <Link href="/einstellungen?tab=kalender" className="underline hover:no-underline" style={{ color: "rgb(var(--accent))" }}>
               Jetzt einrichten →
             </Link>
           </div>
@@ -265,12 +265,12 @@ function BookingTypeRowView({
         <div className="flex items-center gap-2 flex-wrap">
           <div className="font-medium truncate font-serif text-base">{type.name}</div>
           {!type.isActive && (
-            <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+            <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
               <EyeOff size={10} /> Inaktiv
             </span>
           )}
           {type.autoConfirm && (
-            <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--ink)" }}>
+            <span className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--ink))" }}>
               Auto-Bestätigung
             </span>
           )}
@@ -326,7 +326,7 @@ function BookingTypeRowView({
           onClick={onDelete}
           className="btn-icon"
           disabled={pending}
-          style={{ color: "var(--accent)" }}
+          style={{ color: "rgb(var(--accent))" }}
           title="Löschen"
         >
           <Trash2 size={13} />
@@ -660,7 +660,7 @@ function BookingTypeForm({
               onClick={onDelete}
               disabled={busy}
               className="btn-ghost text-sm"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "rgb(var(--accent))" }}
             >
               <Trash2 size={12} /> Löschen
             </button>
@@ -731,9 +731,9 @@ function Stepper({ current, onJump }: { current: number; onJump: (s: number) => 
               disabled={!clickable}
               className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
               style={{
-                background: active ? "var(--ink)" : done ? "rgba(120, 167, 119, 0.15)" : "var(--paper)",
-                color: active ? "var(--linen)" : done ? "rgb(70, 115, 70)" : "var(--smoke)",
-                border: `1px solid ${active ? "var(--ink)" : done ? "rgba(120, 167, 119, 0.4)" : "var(--stone)"}`,
+                background: active ? "rgb(var(--ink))" : done ? "rgba(120, 167, 119, 0.15)" : "rgb(var(--paper))",
+                color: active ? "rgb(var(--linen))" : done ? "rgb(70, 115, 70)" : "rgb(var(--smoke))",
+                border: `1px solid ${active ? "rgb(var(--ink))" : done ? "rgba(120, 167, 119, 0.4)" : "rgb(var(--stone))"}`,
                 cursor: clickable ? "pointer" : "default",
               }}
             >
@@ -742,7 +742,7 @@ function Stepper({ current, onJump }: { current: number; onJump: (s: number) => 
               <span className="sm:hidden">{s.num}</span>
             </button>
             {i < steps.length - 1 && (
-              <div className="h-px flex-1" style={{ background: done ? "rgba(120, 167, 119, 0.4)" : "var(--stone)" }} />
+              <div className="h-px flex-1" style={{ background: done ? "rgba(120, 167, 119, 0.4)" : "rgb(var(--stone))" }} />
             )}
           </div>
         );
@@ -822,7 +822,7 @@ function Step1Basics({
               className="w-7 h-7 rounded-full border-2 transition-transform"
               style={{
                 background: c,
-                borderColor: state.color === c ? "var(--ink)" : "transparent",
+                borderColor: state.color === c ? "rgb(var(--ink))" : "transparent",
                 transform: state.color === c ? "scale(1.1)" : "scale(1)",
               }}
               aria-label={c}
@@ -835,7 +835,7 @@ function Step1Basics({
               value={state.color}
               onChange={(e) => update("color", e.target.value)}
               className="w-7 h-7 rounded-full border-2 cursor-pointer"
-              style={{ borderColor: "var(--stone)", padding: 0 }}
+              style={{ borderColor: "rgb(var(--stone))", padding: 0 }}
             />
             <span className="text-[10px] text-smoke font-mono">eigene</span>
           </label>
@@ -1020,9 +1020,9 @@ function Step3Options({
                 disabled={already}
                 className="text-[11px] rounded-full border px-2.5 py-1 transition-colors flex items-center gap-1"
                 style={{
-                  borderColor: already ? "rgba(120, 167, 119, 0.4)" : "var(--stone)",
-                  background: already ? "rgba(120, 167, 119, 0.10)" : "var(--paper)",
-                  color: already ? "rgb(70, 115, 70)" : "var(--smoke)",
+                  borderColor: already ? "rgba(120, 167, 119, 0.4)" : "rgb(var(--stone))",
+                  background: already ? "rgba(120, 167, 119, 0.10)" : "rgb(var(--paper))",
+                  color: already ? "rgb(70, 115, 70)" : "rgb(var(--smoke))",
                   cursor: already ? "default" : "pointer",
                 }}
               >
@@ -1134,19 +1134,19 @@ function VideoProviderSection({
               onClick={() => onChange(active ? null : key)}
               className="flex flex-col items-center gap-1.5 rounded-lg border p-3 transition-all"
               style={{
-                borderColor: active ? def.brandColor : "var(--stone)",
-                background: active ? `${def.brandColor}12` : "var(--paper)",
+                borderColor: active ? def.brandColor : "rgb(var(--stone))",
+                background: active ? `${def.brandColor}12` : "rgb(var(--paper))",
               }}
             >
               <div
                 className="w-9 h-9 rounded-md flex items-center justify-center overflow-hidden"
                 style={{
-                  background: "var(--paper)",
-                  border: `1px solid ${active ? def.brandColor + "80" : "var(--stone)"}`,
+                  background: "rgb(var(--paper))",
+                  border: `1px solid ${active ? def.brandColor + "80" : "rgb(var(--stone))"}`,
                 }}
               >
                 {key === "manual" ? (
-                  <Mail size={14} style={{ color: "var(--smoke)" }} />
+                  <Mail size={14} style={{ color: "rgb(var(--smoke))" }} />
                 ) : (
                   <ProviderLogo provider={key} size={24} />
                 )}
@@ -1160,7 +1160,7 @@ function VideoProviderSection({
       {linkMissing && (
         <div
           className="mt-2 text-xs p-2 rounded flex items-start gap-2"
-          style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+          style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent))" }}
         >
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <div>
@@ -1206,22 +1206,22 @@ function LocationCheckCard({
       onClick={onClick}
       className={`flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all ${wide ? "w-full" : ""}`}
       style={{
-        borderColor: active ? "var(--ink)" : "var(--stone)",
-        background: active ? "var(--linen)" : "var(--paper)",
+        borderColor: active ? "rgb(var(--ink))" : "rgb(var(--stone))",
+        background: active ? "rgb(var(--linen))" : "rgb(var(--paper))",
       }}
     >
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
         style={{
-          background: active ? "var(--ink)" : "transparent",
-          color: active ? "var(--linen)" : "var(--smoke)",
-          border: `1px solid ${active ? "var(--ink)" : "var(--stone)"}`,
+          background: active ? "rgb(var(--ink))" : "transparent",
+          color: active ? "rgb(var(--linen))" : "rgb(var(--smoke))",
+          border: `1px solid ${active ? "rgb(var(--ink))" : "rgb(var(--stone))"}`,
         }}
       >
         {locationIcon(iconKey)}
       </div>
       <div className="text-sm font-medium leading-tight flex-1">{label}</div>
-      {active && <Check size={14} className="shrink-0" style={{ color: "var(--ink)" }} />}
+      {active && <Check size={14} className="shrink-0" style={{ color: "rgb(var(--ink))" }} />}
     </button>
   );
 }
@@ -1250,13 +1250,13 @@ function FieldEditorRow({
   return (
     <div
       className="rounded-lg border bg-paper transition-colors"
-      style={{ borderColor: "var(--stone)" }}
+      style={{ borderColor: "rgb(var(--stone))" }}
     >
       <div className="flex items-center gap-2 px-3 py-2">
         <GripVertical size={14} className="text-smoke shrink-0 opacity-50" />
         <div
           className="w-6 h-6 rounded shrink-0 flex items-center justify-center"
-          style={{ background: "var(--linen)", color: "var(--smoke)" }}
+          style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}
         >
           {fieldTypeIcon(field.type)}
         </div>
@@ -1291,7 +1291,7 @@ function FieldEditorRow({
           type="button"
           onClick={onRemove}
           className="btn-icon"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "rgb(var(--accent))" }}
           title="Feld entfernen"
         >
           <X size={13} />
@@ -1380,9 +1380,9 @@ function PickerChip({
       onClick={onClick}
       className="rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-all"
       style={{
-        borderColor: active ? "var(--ink)" : "var(--stone)",
-        background: active ? "var(--ink)" : "var(--paper)",
-        color: active ? "var(--linen)" : "var(--ink)",
+        borderColor: active ? "rgb(var(--ink))" : "rgb(var(--stone))",
+        background: active ? "rgb(var(--ink))" : "rgb(var(--paper))",
+        color: active ? "rgb(var(--linen))" : "rgb(var(--ink))",
       }}
     >
       {label}
@@ -1411,9 +1411,9 @@ function CustomNumberInput({
     <label
       className="rounded-full border flex items-center gap-1 pl-3 pr-2 py-0.5 text-xs cursor-text"
       style={{
-        borderColor: isCustom ? "var(--ink)" : "var(--stone)",
-        background: isCustom ? "var(--paper)" : "var(--paper)",
-        color: isCustom ? "var(--ink)" : "var(--smoke)",
+        borderColor: isCustom ? "rgb(var(--ink))" : "rgb(var(--stone))",
+        background: isCustom ? "rgb(var(--paper))" : "rgb(var(--paper))",
+        color: isCustom ? "rgb(var(--ink))" : "rgb(var(--smoke))",
       }}
     >
       <input
@@ -1449,16 +1449,16 @@ function ToggleCard({
       onClick={onClick}
       className="flex items-center gap-3 rounded-lg border p-3 text-left transition-all"
       style={{
-        borderColor: active ? "var(--ink)" : "var(--stone)",
-        background: active ? "var(--linen)" : "var(--paper)",
+        borderColor: active ? "rgb(var(--ink))" : "rgb(var(--stone))",
+        background: active ? "rgb(var(--linen))" : "rgb(var(--paper))",
       }}
     >
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
         style={{
-          background: active ? "var(--ink)" : "transparent",
-          color: active ? "var(--linen)" : "var(--smoke)",
-          border: `1px solid ${active ? "var(--ink)" : "var(--stone)"}`,
+          background: active ? "rgb(var(--ink))" : "transparent",
+          color: active ? "rgb(var(--linen))" : "rgb(var(--smoke))",
+          border: `1px solid ${active ? "rgb(var(--ink))" : "rgb(var(--stone))"}`,
         }}
       >
         {icon}
@@ -1467,7 +1467,7 @@ function ToggleCard({
         <div className="text-sm font-medium leading-tight">{title}</div>
         <div className="text-[11px] text-smoke mt-0.5">{subtitle}</div>
       </div>
-      {active && <Check size={14} className="shrink-0" style={{ color: "var(--ink)" }} />}
+      {active && <Check size={14} className="shrink-0" style={{ color: "rgb(var(--ink))" }} />}
     </button>
   );
 }

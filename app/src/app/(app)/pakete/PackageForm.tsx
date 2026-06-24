@@ -153,15 +153,15 @@ export function PackageForm({ initial, team, questionnaires, addons = [], action
                     onClick={() => toggleQ(q.id)}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg border text-left transition"
                     style={{
-                      borderColor: active ? "var(--ink)" : "var(--stone)",
-                      background: active ? "var(--paper)" : "transparent",
+                      borderColor: active ? "rgb(var(--ink))" : "rgb(var(--stone))",
+                      background: active ? "rgb(var(--paper))" : "transparent",
                     }}
                   >
                     <span
                       className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
                       style={{
-                        borderColor: active ? "var(--ink)" : "var(--stone)",
-                        background: active ? "var(--ink)" : "transparent",
+                        borderColor: active ? "rgb(var(--ink))" : "rgb(var(--stone))",
+                        background: active ? "rgb(var(--ink))" : "transparent",
                       }}
                     >
                       {active && <Check size={12} className="text-bg" strokeWidth={3} />}
@@ -230,8 +230,8 @@ export function PackageForm({ initial, team, questionnaires, addons = [], action
                     <label
                       className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition hover:bg-linen/50"
                       style={{
-                        borderColor: checked ? "var(--ink)" : "var(--stone)",
-                        background: checked ? "var(--linen)" : "var(--paper)",
+                        borderColor: checked ? "rgb(var(--ink))" : "rgb(var(--stone))",
+                        background: checked ? "rgb(var(--linen))" : "rgb(var(--paper))",
                       }}
                     >
                       <input
@@ -271,7 +271,7 @@ export function PackageForm({ initial, team, questionnaires, addons = [], action
         <div className="flex justify-between items-center">
           <div>
             {deleteAction && (
-              <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "var(--accent)" }}>
+              <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "rgb(var(--accent))" }}>
                 <Trash2 size={16} /> Löschen
               </button>
             )}

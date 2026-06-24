@@ -65,8 +65,8 @@ export function TeamPicker({
               key={m.id}
               className="flex items-center gap-3 p-2.5 rounded-lg border transition"
               style={{
-                background: active ? "var(--paper)" : "transparent",
-                borderColor: active ? (isPrimary ? "var(--accent)" : "var(--stone)") : "transparent",
+                background: active ? "rgb(var(--paper))" : "transparent",
+                borderColor: active ? (isPrimary ? "rgb(var(--accent))" : "rgb(var(--stone))") : "transparent",
                 boxShadow: isPrimary ? "0 0 0 2px rgba(200,16,46,0.12)" : "none",
               }}
             >
@@ -98,9 +98,9 @@ export function TeamPicker({
                   onClick={() => setPrim(m.id)}
                   className="text-xs flex items-center gap-1 px-2 py-1 rounded transition"
                   style={{
-                    background: isPrimary ? "var(--accent)" : "transparent",
-                    color: isPrimary ? "#fff" : "var(--smoke)",
-                    border: isPrimary ? "none" : "1px solid var(--stone)",
+                    background: isPrimary ? "rgb(var(--accent))" : "transparent",
+                    color: isPrimary ? "#fff" : "rgb(var(--smoke))",
+                    border: isPrimary ? "none" : "1px solid rgb(var(--stone))",
                   }}
                   title="Als Ansprechpartner setzen"
                 >

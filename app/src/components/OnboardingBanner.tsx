@@ -40,7 +40,7 @@ export function OnboardingBanner({ steps }: { steps: Step[] }) {
         onClick={() => setCollapsed(false)}
         className="card px-4 py-2 mb-6 flex items-center gap-2 text-xs text-smoke hover:text-ink transition"
       >
-        <Sparkles size={12} style={{ color: "var(--accent)" }} />
+        <Sparkles size={12} style={{ color: "rgb(var(--accent))" }} />
         Onboarding ({doneCount} von {steps.length} erledigt) — wieder anzeigen
       </button>
     );
@@ -49,11 +49,11 @@ export function OnboardingBanner({ steps }: { steps: Step[] }) {
   return (
     <div
       className="card p-6 mb-6 relative"
-      style={{ background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--paper) 100%)", borderColor: "var(--accent)" }}
+      style={{ background: "linear-gradient(135deg, rgb(var(--accent-soft)) 0%, rgb(var(--paper)) 100%)", borderColor: "rgb(var(--accent))" }}
     >
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <div className="eyebrow flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
+          <div className="eyebrow flex items-center gap-1.5" style={{ color: "rgb(var(--accent))" }}>
             <Sparkles size={12} /> Willkommen
           </div>
           <h2 className="font-serif text-2xl mt-1 leading-tight">
@@ -84,16 +84,16 @@ export function OnboardingBanner({ steps }: { steps: Step[] }) {
               href={step.href}
               className="flex items-center gap-3 p-3 rounded-lg border transition hover:bg-paper"
               style={{
-                borderColor: step.done ? "rgba(120, 167, 119, 0.4)" : "var(--stone)",
-                background: step.done ? "rgba(120, 167, 119, 0.08)" : "var(--paper)",
+                borderColor: step.done ? "rgba(120, 167, 119, 0.4)" : "rgb(var(--stone))",
+                background: step.done ? "rgba(120, 167, 119, 0.08)" : "rgb(var(--paper))",
                 opacity: step.done ? 0.7 : 1,
               }}
             >
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                 style={{
-                  background: step.done ? "rgb(70, 115, 70)" : "var(--linen)",
-                  color: step.done ? "#fff" : "var(--smoke)",
+                  background: step.done ? "rgb(70, 115, 70)" : "rgb(var(--linen))",
+                  color: step.done ? "#fff" : "rgb(var(--smoke))",
                 }}
               >
                 {step.done ? <Check size={13} /> : <span className="text-xs font-medium">{steps.indexOf(step) + 1}</span>}
@@ -117,7 +117,7 @@ export function OnboardingBanner({ steps }: { steps: Step[] }) {
           onClick={onDismiss}
           disabled={pending}
           className="btn-ghost text-xs h-8"
-          style={{ color: allDone ? "var(--accent)" : "var(--smoke)" }}
+          style={{ color: allDone ? "rgb(var(--accent))" : "rgb(var(--smoke))" }}
         >
           {pending ? "…" : allDone ? "Fertig — Banner ausblenden" : "Banner dauerhaft ausblenden"}
         </button>

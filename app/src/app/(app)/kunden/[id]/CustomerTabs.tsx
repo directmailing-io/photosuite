@@ -55,8 +55,8 @@ export function CustomerTabs({
                   <span
                     className="badge tabular-nums"
                     style={{
-                      background: t.accent ? "var(--accent-soft)" : "var(--linen)",
-                      color: t.accent ? "var(--accent-deep)" : "var(--smoke)",
+                      background: t.accent ? "rgb(var(--accent-soft))" : "rgb(var(--linen))",
+                      color: t.accent ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))",
                       padding: "1px 7px",
                       fontSize: 10,
                     }}

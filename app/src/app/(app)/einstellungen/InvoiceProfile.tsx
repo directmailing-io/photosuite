@@ -74,7 +74,7 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
           </div>
         </div>
         {!isComplete && (
-          <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)", border: "none" }}>
+          <span className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))", border: "none" }}>
             <AlertCircle size={11} /> Unvollständig
           </span>
         )}
@@ -110,7 +110,7 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
           <Field label="Steuernummer" hint="z.B. 207/123/45678"><input name="invoiceTaxId" defaultValue={initial.invoiceTaxId ?? ""} className="input" /></Field>
           <Field label="USt-IdNr" hint="z.B. DE123456789 — Pflicht bei EU-Geschäft"><input name="invoiceVatId" defaultValue={initial.invoiceVatId ?? ""} className="input" /></Field>
         </FormRow>
-        <div className="flex items-start gap-3 p-3 rounded-lg" style={{ background: "var(--linen)" }}>
+        <div className="flex items-start gap-3 p-3 rounded-lg" style={{ background: "rgb(var(--linen))" }}>
           <input
             id="isSmallBusiness"
             type="checkbox"

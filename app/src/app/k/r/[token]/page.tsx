@@ -139,11 +139,11 @@ export default async function PublicInvoicePage({
         {/* Begrüßung */}
         <div>
           <div className="eyebrow">
-            <span style={{ display: "inline-block", width: 28, height: 1, background: "var(--accent)", marginRight: 10, verticalAlign: "middle" }} />
+            <span style={{ display: "inline-block", width: 28, height: 1, background: "rgb(var(--accent))", marginRight: 10, verticalAlign: "middle" }} />
             {KIND_LABEL[invoice.kind] ?? "Rechnung"}
           </div>
           <h1 className="font-serif text-4xl mt-3 leading-tight">
-            Hallo <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{invoice.customer.firstName}</em>,
+            Hallo <em style={{ color: "rgb(var(--accent))", fontStyle: "italic" }}>{invoice.customer.firstName}</em>,
           </h1>
           <p className="text-smoke mt-2 max-w-xl">
             {isPaid
@@ -156,7 +156,7 @@ export default async function PublicInvoicePage({
 
         {/* Status-Banner */}
         {justPaid && !isPaid && (
-          <div className="card p-4 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+          <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
             <Hourglass size={18} className="text-accent shrink-0 mt-0.5" />
             <div className="text-sm">
               <div className="font-medium">Danke! Wir warten auf die Bestätigung deiner Zahlung.</div>
@@ -167,10 +167,10 @@ export default async function PublicInvoicePage({
           </div>
         )}
         {isPaid && (
-          <div className="card p-4 flex items-start gap-3" style={{ background: "var(--success-soft)", borderLeftWidth: 3, borderLeftColor: "var(--success)" }}>
-            <CheckCircle2 size={18} className="shrink-0 mt-0.5" style={{ color: "var(--success)" }} />
+          <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--success-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--success))" }}>
+            <CheckCircle2 size={18} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--success))" }} />
             <div className="text-sm">
-              <div className="font-medium" style={{ color: "var(--success-deep)" }}>Bezahlt</div>
+              <div className="font-medium" style={{ color: "rgb(var(--success-deep))" }}>Bezahlt</div>
               {invoice.paidAt && (
                 <div className="text-smoke text-xs mt-0.5">
                   Eingegangen am {fmtDate(invoice.paidAt)}
@@ -181,7 +181,7 @@ export default async function PublicInvoicePage({
           </div>
         )}
         {!isPaid && !isCancelled && overdue && (
-          <div className="card p-4 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+          <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
             <AlertTriangle size={18} className="text-accent shrink-0 mt-0.5" />
             <div className="text-sm">
               <div className="font-medium">Diese Rechnung ist überfällig</div>
@@ -255,29 +255,29 @@ export default async function PublicInvoicePage({
         {/* Kontakt */}
         {studio && (
           <section className="card p-6 bg-ink text-bg overflow-hidden relative">
-            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full opacity-10" style={{ background: "var(--accent)" }} />
+            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full opacity-10" style={{ background: "rgb(var(--accent))" }} />
             <div className="relative">
               <div className="eyebrow" style={{ color: "rgba(255,255,255,0.7)" }}>Bei Fragen</div>
               <h2 className="font-serif text-2xl mt-1 mb-3">{studio.studioName ?? studio.name}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 {studio.studioPhone && (
                   <a href={`tel:${studio.studioPhone}`} className="flex items-center gap-2 opacity-90 hover:opacity-100">
-                    <Phone size={13} style={{ color: "var(--accent)" }} /> {studio.studioPhone}
+                    <Phone size={13} style={{ color: "rgb(var(--accent))" }} /> {studio.studioPhone}
                   </a>
                 )}
                 {(studio.invoiceEmail ?? studio.studioEmail) && (
                   <a href={`mailto:${studio.invoiceEmail ?? studio.studioEmail}`} className="flex items-center gap-2 opacity-90 hover:opacity-100">
-                    <Mail size={13} style={{ color: "var(--accent)" }} /> {studio.invoiceEmail ?? studio.studioEmail}
+                    <Mail size={13} style={{ color: "rgb(var(--accent))" }} /> {studio.invoiceEmail ?? studio.studioEmail}
                   </a>
                 )}
                 {studio.studioWebsite && (
                   <a href={studio.studioWebsite} target="_blank" rel="noopener" className="flex items-center gap-2 opacity-90 hover:opacity-100">
-                    <Globe size={13} style={{ color: "var(--accent)" }} /> {studio.studioWebsite.replace(/^https?:\/\//, "")}
+                    <Globe size={13} style={{ color: "rgb(var(--accent))" }} /> {studio.studioWebsite.replace(/^https?:\/\//, "")}
                   </a>
                 )}
                 {studio.studioAddress && (
                   <div className="flex items-start gap-2 col-span-full opacity-90">
-                    <MapPin size={13} style={{ color: "var(--accent)" }} className="mt-0.5" />
+                    <MapPin size={13} style={{ color: "rgb(var(--accent))" }} className="mt-0.5" />
                     <span className="whitespace-pre-line">{studio.studioAddress}</span>
                   </div>
                 )}
@@ -298,7 +298,7 @@ function Info({ label, value, accent, fullWidth }: { label: string; value: strin
   return (
     <div className={fullWidth ? "col-span-2" : ""}>
       <div className="text-[10px] uppercase tracking-wider text-smoke">{label}</div>
-      <div className="mt-0.5" style={{ color: accent ? "var(--accent)" : undefined }}>{value}</div>
+      <div className="mt-0.5" style={{ color: accent ? "rgb(var(--accent))" : undefined }}>{value}</div>
     </div>
   );
 }

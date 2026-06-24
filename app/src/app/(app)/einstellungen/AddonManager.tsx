@@ -124,7 +124,7 @@ function AddonRowView({ addon, onEdit }: { addon: AddonRow; onEdit: () => void }
         <div className="flex items-center gap-2 flex-wrap">
           <div className="font-medium truncate">{addon.name}</div>
           {!addon.isActive && (
-            <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+            <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
               <EyeOff size={10} /> Inaktiv
             </span>
           )}
@@ -146,7 +146,7 @@ function AddonRowView({ addon, onEdit }: { addon: AddonRow; onEdit: () => void }
         <button onClick={onEdit} className="btn-icon" disabled={pending} title="Bearbeiten">
           <Pencil size={13} />
         </button>
-        <button onClick={onDelete} className="btn-icon" disabled={pending} style={{ color: "var(--accent)" }} title="Löschen">
+        <button onClick={onDelete} className="btn-icon" disabled={pending} style={{ color: "rgb(var(--accent))" }} title="Löschen">
           <Trash2 size={13} />
         </button>
       </div>
@@ -249,7 +249,7 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
               type="button"
               onClick={onClearImage}
               className="btn-ghost text-xs h-9"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "rgb(var(--accent))" }}
             >
               <X size={12} /> Entfernen
             </button>

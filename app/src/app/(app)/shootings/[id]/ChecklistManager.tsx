@@ -145,8 +145,8 @@ function AudienceSection({
     <div className="mb-5">
       <div className="flex items-center gap-2 mb-3">
         <span className="badge" style={{
-          background: accent ? "var(--accent-soft)" : "var(--linen)",
-          color: accent ? "var(--accent-deep)" : "var(--smoke)",
+          background: accent ? "rgb(var(--accent-soft))" : "rgb(var(--linen))",
+          color: accent ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))",
         }}>
           {icon} {title}
         </span>
@@ -185,7 +185,7 @@ function ChecklistBlock({
       </div>
       {total > 0 && (
         <div className="h-1 rounded-full bg-linen overflow-hidden mb-3">
-          <div className="h-full" style={{ background: cl.audience === "CUSTOMER" ? "var(--accent)" : "var(--ink)", width: `${(done / total) * 100}%` }} />
+          <div className="h-full" style={{ background: cl.audience === "CUSTOMER" ? "rgb(var(--accent))" : "rgb(var(--ink))", width: `${(done / total) * 100}%` }} />
         </div>
       )}
       <ul className="space-y-1">
@@ -209,7 +209,7 @@ function ItemRow({
   const [editingDate, setEditingDate] = useState(false);
 
   const overdue = item.dueAt && !item.done && new Date(item.dueAt) < new Date();
-  const dateColor = item.done ? "var(--smoke)" : overdue ? "var(--accent)" : "var(--smoke)";
+  const dateColor = item.done ? "rgb(var(--smoke))" : overdue ? "rgb(var(--accent))" : "rgb(var(--smoke))";
 
   return (
     <li className="flex items-center gap-2 group/item">

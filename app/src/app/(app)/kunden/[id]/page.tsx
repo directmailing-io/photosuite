@@ -325,7 +325,7 @@ export default async function CustomerDetailPage({
                   <ol className="divide-y divide-stone/60">
                     {customer.activities.map((a) => (
                       <li key={a.id} className="px-6 py-3 flex items-start gap-3">
-                        <div className="mt-1.5 w-2 h-2 rounded-full" style={{ background: a.kind === "note_added" ? "var(--accent)" : "var(--taupe)" }} />
+                        <div className="mt-1.5 w-2 h-2 rounded-full" style={{ background: a.kind === "note_added" ? "rgb(var(--accent))" : "rgb(var(--taupe))" }} />
                         <div className="flex-1">
                           <div className="text-sm text-ink whitespace-pre-wrap">{a.message}</div>
                           <div className="text-[11px] text-smoke mt-1">{formatDateTime(a.createdAt)}</div>
@@ -349,7 +349,7 @@ function KpiCell({ label, value, accent }: { label: string; value: string; accen
       <div className="text-[10px] uppercase tracking-wider text-smoke">{label}</div>
       <div
         className="font-serif text-xl tabular-nums mt-1 truncate"
-        style={{ color: accent ? "var(--accent)" : undefined }}
+        style={{ color: accent ? "rgb(var(--accent))" : undefined }}
         title={value}
       >
         {value}

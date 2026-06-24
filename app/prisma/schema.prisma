@@ -98,6 +98,8 @@ model User {
   availabilityOverrides  AvailabilityOverride[]
   // Onboarding: nach erstem Login Setup-Wizard zeigen, bis User ihn schließt.
   onboardingDismissed    Boolean                 @default(false)
+  // UI-Theme. Werte: "lisa" | "studio" | "midnight". Mapped auf data-theme="…" am <html>.
+  theme                  String                  @default("lisa")
   // "Ganzer Tag" — Standardfenster, das bei AvailabilityWeekly/Override ohne slotsJson greift.
   // Auch der "Ganzer Tag"-Quick-Button im Kalender füllt diese Range ein.
   defaultDayStartMinutes Int                     @default(540) // 09:00

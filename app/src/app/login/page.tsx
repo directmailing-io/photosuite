@@ -58,7 +58,7 @@ function LoginForm() {
       />
 
       {error && (
-        <div className="text-sm mt-3 px-3 py-2 rounded-lg" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>
+        <div className="text-sm mt-3 px-3 py-2 rounded-lg" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
           {error}
         </div>
       )}
@@ -97,7 +97,7 @@ export default function LoginPage() {
             }}
           >
             <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.95)" }}>photo</span>
-            <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
+            <span style={{ fontStyle: "italic", fontWeight: 500, color: "rgb(var(--accent))" }}>suite</span>
           </div>
           <div className="font-serif text-5xl mt-3 leading-tight">Schön, dich<br/>wiederzusehen.</div>
         </div>

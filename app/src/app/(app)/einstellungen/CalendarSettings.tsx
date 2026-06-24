@@ -44,10 +44,10 @@ export function CalendarSettings({ connections }: { connections: Connection[] })
   return (
     <div className="space-y-6">
       {flashConnected && (
-        <div className="card p-4 flex items-center gap-3" style={{ background: "var(--success-soft)", borderLeftWidth: 3, borderLeftColor: "var(--success)" }}>
-          <Check size={18} style={{ color: "var(--success)" }} />
+        <div className="card p-4 flex items-center gap-3" style={{ background: "rgb(var(--success-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--success))" }}>
+          <Check size={18} style={{ color: "rgb(var(--success))" }} />
           <div className="text-sm">
-            <div className="font-medium" style={{ color: "var(--success-deep)" }}>
+            <div className="font-medium" style={{ color: "rgb(var(--success-deep))" }}>
               {PROVIDERS[flashConnected as ProviderId]?.label ?? flashConnected} verbunden
             </div>
             <div className="text-smoke text-xs mt-0.5">
@@ -57,7 +57,7 @@ export function CalendarSettings({ connections }: { connections: Connection[] })
         </div>
       )}
       {flashError && (
-        <div className="card p-4 flex items-center gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+        <div className="card p-4 flex items-center gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
           <AlertCircle size={18} className="text-accent" />
           <div className="text-sm">
             <div className="font-medium">Verbindung abgebrochen</div>
@@ -152,7 +152,7 @@ function ProviderTile({
       disabled={disabled}
       className="card p-4 flex items-center gap-4 text-left transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-paper shrink-0" style={{ border: "1px solid var(--stone)" }}>
+      <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-paper shrink-0" style={{ border: "1px solid rgb(var(--stone))" }}>
         <Logo />
       </div>
       <div className="flex-1 min-w-0">
@@ -160,7 +160,7 @@ function ProviderTile({
         <div className="text-xs text-smoke mt-0.5 truncate">{cfg.description}</div>
       </div>
       {alreadyConnected ? (
-        <Check size={16} style={{ color: "var(--success)" }} />
+        <Check size={16} style={{ color: "rgb(var(--success))" }} />
       ) : !cfg.enabled ? (
         <span className="text-[10px] uppercase tracking-wider text-smoke">bald</span>
       ) : (
@@ -173,7 +173,7 @@ function ProviderTile({
 const LOGO_MAP: Record<ProviderId, React.ComponentType> = {
   google: () => <GoogleLogo size={24} />,
   microsoft: () => <MicrosoftLogo size={22} />,
-  apple: () => <AppleLogo size={22} color="var(--ink)" />,
+  apple: () => <AppleLogo size={22} color="rgb(var(--ink))" />,
   nextcloud: () => <NextcloudLogo size={32} />,
   mailbox: () => <MailboxOrgLogo size={22} />,
   posteo: () => <PosteoLogo size={22} />,
@@ -221,18 +221,18 @@ function ConnectedRow({ connection }: { connection: Connection }) {
   return (
     <div className="card p-4">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-paper shrink-0" style={{ border: "1px solid var(--stone)" }}>
+        <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-paper shrink-0" style={{ border: "1px solid rgb(var(--stone))" }}>
           <Logo />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <div className="font-medium">{cfg?.label ?? connection.provider}</div>
             {connection.status === "active" ? (
-              <span className="badge" style={{ background: "var(--success-soft)", color: "var(--success-deep)" }}>
+              <span className="badge" style={{ background: "rgb(var(--success-soft))", color: "rgb(var(--success-deep))" }}>
                 <Check size={10} /> Aktiv
               </span>
             ) : (
-              <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>
+              <span className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
                 <AlertCircle size={10} /> Fehler
               </span>
             )}
@@ -258,7 +258,7 @@ function ConnectedRow({ connection }: { connection: Connection }) {
               <ListFilter size={11} /> Kalender
             </button>
           )}
-          <button onClick={onDisconnect} disabled={pending} className="btn-ghost text-xs h-8" style={{ color: "var(--accent)" }}>
+          <button onClick={onDisconnect} disabled={pending} className="btn-ghost text-xs h-8" style={{ color: "rgb(var(--accent))" }}>
             <Trash2 size={11} /> Trennen
           </button>
         </div>
@@ -353,7 +353,7 @@ function CalendarPickerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
@@ -493,12 +493,12 @@ function CalDAVWizard({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 space-y-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-paper" style={{ border: "1px solid var(--stone)" }}>
+              <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-paper" style={{ border: "1px solid rgb(var(--stone))" }}>
                 {(() => { const L = LOGO_MAP[providerId]; return <L />; })()}
               </div>
               <div>

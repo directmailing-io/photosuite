@@ -77,8 +77,8 @@ function StepDot({ n, active, done, label }: { n: number; active: boolean; done:
       <div
         className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold"
         style={{
-          background: done ? "var(--ink)" : active ? "var(--accent)" : "var(--stone)",
-          color: done || active ? "#fff" : "var(--smoke)",
+          background: done ? "rgb(var(--ink))" : active ? "rgb(var(--accent))" : "rgb(var(--stone))",
+          color: done || active ? "#fff" : "rgb(var(--smoke))",
         }}
       >
         {done ? <Check size={14} /> : n}
@@ -111,7 +111,7 @@ function PackageStep({
               onClick={() => onSelect(p)}
               className={cn("card card-hover overflow-hidden text-left flex flex-col transition-all", active && "ring-2")}
               style={{
-                borderColor: active ? "var(--accent)" : undefined,
+                borderColor: active ? "rgb(var(--accent))" : undefined,
                 boxShadow: active ? "0 0 0 3px rgba(200,16,46,0.15)" : undefined,
               }}
             >
@@ -153,12 +153,12 @@ function PackageStep({
               onClick={() => onSelect("individual")}
               className={cn("card card-hover overflow-hidden text-left flex flex-col transition-all", active && "ring-2")}
               style={{
-                borderColor: active ? "var(--accent)" : undefined,
+                borderColor: active ? "rgb(var(--accent))" : undefined,
                 boxShadow: active ? "0 0 0 3px rgba(200,16,46,0.15)" : undefined,
                 borderStyle: "dashed",
               }}
             >
-              <div className="aspect-[16/9] relative overflow-hidden flex items-center justify-center" style={{ background: "linear-gradient(135deg, #ECEBE8 0%, #DFDEDA 100%)" }}>
+              <div className="aspect-[16/9] relative overflow-hidden flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgb(var(--linen)) 0%, rgb(var(--stone)) 100%)" }}>
                 <Sparkles size={42} strokeWidth={1} className="text-taupe" />
                 {active && (
                   <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center shadow-md">

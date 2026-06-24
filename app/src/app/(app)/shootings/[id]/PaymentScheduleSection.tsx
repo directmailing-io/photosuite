@@ -166,7 +166,7 @@ export function PaymentScheduleSection({ shootingId, shootingPriceCents, install
           {display.map((r, i) => {
             const inv = r.invoiceId ? invoices[r.invoiceId] : null;
             return (
-              <li key={r.id} className="card p-3" style={{ background: r.paidAt ? "var(--linen)" : "var(--paper)" }}>
+              <li key={r.id} className="card p-3" style={{ background: r.paidAt ? "rgb(var(--linen))" : "rgb(var(--paper))" }}>
                 {editing && !r.invoiceId ? (
                   <div className="space-y-2">
                     <div className="grid grid-cols-12 gap-2">
@@ -211,7 +211,7 @@ export function PaymentScheduleSection({ shootingId, shootingPriceCents, install
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium">{r.label}</span>
-                        <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+                        <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
                           {KIND_LABEL[r.kind] ?? r.kind}
                         </span>
                       </div>
@@ -266,7 +266,7 @@ export function PaymentScheduleSection({ shootingId, shootingPriceCents, install
             </button>
             <div className="text-smoke tabular-nums">
               Plan: {eurFromCents(planSum)} {diff !== 0 && (
-                <span style={{ color: "var(--accent)" }}>
+                <span style={{ color: "rgb(var(--accent))" }}>
                   ({diff > 0 ? "+" : ""}{eurFromCents(diff)} ggü. Shooting-Preis)
                 </span>
               )}
@@ -277,7 +277,7 @@ export function PaymentScheduleSection({ shootingId, shootingPriceCents, install
               type="button"
               onClick={onDeleteSchedule}
               className="btn-ghost text-xs"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "rgb(var(--accent))" }}
               disabled={busy}
             >
               <Trash2 size={13} /> Plan löschen

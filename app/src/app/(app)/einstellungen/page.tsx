@@ -12,6 +12,7 @@ import { ensureWeeklyDefaults } from "./availabilityActions";
 import { AddonManager } from "./AddonManager";
 import { BookingTypeManager } from "./BookingTypeManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
+import { ThemePicker } from "./ThemePicker";
 import { EmptyState } from "@/components/EmptyState";
 import { requireUserId } from "@/lib/auth";
 import {
@@ -27,7 +28,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "addons", "status", "tags"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "addons", "status", "tags", "design"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -147,6 +148,19 @@ export default async function EinstellungenPage({
 
       {tab === "status" && <StatusSection userId={userId} />}
       {tab === "tags" && <TagsSection userId={userId} />}
+
+      {tab === "design" && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl mb-2">Anpassungen</h2>
+            <p className="text-sm text-taupe max-w-2xl">
+              Wähle den Look, in dem deine gesamte App erscheint — Farben, Schriften, Formen.
+              Jeder User hat sein eigenes Theme; Buchungs- und Kunden-Daten bleiben unverändert.
+            </p>
+          </div>
+          <ThemePicker initial={(user?.theme as "lisa" | "studio" | "midnight") ?? "lisa"} />
+        </div>
+      )}
     </>
   );
 }

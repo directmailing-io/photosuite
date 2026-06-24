@@ -1,38 +1,57 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Multi-Theme via CSS-Variablen:
+ * Tokens werden als RGB-Triplets (z.B. "246 246 242") in globals.css gespeichert,
+ * damit Tailwind Opacity-Modifier (bg-linen/40, border-stone/60) korrekt mit
+ * `rgb(var(--xyz) / <alpha-value>)` auflösen kann.
+ * Theme-Switch via `<html data-theme="lisa|studio|midnight">`.
+ */
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "#F6F6F2",
-        paper: "#FFFFFF",
-        linen: "#ECEBE8",
-        stone: "#DFDEDA",
-        smoke: "#7D7878",
-        taupe: "#9F877F",
-        ink: "#19191A",
+        bg: "rgb(var(--bg) / <alpha-value>)",
+        paper: "rgb(var(--paper) / <alpha-value>)",
+        linen: "rgb(var(--linen) / <alpha-value>)",
+        stone: "rgb(var(--stone) / <alpha-value>)",
+        smoke: "rgb(var(--taupe) / <alpha-value>)", // text-smoke ist semantisch muted-text
+        taupe: "rgb(var(--taupe) / <alpha-value>)",
+        ink: "rgb(var(--ink) / <alpha-value>)",
         accent: {
-          DEFAULT: "#C8102E",
-          soft: "#FBE9EC",
-          deep: "#9C0822",
+          DEFAULT: "rgb(var(--accent) / <alpha-value>)",
+          soft: "rgb(var(--accent-soft) / <alpha-value>)",
+          deep: "rgb(var(--accent-deep) / <alpha-value>)",
+        },
+        success: {
+          DEFAULT: "rgb(var(--success) / <alpha-value>)",
+          soft: "rgb(var(--success-soft) / <alpha-value>)",
         },
       },
       fontFamily: {
-        serif: ['"Cormorant Garamond"', "Georgia", "serif"],
-        sans: ['"Open Sans"', "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        ui: ['"Montserrat"', '"Open Sans"', "sans-serif"],
+        serif: ["var(--font-display)", "Georgia", "serif"],
+        sans: ["var(--font-body)", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        body: ["var(--font-body)", "-apple-system", "sans-serif"],
+        ui: ["var(--font-ui)", "-apple-system", "sans-serif"],
       },
       letterSpacing: {
         eyebrow: "0.24em",
       },
       boxShadow: {
-        soft: "0 1px 2px rgba(25,25,26,0.04), 0 1px 1px rgba(25,25,26,0.03)",
-        md: "0 6px 20px rgba(25,25,26,0.08), 0 2px 6px rgba(25,25,26,0.04)",
-        lg: "0 28px 64px rgba(25,25,26,0.16), 0 8px 16px rgba(25,25,26,0.08)",
+        soft: "var(--shadow-soft)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
       },
       borderRadius: {
-        xl2: "14px",
+        DEFAULT: "var(--radius-md)",
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-md)",
+        xl: "var(--radius-lg)",
+        xl2: "var(--radius-lg)",
+        full: "var(--radius-full)",
       },
     },
   },

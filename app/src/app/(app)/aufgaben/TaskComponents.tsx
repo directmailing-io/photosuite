@@ -51,7 +51,7 @@ export function TaskList({ tasks }: { tasks: TaskUI[] }) {
               )}
               <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-smoke">
                 {t.dueAt && (
-                  <span className="flex items-center gap-1" style={{ color: overdue ? "var(--accent)" : undefined }}>
+                  <span className="flex items-center gap-1" style={{ color: overdue ? "rgb(var(--accent))" : undefined }}>
                     <CalendarClock size={12} /> {formatDate(t.dueAt)}
                   </span>
                 )}
@@ -104,7 +104,7 @@ export function ChecklistRowGroup({ shootingId, checklist }: { shootingId: strin
               {it.dueAt && (
                 <span
                   className="text-xs flex items-center gap-1 tabular-nums"
-                  style={{ color: overdue ? "var(--accent)" : "var(--smoke)" }}
+                  style={{ color: overdue ? "rgb(var(--accent))" : "rgb(var(--smoke))" }}
                 >
                   <CalendarClock size={11} /> {formatDate(it.dueAt)}
                 </span>

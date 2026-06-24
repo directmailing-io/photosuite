@@ -122,7 +122,7 @@ export default async function BuchhaltungPage({
       />
 
       {profileMissing && (
-        <div className="card p-4 mb-6 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+        <div className="card p-4 mb-6 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
           <AlertCircle size={18} className="text-accent shrink-0 mt-0.5" />
           <div className="flex-1 text-sm">
             <div className="font-medium text-ink">Rechnungs-Profil unvollständig</div>
@@ -184,7 +184,7 @@ export default async function BuchhaltungPage({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <div className="font-medium text-sm font-mono">{inv.number ?? "(Entwurf)"}</div>
-                          <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+                          <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
                             {KIND_LABEL[inv.kind] ?? inv.kind}
                           </span>
                         </div>
@@ -195,7 +195,7 @@ export default async function BuchhaltungPage({
                         <div className="text-xs text-smoke mt-1">
                           Ausgestellt {formatDate(inv.issueDate)}
                           {inv.status === "ISSUED" && (
-                            <span style={{ color: isOver ? "var(--accent)" : "var(--smoke)" }}>
+                            <span style={{ color: isOver ? "rgb(var(--accent))" : "rgb(var(--smoke))" }}>
                               {" "}· fällig {formatDate(inv.dueDate)}
                             </span>
                           )}
@@ -233,7 +233,7 @@ function KPI({ label, value, sub, icon, accent }: { label: string; value: string
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 text-smoke">{icon}<div className="eyebrow eyebrow-muted">{label}</div></div>
-      <div className="font-serif text-2xl mt-2 tabular-nums" style={{ color: accent ? "var(--accent)" : undefined }}>{value}</div>
+      <div className="font-serif text-2xl mt-2 tabular-nums" style={{ color: accent ? "rgb(var(--accent))" : undefined }}>{value}</div>
       <div className="text-xs text-smoke mt-1">{sub}</div>
     </div>
   );
@@ -257,9 +257,9 @@ function FilterChip({
       href={qs ? `/buchhaltung?${qs}` : "/buchhaltung"}
       className="badge transition"
       style={{
-        background: active ? "var(--ink)" : accent && count > 0 ? "var(--accent-soft)" : "var(--paper)",
-        color: active ? "var(--bg)" : accent && count > 0 ? "var(--accent-deep)" : "var(--smoke)",
-        border: active ? "none" : "1px solid var(--stone)",
+        background: active ? "rgb(var(--ink))" : accent && count > 0 ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
+        color: active ? "rgb(var(--bg))" : accent && count > 0 ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))",
+        border: active ? "none" : "1px solid rgb(var(--stone))",
         padding: "6px 12px",
       }}
     >

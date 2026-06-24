@@ -222,7 +222,7 @@ export function CustomerForm({ initial, statuses, tags, action, deleteAction }: 
       <div className="flex justify-between items-center sticky bottom-4 z-10">
         <div>
           {deleteAction && (
-            <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "var(--accent)" }}>
+            <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "rgb(var(--accent))" }}>
               <Trash2 size={16} /> Löschen
             </button>
           )}

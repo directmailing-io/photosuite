@@ -118,13 +118,13 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
           }}
         />
 
-        <div className="max-w-5xl mx-auto px-6 pt-12 pb-20 min-h-[70vh] flex flex-col justify-end" style={{ color: "var(--bg)" }}>
+        <div className="max-w-5xl mx-auto px-6 pt-12 pb-20 min-h-[70vh] flex flex-col justify-end" style={{ color: "rgb(var(--bg))" }}>
           <div className="eyebrow" style={{ color: "rgba(255,255,255,0.85)" }}>
-            <span style={{ display: "inline-block", width: 32, height: 1, background: "var(--accent)", marginRight: 12, verticalAlign: "middle" }}></span>
+            <span style={{ display: "inline-block", width: 32, height: 1, background: "rgb(var(--accent))", marginRight: 12, verticalAlign: "middle" }}></span>
             {studio?.studioName ?? "Studio"}
           </div>
           <h1 className="font-serif font-medium mt-4 leading-[1.02]" style={{ fontSize: "clamp(40px, 7vw, 80px)" }}>
-            Hi <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em>,
+            Hi <em style={{ color: "rgb(var(--accent))", fontStyle: "italic" }}>{firstName}</em>,
             <br />schön, dass du da bist.
           </h1>
           {description && (
@@ -208,19 +208,19 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                   href={`/k/${slug}/fragebogen/${q.id}`}
                   className="card p-6 flex items-center gap-5 group hover:shadow-md transition"
                   style={{
-                    background: isDone ? "var(--paper)" : "linear-gradient(135deg, var(--accent-soft) 0%, var(--paper) 100%)",
-                    borderColor: isDone ? "var(--stone)" : "var(--accent)",
+                    background: isDone ? "rgb(var(--paper))" : "linear-gradient(135deg, rgb(var(--accent-soft)) 0%, rgb(var(--paper)) 100%)",
+                    borderColor: isDone ? "rgb(var(--stone))" : "rgb(var(--accent))",
                     borderWidth: 1,
                   }}
                 >
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{ background: isDone ? "var(--linen)" : "var(--accent)", color: isDone ? "var(--smoke)" : "#fff" }}
+                    style={{ background: isDone ? "rgb(var(--linen))" : "rgb(var(--accent))", color: isDone ? "rgb(var(--smoke))" : "#fff" }}
                   >
                     {isDone ? <CheckCircle2 size={26} /> : <FileQuestion size={26} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="eyebrow" style={{ color: isDone ? "var(--smoke)" : "var(--accent)" }}>
+                    <div className="eyebrow" style={{ color: isDone ? "rgb(var(--smoke))" : "rgb(var(--accent))" }}>
                       {isDone ? "Fragebogen erledigt" : "Bitte ausfüllen"}
                     </div>
                     <div className="font-serif text-2xl mt-0.5">{q.title}</div>
@@ -257,11 +257,11 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               {shooting.dates.map((d, idx) => (
                 <li key={d.id} className="relative pl-10 pb-8 last:pb-0">
                   <span className="absolute left-0 top-1.5 w-5 h-5 rounded-full bg-bg border-2 flex items-center justify-center"
-                    style={{ borderColor: "var(--accent)" }}>
-                    <span className="w-2 h-2 rounded-full" style={{ background: "var(--accent)" }} />
+                    style={{ borderColor: "rgb(var(--accent))" }}>
+                    <span className="w-2 h-2 rounded-full" style={{ background: "rgb(var(--accent))" }} />
                   </span>
                   {idx < shooting.dates.length - 1 && (
-                    <span className="absolute left-[9px] top-7 bottom-0 w-px" style={{ background: "var(--stone)" }} />
+                    <span className="absolute left-[9px] top-7 bottom-0 w-px" style={{ background: "rgb(var(--stone))" }} />
                   )}
 
                   <div className="flex flex-wrap items-baseline gap-3 mb-1">
@@ -337,7 +337,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
             href={`/k/r/${openInvoice.paymentToken}`}
             className="card p-5 sm:p-6 flex items-center gap-4 transition group hover:shadow-md"
             style={{
-              background: "linear-gradient(135deg, var(--accent) 0%, #A30D24 100%)",
+              background: "linear-gradient(135deg, rgb(var(--accent)) 0%, #A30D24 100%)",
               color: "white",
               borderColor: "transparent",
             }}
@@ -385,18 +385,18 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                     style={{
                       borderLeftWidth: 3,
                       borderLeftColor: isPaid
-                        ? "var(--success)"
+                        ? "rgb(var(--success))"
                         : overdue
-                        ? "var(--accent)"
-                        : "var(--stone)",
+                        ? "rgb(var(--accent))"
+                        : "rgb(var(--stone))",
                     }}
                   >
                     <div
                       className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
                       style={{
-                        background: isPaid ? "var(--success-soft)" : isProcessing ? "var(--linen)" : "var(--paper)",
-                        color: isPaid ? "var(--success)" : "var(--smoke)",
-                        border: "1px solid var(--stone)",
+                        background: isPaid ? "rgb(var(--success-soft))" : isProcessing ? "rgb(var(--linen))" : "rgb(var(--paper))",
+                        color: isPaid ? "rgb(var(--success))" : "rgb(var(--smoke))",
+                        border: "1px solid rgb(var(--stone))",
                       }}
                     >
                       {isPaid ? <CheckCircle2 size={20} /> : isProcessing ? <Hourglass size={20} /> : overdue ? <AlertCircle size={20} /> : <Receipt size={20} />}
@@ -410,17 +410,17 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                       <div className="text-xs text-smoke mt-1">
                         Ausgestellt {inv.issueDate.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}
                         {isPaid && inv.paidAt && (
-                          <span style={{ color: "var(--success-deep)" }}>
+                          <span style={{ color: "rgb(var(--success-deep))" }}>
                             {" "}· bezahlt {inv.paidAt.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}
                           </span>
                         )}
                         {!isPaid && (
-                          <span style={{ color: overdue ? "var(--accent)" : "var(--smoke)" }}>
+                          <span style={{ color: overdue ? "rgb(var(--accent))" : "rgb(var(--smoke))" }}>
                             {" "}· fällig {inv.dueDate.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}
                           </span>
                         )}
                         {isProcessing && (
-                          <span style={{ color: "var(--accent-deep)" }}> · Zahlung in Bearbeitung</span>
+                          <span style={{ color: "rgb(var(--accent-deep))" }}> · Zahlung in Bearbeitung</span>
                         )}
                       </div>
                     </div>
@@ -480,7 +480,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {primary && (
                   <div className="card p-6 relative overflow-hidden">
-                    <div className="absolute top-4 right-4 badge" style={{ background: "var(--accent)", color: "white", border: "none" }}>
+                    <div className="absolute top-4 right-4 badge" style={{ background: "rgb(var(--accent))", color: "white", border: "none" }}>
                       <Star size={11} className="fill-current" /> Ansprechpartner:in
                     </div>
                     <div className="flex items-start gap-4">
@@ -548,8 +548,8 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                       <li key={it.id} className="flex items-start gap-3 text-sm">
                         <span className="mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0"
                           style={{
-                            borderColor: it.done ? "var(--accent)" : "var(--stone)",
-                            background: it.done ? "var(--accent)" : "transparent",
+                            borderColor: it.done ? "rgb(var(--accent))" : "rgb(var(--stone))",
+                            background: it.done ? "rgb(var(--accent))" : "transparent",
                           }}>
                           {it.done && <Check size={12} className="text-white" />}
                         </span>
@@ -566,7 +566,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
         {/* KONTAKT-BLOCK */}
         {studio && (
           <section id="kontakt" className="card p-8 bg-ink text-bg overflow-hidden relative scroll-mt-20">
-            <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-10" style={{ background: "var(--accent)" }} />
+            <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-10" style={{ background: "rgb(var(--accent))" }} />
             <div className="relative">
               <div className="eyebrow" style={{ color: "rgba(255,255,255,0.7)" }}>Bei Fragen</div>
               <h2 className="font-serif text-3xl mt-1 mb-1">{studio.studioName ?? studio.name}</h2>
@@ -575,27 +575,27 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
                 {studio.studioPhone && (
                   <a href={`tel:${studio.studioPhone}`} className="flex items-center gap-3 hover:opacity-100 opacity-90">
-                    <Phone size={15} style={{ color: "var(--accent)" }} /> {studio.studioPhone}
+                    <Phone size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioPhone}
                   </a>
                 )}
                 {studio.studioEmail && (
                   <a href={`mailto:${studio.studioEmail}`} className="flex items-center gap-3 hover:opacity-100 opacity-90">
-                    <Mail size={15} style={{ color: "var(--accent)" }} /> {studio.studioEmail}
+                    <Mail size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioEmail}
                   </a>
                 )}
                 {studio.studioWebsite && (
                   <a href={studio.studioWebsite} target="_blank" className="flex items-center gap-3 hover:opacity-100 opacity-90">
-                    <Globe size={15} style={{ color: "var(--accent)" }} /> {studio.studioWebsite.replace(/^https?:\/\//, "")}
+                    <Globe size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioWebsite.replace(/^https?:\/\//, "")}
                   </a>
                 )}
                 {studio.studioInstagram && (
                   <a href={`https://instagram.com/${studio.studioInstagram.replace(/^@/, "")}`} target="_blank" className="flex items-center gap-3 hover:opacity-100 opacity-90">
-                    <Instagram size={15} style={{ color: "var(--accent)" }} /> {studio.studioInstagram}
+                    <Instagram size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioInstagram}
                   </a>
                 )}
                 {studio.studioAddress && (
                   <div className="flex items-start gap-3 col-span-full">
-                    <MapPin size={15} style={{ color: "var(--accent)" }} className="mt-0.5" />
+                    <MapPin size={15} style={{ color: "rgb(var(--accent))" }} className="mt-0.5" />
                     <span className="whitespace-pre-line">{studio.studioAddress}</span>
                   </div>
                 )}

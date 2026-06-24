@@ -112,7 +112,7 @@ export function LogoUploader({ initial }: { initial: Initial }) {
           </div>
         </div>
         {hasLogo && (
-          <button type="button" onClick={onRemove} disabled={pending} className="btn-ghost text-xs" style={{ color: "var(--accent)" }}>
+          <button type="button" onClick={onRemove} disabled={pending} className="btn-ghost text-xs" style={{ color: "rgb(var(--accent))" }}>
             <Trash2 size={12} /> Entfernen
           </button>
         )}
@@ -272,7 +272,7 @@ function CropModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
       <div className="card max-w-md w-full p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>

@@ -157,7 +157,7 @@ function CompanionRow({ companion, onEdit }: { companion: Companion; onEdit: () 
         <button onClick={onEdit} className="btn-icon" title="Bearbeiten" disabled={pending}>
           <Pencil size={13} />
         </button>
-        <button onClick={onDelete} className="btn-icon" title="Entfernen" disabled={pending} style={{ color: "var(--accent)" }}>
+        <button onClick={onDelete} className="btn-icon" title="Entfernen" disabled={pending} style={{ color: "rgb(var(--accent))" }}>
           <Trash2 size={13} />
         </button>
       </div>

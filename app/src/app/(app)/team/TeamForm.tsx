@@ -78,7 +78,7 @@ export function TeamForm({ initial, expertise, action, deleteAction }: Props) {
         <div className="eyebrow eyebrow-muted mb-4 flex items-center gap-2">
           Profil
           {initial?.isOwner && (
-            <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>
+            <span className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
               <Star size={11} /> Eigenes Profil
             </span>
           )}
@@ -161,7 +161,7 @@ export function TeamForm({ initial, expertise, action, deleteAction }: Props) {
       <div className="flex justify-between items-center">
         <div>
           {deleteAction && !initial?.isOwner && (
-            <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "var(--accent)" }}>
+            <button type="button" onClick={onDelete} className="btn-ghost" style={{ color: "rgb(var(--accent))" }}>
               <Trash2 size={16} /> Mitglied entfernen
             </button>
           )}

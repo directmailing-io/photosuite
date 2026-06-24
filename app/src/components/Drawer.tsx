@@ -31,7 +31,7 @@ export function Drawer({ title, subtitle, open, onClose, footer, children, width
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <aside
         className="ml-auto relative h-full bg-bg shadow-lg flex flex-col"
         style={{ width: `min(${width}px, 100vw)` }}

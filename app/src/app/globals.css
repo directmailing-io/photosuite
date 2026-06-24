@@ -2,160 +2,394 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   THEME-TOKENS — drei Themes, ein Namensraum.
+   Farben werden als RGB-Triplets gespeichert ("246 246 242"),
+   damit Tailwind Opacity-Modifier (z.B. `bg-linen/40`) korrekt
+   auflösen kann. Plain CSS nutzt `rgb(var(--bg))` als Wrapper.
+   ============================================================ */
 @layer base {
-  :root {
-    --bg: #f6f6f2;
-    --paper: #ffffff;
-    --linen: #ecebe8;
-    --stone: #dfdeda;
-    --smoke: #7d7878;
-    --taupe: #9f877f;
-    --ink: #19191a;
-    --accent: #c8102e;
-    --accent-soft: #fbe9ec;
-    --accent-deep: #9c0822;
-    --success: #2f6b4a;
-    --success-soft: #e6efe9;
-    --success-deep: #1f4a32;
+  /* Default = Lisa (Boudoir-Editorial). */
+  :root,
+  :root[data-theme="lisa"] {
+    --bg: 246 246 242;          /* #F6F6F2 */
+    --paper: 255 252 248;       /* #FFFCF8 */
+    --linen: 240 239 233;       /* #F0EFE9 */
+    --stone: 228 226 218;       /* #E4E2DA */
+    --smoke: 250 250 246;       /* #FAFAF6 — Faint Surface (Midnight nutzt Input-BG) */
+    --taupe: 122 116 107;       /* #7A746B */
+    --ink: 25 25 26;            /* #19191A */
+    --accent: 200 16 46;        /* #C8102E */
+    --accent-soft: 246 226 229; /* #F6E2E5 */
+    --accent-deep: 158 12 36;   /* #9E0C24 */
+    --accent-on: 255 255 255;
+    --success: 47 107 59;       /* #2F6B3B */
+    --success-soft: 227 238 223;
+    --success-deep: 31 74 50;   /* #1F4A32 */
+
+    --shadow-soft: 0 1px 2px rgba(25,25,26,0.04), 0 1px 1px rgba(25,25,26,0.03);
+    --shadow-md: 0 6px 20px rgba(25,25,26,0.08), 0 2px 6px rgba(25,25,26,0.04);
+    --shadow-lg: 0 28px 64px rgba(25,25,26,0.16), 0 8px 16px rgba(25,25,26,0.08);
+
+    --font-display: "Cormorant Garamond", Georgia, serif;
+    --font-body: "Open Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-ui: "Montserrat", "Open Sans", sans-serif;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 14px;
+    --radius-full: 9999px;
+
+    --eyebrow-transform: uppercase;
+    --eyebrow-tracking: 0.24em;
+    --eyebrow-size: 10.5px;
+    --eyebrow-color: rgb(var(--accent));
+
+    --display-weight: 500;
+    --display-line: 1.08;
+    --display-tracking: -0.015em;
+
+    --focus-ring: 0 0 0 3px rgba(25,25,26,0.08);
+    --focus-border-rgb: var(--ink);
+  }
+
+  :root[data-theme="studio"] {
+    --bg: 255 255 255;
+    --paper: 255 255 255;
+    --linen: 247 247 247;
+    --stone: 235 235 235;
+    --smoke: 250 250 250;
+    --taupe: 113 113 113;
+    --ink: 34 34 34;
+    --accent: 255 90 95;        /* Airbnb Rauschrot */
+    --accent-soft: 255 232 233;
+    --accent-deep: 224 74 79;
+    --accent-on: 255 255 255;
+    --success: 0 138 5;
+    --success-soft: 230 244 230;
+    --success-deep: 0 92 4;
+
+    --shadow-soft: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 6px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+    --shadow-lg: 0 24px 48px rgba(0,0,0,0.16), 0 8px 16px rgba(0,0,0,0.08);
+
+    --font-display: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-body: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-ui: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    --eyebrow-transform: none;
+    --eyebrow-tracking: 0;
+    --eyebrow-size: 13px;
+    --eyebrow-color: rgb(var(--taupe));
+
+    --display-weight: 700;
+    --display-line: 1.15;
+    --display-tracking: -0.02em;
+
+    --focus-ring: 0 0 0 2px rgb(var(--ink));
+    --focus-border-rgb: var(--ink);
+  }
+
+  :root[data-theme="midnight"] {
+    --bg: 10 10 11;             /* #0A0A0B */
+    --paper: 20 20 22;          /* #141416 */
+    --linen: 28 28 31;          /* #1C1C1F */
+    --stone: 42 42 46;          /* #2A2A2E */
+    --smoke: 16 16 18;          /* #101012 — Faint dunkle Surface (Input-BG) */
+    --taupe: 139 139 146;       /* #8B8B92 */
+    --ink: 242 242 238;         /* #F2F2EE */
+    --accent: 212 165 116;      /* #D4A574 — warmes Gold */
+    --accent-soft: 58 46 31;    /* #3A2E1F */
+    --accent-deep: 184 137 90;  /* #B8895A */
+    --accent-on: 25 25 26;
+    --success: 127 212 154;
+    --success-soft: 31 58 40;
+    --success-deep: 168 230 187;  /* heller in Midnight, weil deep auf hellem Text gemeint */
+
+    --shadow-soft: none;
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
+    --shadow-lg: 0 24px 64px rgba(0,0,0,0.6), 0 0 24px rgba(212,165,116,0.08);
+
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Inter", -apple-system, system-ui, sans-serif;
+    --font-ui: "Inter", -apple-system, system-ui, sans-serif;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-full: 9999px;
+
+    --eyebrow-transform: uppercase;
+    --eyebrow-tracking: 0.2em;
+    --eyebrow-size: 11px;
+    --eyebrow-color: rgb(var(--accent));
+
+    --display-weight: 500;
+    --display-line: 1.1;
+    --display-tracking: -0.01em;
+
+    --focus-ring: 0 0 0 3px rgba(212,165,116,0.18);
+    --focus-border-rgb: var(--accent);
   }
 
   html,
   body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: rgb(var(--bg));
+    color: rgb(var(--ink));
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-weight: 500;
-    /* color: inherit — wir setzen Body-Color (--ink) als Default und lassen dunkle
-       Sections (z.B. Hero, Kontakt-Block) ihre eigene helle Farbe vererben. */
+    font-family: var(--font-display);
+    font-weight: var(--display-weight);
     color: inherit;
-    line-height: 1.08;
-    letter-spacing: -0.015em;
+    line-height: var(--display-line);
+    letter-spacing: var(--display-tracking);
   }
-  ::selection { background: var(--accent); color: white; }
+  ::selection { background: rgb(var(--accent)); color: rgb(var(--accent-on)); }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 999px; border: 2px solid var(--bg); }
-  ::-webkit-scrollbar-thumb:hover { background: var(--taupe); }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--stone)); border-radius: 999px; border: 2px solid rgb(var(--bg)); }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--taupe)); }
   ::-webkit-scrollbar-track { background: transparent; }
 }
 
 @layer components {
   /* ========= Eyebrow ========= */
   .eyebrow {
-    font-family: "Montserrat", "Open Sans", sans-serif;
+    font-family: var(--font-ui);
     font-weight: 700;
-    font-size: 10.5px;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: var(--accent);
+    font-size: var(--eyebrow-size);
+    letter-spacing: var(--eyebrow-tracking);
+    text-transform: var(--eyebrow-transform);
+    color: var(--eyebrow-color);
   }
-  .eyebrow-muted { color: var(--smoke); }
+  .eyebrow-muted { color: rgb(var(--taupe)); }
 
   /* ========= Buttons ========= */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 h-10 rounded-lg font-medium text-sm transition-all select-none;
-    font-family: "Montserrat", "Open Sans", sans-serif;
+    @apply inline-flex items-center justify-center gap-2 px-4 h-10 font-medium text-sm transition-all select-none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
     letter-spacing: 0.03em;
   }
   .btn-primary {
-    @apply btn text-white;
-    background: var(--ink);
+    @apply btn;
+    background: rgb(var(--ink));
+    color: rgb(var(--bg));
   }
-  .btn-primary:hover { background: #000; }
+  .btn-primary:hover { filter: brightness(1.1); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-accent {
-    @apply btn text-white;
-    background: var(--accent);
+    @apply btn;
+    background: rgb(var(--accent));
+    color: rgb(var(--accent-on));
   }
-  .btn-accent:hover { background: var(--accent-deep); }
+  .btn-accent:hover { background: rgb(var(--accent-deep)); }
 
   .btn-secondary {
-    @apply btn bg-paper text-ink border border-stone;
+    @apply btn;
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    border: 1px solid rgb(var(--stone));
   }
-  .btn-secondary:hover { background: var(--linen); }
+  .btn-secondary:hover { background: rgb(var(--linen)); }
 
   .btn-ghost {
-    @apply btn text-smoke;
+    @apply btn;
+    color: rgb(var(--taupe));
     background: transparent;
   }
-  .btn-ghost:hover { background: var(--linen); color: var(--ink); }
+  .btn-ghost:hover { background: rgb(var(--linen)); color: rgb(var(--ink)); }
 
   .btn-icon {
-    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg text-smoke transition-colors;
+    @apply inline-flex items-center justify-center w-9 h-9 transition-colors;
+    border-radius: var(--radius-md);
+    color: rgb(var(--taupe));
   }
-  .btn-icon:hover { background: var(--linen); color: var(--ink); }
+  .btn-icon:hover { background: rgb(var(--linen)); color: rgb(var(--ink)); }
 
   /* ========= Inputs ========= */
   .input, .textarea, .select {
-    @apply block w-full rounded-lg bg-paper border border-stone px-3.5 h-10 text-sm text-ink placeholder:text-smoke/60 transition-all;
+    @apply block w-full px-3.5 h-10 text-sm transition-all;
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    border: 1px solid rgb(var(--stone));
+    border-radius: var(--radius-md);
     font-family: inherit;
+  }
+  .input::placeholder, .textarea::placeholder, .select::placeholder {
+    color: rgb(var(--taupe) / 0.7);
   }
   .textarea { @apply py-2.5 h-auto leading-relaxed; min-height: 80px; }
   .input:focus, .textarea:focus, .select:focus {
     outline: none;
-    border-color: var(--ink);
-    box-shadow: 0 0 0 3px rgba(25,25,26,0.08);
+    border-color: rgb(var(--focus-border-rgb));
+    box-shadow: var(--focus-ring);
   }
   .label {
-    @apply block text-xs font-semibold text-ink/80 mb-1.5;
-    font-family: "Montserrat", "Open Sans", sans-serif;
+    @apply block text-xs font-semibold mb-1.5;
+    color: rgb(var(--ink) / 0.85);
+    font-family: var(--font-ui);
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 
   /* ========= Card ========= */
   .card {
-    @apply bg-paper rounded-xl2 border border-stone/70 shadow-soft;
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    border: 1px solid rgb(var(--stone));
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
   }
   .card-hover { transition: all 0.2s ease; }
-  .card-hover:hover { @apply shadow-md; border-color: var(--taupe); }
+  .card-hover:hover { box-shadow: var(--shadow-md); border-color: rgb(var(--taupe)); }
 
   /* ========= Badge ========= */
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold;
-    font-family: "Montserrat", "Open Sans", sans-serif;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold;
+    border-radius: var(--radius-full);
+    font-family: var(--font-ui);
     letter-spacing: 0.05em;
   }
   .badge-dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
 
-  /* ========= Topbar / Sidebar ========= */
+  /* ========= Nav ========= */
   .nav-link {
-    @apply flex items-center gap-3 h-10 px-3 rounded-lg text-sm text-smoke transition-all;
+    @apply flex items-center gap-3 h-10 px-3 text-sm transition-all;
+    border-radius: var(--radius-md);
+    color: rgb(var(--taupe));
   }
-  .nav-link:hover { background: var(--linen); color: var(--ink); }
+  .nav-link:hover { background: rgb(var(--linen)); color: rgb(var(--ink)); }
   .nav-link.active {
-    background: var(--ink);
-    color: var(--bg);
+    background: rgb(var(--ink));
+    color: rgb(var(--bg));
   }
-  .nav-link.active svg { color: var(--accent); }
+  .nav-link.active svg { color: rgb(var(--accent)); }
 
   /* ========= Avatar ========= */
   .avatar {
-    @apply inline-flex items-center justify-center rounded-full bg-linen text-ink font-semibold overflow-hidden;
-    font-family: "Montserrat", "Open Sans", sans-serif;
+    @apply inline-flex items-center justify-center font-semibold overflow-hidden;
+    background: rgb(var(--linen));
+    color: rgb(var(--ink));
+    border-radius: var(--radius-full);
+    font-family: var(--font-ui);
   }
 
   /* ========= Tablecell ========= */
   .table-th {
-    @apply text-left text-[11px] font-bold text-smoke px-4 py-3;
-    font-family: "Montserrat", "Open Sans", sans-serif;
+    @apply text-left text-[11px] font-bold px-4 py-3;
+    color: rgb(var(--taupe));
+    font-family: var(--font-ui);
     letter-spacing: 0.15em;
     text-transform: uppercase;
   }
-  .table-td { @apply px-4 py-3.5 text-sm text-ink align-middle; }
-  .table-row { border-top: 1px solid rgba(223,222,218,0.7); }
-  .table-row:hover { background: rgba(236,235,232,0.5); }
+  .table-td { @apply px-4 py-3.5 text-sm align-middle; color: rgb(var(--ink)); }
+  .table-row { border-top: 1px solid rgb(var(--stone) / 0.7); }
+  .table-row:hover { background: rgb(var(--linen) / 0.5); }
 
   /* ========= Hairline ========= */
-  .hairline { border-top: 1px solid rgba(223,222,218,0.7); }
+  .hairline { border-top: 1px solid rgb(var(--stone) / 0.7); }
 }
+
+/* ============================================================
+   Theme-spezifische Component-Skin-Overrides.
+   Dieselben JSX-Klassen → drei verschiedene Looks.
+   ============================================================ */
+
+/* --- Studio (Airbnb-Stil) --- */
+:root[data-theme="studio"] .btn {
+  border-radius: var(--radius-full);
+  padding-left: 20px;
+  padding-right: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+:root[data-theme="studio"] .btn-accent:hover { background: rgb(var(--accent-deep)); transform: translateY(-1px); }
+:root[data-theme="studio"] .btn-secondary { border-color: rgb(var(--ink)); }
+:root[data-theme="studio"] .card {
+  box-shadow: var(--shadow-soft);
+  border-color: rgb(var(--stone));
+}
+:root[data-theme="studio"] .card-hover:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+:root[data-theme="studio"] .nav-link { border-radius: var(--radius-full); padding-left: 14px; padding-right: 14px; }
+:root[data-theme="studio"] .nav-link.active {
+  background: rgb(var(--linen));
+  color: rgb(var(--ink));
+}
+:root[data-theme="studio"] .nav-link.active svg { color: rgb(var(--accent)); }
+:root[data-theme="studio"] .label {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(var(--ink));
+}
+:root[data-theme="studio"] .badge { font-weight: 600; letter-spacing: 0; padding: 4px 12px; font-size: 12px; }
+:root[data-theme="studio"] .table-th { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 13px; }
+
+/* --- Midnight (Dark Editorial) --- */
+:root[data-theme="midnight"] .btn { letter-spacing: 0.02em; }
+:root[data-theme="midnight"] .btn-primary {
+  background: rgb(var(--accent));
+  color: rgb(var(--accent-on));
+}
+:root[data-theme="midnight"] .btn-primary:hover {
+  background: rgb(var(--accent-deep));
+  filter: none;
+  box-shadow: 0 0 24px rgba(212,165,116,0.25);
+}
+:root[data-theme="midnight"] .btn-secondary {
+  background: rgb(var(--paper));
+  border-color: rgb(var(--stone));
+}
+:root[data-theme="midnight"] .btn-secondary:hover {
+  border-color: rgb(var(--accent));
+  color: rgb(var(--accent));
+  background: rgb(var(--paper));
+}
+:root[data-theme="midnight"] .input,
+:root[data-theme="midnight"] .textarea,
+:root[data-theme="midnight"] .select {
+  background: rgb(var(--smoke));
+}
+:root[data-theme="midnight"] .card { box-shadow: none; }
+:root[data-theme="midnight"] .card-hover:hover {
+  box-shadow: var(--shadow-md);
+  border-color: rgb(var(--accent) / 0.4);
+}
+:root[data-theme="midnight"] .nav-link.active {
+  background: rgb(var(--linen));
+  color: rgb(var(--ink));
+  border-left: 2px solid rgb(var(--accent));
+  padding-left: calc(0.75rem - 2px);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+:root[data-theme="midnight"] .nav-link.active svg { color: rgb(var(--accent)); }
+:root[data-theme="midnight"] .badge {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+:root[data-theme="midnight"] .label {
+  font-family: var(--font-body);
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+:root[data-theme="midnight"] .table-th { letter-spacing: 0.12em; font-size: 11px; }
 
 /* Fade-in für Page-Inhalte */
 .page-enter { animation: fadeUp 0.2s ease-out; }

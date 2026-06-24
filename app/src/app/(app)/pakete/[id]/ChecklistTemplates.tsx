@@ -125,7 +125,7 @@ function Section({
     return (
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <span className="badge" style={{ background: accent ? "var(--accent-soft)" : "var(--linen)", color: accent ? "var(--accent-deep)" : "var(--smoke)" }}>
+          <span className="badge" style={{ background: accent ? "rgb(var(--accent-soft))" : "rgb(var(--linen))", color: accent ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))" }}>
             {icon} {title}
           </span>
           <span className="text-xs text-smoke">{subtitle}</span>
@@ -137,7 +137,7 @@ function Section({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <span className="badge" style={{ background: accent ? "var(--accent-soft)" : "var(--linen)", color: accent ? "var(--accent-deep)" : "var(--smoke)" }}>
+        <span className="badge" style={{ background: accent ? "rgb(var(--accent-soft))" : "rgb(var(--linen))", color: accent ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))" }}>
           {icon} {title}
         </span>
         <span className="text-xs text-smoke">{subtitle}</span>

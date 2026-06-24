@@ -75,8 +75,8 @@ export function Sidebar({
           fontSize: "32px",
           letterSpacing: "-0.01em",
         }}>
-          <span style={{ fontWeight: 500, color: "var(--ink)" }}>photo</span>
-          <span style={{ fontStyle: "italic", fontWeight: 500, color: "var(--accent)" }}>suite</span>
+          <span style={{ fontWeight: 500, color: "rgb(var(--ink))" }}>photo</span>
+          <span style={{ fontStyle: "italic", fontWeight: 500, color: "rgb(var(--accent))" }}>suite</span>
         </Link>
       </div>
 
@@ -142,7 +142,7 @@ function NavSection({
               {it.badgeCount != null && it.badgeCount > 0 && (
                 <span
                   className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center"
-                  style={{ background: "var(--accent)", color: "white" }}
+                  style={{ background: "rgb(var(--accent))", color: "white" }}
                   title={`${it.badgeCount} neue`}
                 >
                   {it.badgeCount}

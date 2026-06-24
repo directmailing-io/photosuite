@@ -179,7 +179,7 @@ function KanbanColumn({
       </div>
       <div
         className="rounded-xl2 p-2 space-y-2 transition-colors"
-        style={{ background: isOver ? "var(--linen)" : "rgba(236,235,232,0.4)", minHeight: 120 }}
+        style={{ background: isOver ? "rgb(var(--linen))" : "rgba(236,235,232,0.4)", minHeight: 120 }}
       >
         {children}
       </div>

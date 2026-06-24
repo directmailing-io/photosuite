@@ -58,7 +58,7 @@ export function SignUpForm({ action }: { action: (fd: FormData) => Promise<Resul
       <div className="text-[11px] text-smoke mb-4">Mindestens 8 Zeichen.</div>
 
       {error && (
-        <div className="rounded-lg p-3 text-sm mb-4" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+        <div className="rounded-lg p-3 text-sm mb-4" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent))" }}>
           {error}
         </div>
       )}

@@ -167,7 +167,7 @@ function BookingCard({ booking }: { booking: Booking }) {
             {booking.message && (
               <div className="mt-2 p-3 rounded-lg bg-linen/50 text-sm flex gap-2">
                 <MessageSquare size={13} className="text-smoke shrink-0 mt-0.5" />
-                <span className="italic" style={{ color: "var(--ink)" }}>„{booking.message}"</span>
+                <span className="italic" style={{ color: "rgb(var(--ink))" }}>„{booking.message}"</span>
               </div>
             )}
 
@@ -190,10 +190,10 @@ function BookingCard({ booking }: { booking: Booking }) {
               </div>
             )}
             {booking.bookingType.videoProvider && !booking.meetingUrl && booking.status !== "CANCELLED" && (
-              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)" }}>
-                <Video size={13} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start" style={{ background: "rgb(var(--accent-soft))", border: "1px solid rgb(var(--accent))" }}>
+                <Video size={13} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
                 <div className="flex-1 min-w-0 text-xs">
-                  <div className="font-medium" style={{ color: "var(--accent)" }}>
+                  <div className="font-medium" style={{ color: "rgb(var(--accent))" }}>
                     {providerName(booking.bookingType.videoProvider)}-Link fehlt
                   </div>
                   <div className="text-smoke mt-0.5">
@@ -231,7 +231,7 @@ function BookingCard({ booking }: { booking: Booking }) {
               </Link>
             )}
             {(booking.status === "CANCELLED" || isPast) && (
-              <button onClick={onDelete} disabled={pending} className="btn-ghost text-xs h-8" style={{ color: "var(--accent)" }}>
+              <button onClick={onDelete} disabled={pending} className="btn-ghost text-xs h-8" style={{ color: "rgb(var(--accent))" }}>
                 <Trash2 size={13} /> Löschen
               </button>
             )}
@@ -252,7 +252,7 @@ function BookingCard({ booking }: { booking: Booking }) {
           />
           <div className="flex justify-end gap-2">
             <button onClick={() => setCancelOpen(false)} className="btn-ghost text-sm" disabled={pending}>Abbrechen</button>
-            <button onClick={onCancel} className="btn-primary text-sm" disabled={pending} style={{ background: "var(--accent)" }}>
+            <button onClick={onCancel} className="btn-primary text-sm" disabled={pending} style={{ background: "rgb(var(--accent))" }}>
               Ablehnen
             </button>
           </div>
@@ -265,5 +265,5 @@ function BookingCard({ booking }: { booking: Booking }) {
 const STATUS_META = {
   PENDING: { label: "Neu", color: "rgb(80, 130, 80)", icon: <span className="w-1.5 h-1.5 rounded-full bg-current" /> },
   CONFIRMED: { label: "Angenommen", color: "rgb(60, 105, 60)", icon: <CheckCircle2 size={10} /> },
-  CANCELLED: { label: "Abgelehnt", color: "var(--smoke)", icon: <XCircle size={10} /> },
+  CANCELLED: { label: "Abgelehnt", color: "rgb(var(--smoke))", icon: <XCircle size={10} /> },
 };

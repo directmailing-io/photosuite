@@ -216,7 +216,7 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <form onSubmit={onSave} className="lg:col-span-2 space-y-6">
         {isCancelInvoice && invoice.cancelsInvoice && (
-          <div className="card p-4 flex items-start gap-3" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+          <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
             <ArrowLeftRight size={18} className="text-accent mt-0.5 shrink-0" />
             <div className="flex-1 text-sm">
               <div className="font-medium">Stornorechnung</div>
@@ -230,7 +230,7 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
           </div>
         )}
         {invoice.cancelledByInvoice && (
-          <div className="card p-4 flex items-start gap-3" style={{ background: "var(--linen)" }}>
+          <div className="card p-4 flex items-start gap-3" style={{ background: "rgb(var(--linen))" }}>
             <CircleSlash size={18} className="text-smoke mt-0.5 shrink-0" />
             <div className="flex-1 text-sm">
               <div className="font-medium">Diese Rechnung wurde storniert</div>
@@ -351,7 +351,7 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
 
         {isDraft && (
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onCancel} className="btn-ghost" style={{ color: "var(--accent)" }} disabled={busy}>
+            <button type="button" onClick={onCancel} className="btn-ghost" style={{ color: "rgb(var(--accent))" }} disabled={busy}>
               <Trash2 size={15} /> Entwurf löschen
             </button>
             <button disabled={busy} className="btn-primary">
@@ -365,7 +365,7 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
       <div className="space-y-4 lg:sticky lg:top-6 self-start">
         {/* Verzug-Banner */}
         {isOverdue && invoice.status !== "PAID" && (
-          <div className="card p-4" style={{ background: "var(--accent-soft)", borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+          <div className="card p-4" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
             <div className="flex items-start gap-2">
               <AlertTriangle size={16} className="text-accent shrink-0 mt-0.5" />
               <div>
@@ -475,15 +475,15 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
                 <CheckCircle2 size={14} /> Als bezahlt markieren
               </button>
               {!isCancelInvoice && (
-                <button onClick={onCancel} disabled={busy} className="btn-ghost w-full" style={{ color: "var(--accent)" }}>
+                <button onClick={onCancel} disabled={busy} className="btn-ghost w-full" style={{ color: "rgb(var(--accent))" }}>
                   <CircleSlash size={14} /> Stornieren
                 </button>
               )}
             </>
           )}
           {invoice.status === "PAID" && invoice.paidAt && (
-            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--success-deep)" }}>
-              <CheckCircle2 size={15} style={{ color: "var(--success)" }} />
+            <div className="flex items-center gap-2 text-sm" style={{ color: "rgb(var(--success-deep))" }}>
+              <CheckCircle2 size={15} style={{ color: "rgb(var(--success))" }} />
               <span>Bezahlt am {new Date(invoice.paidAt).toLocaleDateString("de-DE")}</span>
             </div>
           )}
@@ -676,8 +676,8 @@ function ItemRow({
 function Row({ label, value, bold, large, muted, accent }: { label: string; value: string; bold?: boolean; large?: boolean; muted?: boolean; accent?: boolean }) {
   return (
     <div className="flex justify-between py-1.5" style={{
-      color: accent ? "var(--accent)" : muted ? "var(--smoke)" : "var(--ink)",
-      borderTop: bold && large ? "1px solid var(--stone)" : undefined,
+      color: accent ? "rgb(var(--accent))" : muted ? "rgb(var(--smoke))" : "rgb(var(--ink))",
+      borderTop: bold && large ? "1px solid rgb(var(--stone))" : undefined,
       marginTop: bold && large ? 4 : 0,
       paddingTop: bold && large ? 8 : 6,
     }}>
@@ -712,10 +712,10 @@ function PaymentCard({
   // PAID → grüner Status statt rot
   if (invoice.status === "PAID") {
     return (
-      <div className="card p-5 flex items-start gap-3" style={{ background: "var(--success-soft)", borderLeftWidth: 3, borderLeftColor: "var(--success)" }}>
-        <CheckCircle2 size={18} className="shrink-0 mt-0.5" style={{ color: "var(--success)" }} />
+      <div className="card p-5 flex items-start gap-3" style={{ background: "rgb(var(--success-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--success))" }}>
+        <CheckCircle2 size={18} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--success))" }} />
         <div className="text-sm">
-          <div className="font-medium" style={{ color: "var(--success-deep)" }}>Online bezahlt</div>
+          <div className="font-medium" style={{ color: "rgb(var(--success-deep))" }}>Online bezahlt</div>
           <div className="text-smoke text-xs mt-0.5">
             {invoice.paidAt && new Date(invoice.paidAt).toLocaleDateString("de-DE")}
             {invoice.stripePaymentMethod && ` · via ${PAYMENT_METHOD_LABELS[invoice.stripePaymentMethod] ?? invoice.stripePaymentMethod}`}
@@ -757,7 +757,7 @@ function PaymentCard({
             </a>
           </div>
           {status === "processing" && (
-            <div className="text-xs flex items-center gap-1.5" style={{ color: "var(--accent-deep)" }}>
+            <div className="text-xs flex items-center gap-1.5" style={{ color: "rgb(var(--accent-deep))" }}>
               <Hourglass size={11} /> Zahlung wurde gestartet, läuft noch
             </div>
           )}

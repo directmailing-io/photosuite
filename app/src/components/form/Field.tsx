@@ -19,7 +19,7 @@ export function Field({
       {children}
       {hint && !error && <div className="text-xs text-smoke mt-1.5">{hint}</div>}
       {error && (
-        <div className="text-xs mt-1.5" style={{ color: "var(--accent-deep)" }}>
+        <div className="text-xs mt-1.5" style={{ color: "rgb(var(--accent-deep))" }}>
           {error}
         </div>
       )}

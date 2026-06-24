@@ -144,7 +144,7 @@ export function CustomerQuestionnaireView(props: Props) {
           </Link>
           <div className="flex-1">
             <div className="h-1.5 rounded-full bg-linen overflow-hidden">
-              <div className="h-full transition-all duration-500" style={{ background: "var(--accent)", width: `${progress}%` }} />
+              <div className="h-full transition-all duration-500" style={{ background: "rgb(var(--accent))", width: `${progress}%` }} />
             </div>
           </div>
           <div className="text-xs text-smoke tabular-nums shrink-0">
@@ -171,7 +171,7 @@ export function CustomerQuestionnaireView(props: Props) {
           }}
         />
         <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, rgba(25,25,26,0.6) 0%, rgba(25,25,26,0.85) 100%)" }} />
-        <div className="max-w-2xl mx-auto px-6 pt-16 pb-12 min-h-[40vh] flex flex-col justify-end" style={{ color: "var(--bg)" }}>
+        <div className="max-w-2xl mx-auto px-6 pt-16 pb-12 min-h-[40vh] flex flex-col justify-end" style={{ color: "rgb(var(--bg))" }}>
           <div className="eyebrow" style={{ color: "rgba(255,255,255,0.85)" }}>Fragebogen</div>
           <h1 className="font-serif font-medium mt-3 leading-[1.05]" style={{ fontSize: "clamp(36px, 5.5vw, 56px)" }}>
             {title}
@@ -250,7 +250,7 @@ function ReadOnlyView({
             <ChevronLeft size={13} /> Zurück
           </Link>
           <div className="flex-1" />
-          <span className="badge" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
+          <span className="badge" style={{ background: "rgb(var(--ink))", color: "rgb(var(--bg))", border: "none" }}>
             <CheckCircle2 size={11} /> Abgeschickt
           </span>
         </div>
@@ -262,7 +262,7 @@ function ReadOnlyView({
           background: coverUrl ? `url("${coverUrl}") center/cover no-repeat` : "linear-gradient(135deg, #19191A 0%, #2a2526 100%)",
         }} />
         <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, rgba(25,25,26,0.6) 0%, rgba(25,25,26,0.85) 100%)" }} />
-        <div className="max-w-2xl mx-auto px-6 pt-12 pb-10 min-h-[30vh] flex flex-col justify-end" style={{ color: "var(--bg)" }}>
+        <div className="max-w-2xl mx-auto px-6 pt-12 pb-10 min-h-[30vh] flex flex-col justify-end" style={{ color: "rgb(var(--bg))" }}>
           <div className="eyebrow" style={{ color: "rgba(255,255,255,0.85)" }}>
             <CheckCircle2 size={12} className="inline mr-1.5" /> Vielen Dank, {customerFirstName}
           </div>
@@ -330,7 +330,7 @@ function ReadOnlyAnswer({ field, value }: { field: FieldUI; value: any }) {
       return (
         <div className="flex flex-wrap gap-1.5">
           {(value as string[]).map((v, i) => (
-            <span key={i} className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>{v}</span>
+            <span key={i} className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>{v}</span>
           ))}
         </div>
       );
@@ -422,9 +422,9 @@ function YesNo({ value, onChange }: { value: any; onChange: (v: boolean) => void
             onClick={() => onChange(o.v)}
             className="card p-5 text-center text-base font-medium transition"
             style={{
-              borderColor: active ? "var(--accent)" : "var(--stone)",
-              background: active ? "var(--accent)" : "var(--paper)",
-              color: active ? "#fff" : "var(--ink)",
+              borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
+              background: active ? "rgb(var(--accent))" : "rgb(var(--paper))",
+              color: active ? "#fff" : "rgb(var(--ink))",
               boxShadow: active ? "0 0 0 3px rgba(200,16,46,0.12)" : "none",
             }}
           >
@@ -476,13 +476,13 @@ function SelectSingle({ options, value, onChange }: { options: string[]; value: 
             onClick={() => onChange(o)}
             className="w-full text-left p-4 rounded-xl2 border flex items-center gap-3 transition"
             style={{
-              borderColor: active ? "var(--accent)" : "var(--stone)",
-              background: active ? "var(--accent-soft)" : "var(--paper)",
+              borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
+              background: active ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
               boxShadow: active ? "0 0 0 2px rgba(200,16,46,0.15)" : "none",
             }}
           >
             <span className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-              style={{ borderColor: active ? "var(--accent)" : "var(--stone)" }}>
+              style={{ borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))" }}>
               {active && <span className="w-2.5 h-2.5 rounded-full bg-accent" />}
             </span>
             <span className="text-sm">{o}</span>
@@ -508,15 +508,15 @@ function SelectMulti({ options, value, onChange }: { options: string[]; value: s
             onClick={() => toggle(o)}
             className="w-full text-left p-4 rounded-xl2 border flex items-center gap-3 transition"
             style={{
-              borderColor: active ? "var(--accent)" : "var(--stone)",
-              background: active ? "var(--accent-soft)" : "var(--paper)",
+              borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
+              background: active ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
               boxShadow: active ? "0 0 0 2px rgba(200,16,46,0.15)" : "none",
             }}
           >
             <span className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
               style={{
-                borderColor: active ? "var(--accent)" : "var(--stone)",
-                background: active ? "var(--accent)" : "transparent",
+                borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
+                background: active ? "rgb(var(--accent))" : "transparent",
               }}>
               {active && <Check size={13} className="text-white" strokeWidth={3} />}
             </span>
@@ -595,7 +595,7 @@ function FileField({ field, value, onChange, slug, qid }: {
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
         className="w-full p-6 rounded-xl2 border-2 border-dashed flex flex-col items-center justify-center gap-2 transition hover:border-ink/40"
-        style={{ borderColor: "var(--stone)", background: "var(--paper)" }}
+        style={{ borderColor: "rgb(var(--stone))", background: "rgb(var(--paper))" }}
       >
         {uploading ? <Loader2 size={28} className="animate-spin text-taupe" /> : <Upload size={28} className="text-taupe" />}
         <div className="text-sm font-medium">{uploading ? progress : "Datei auswählen"}</div>

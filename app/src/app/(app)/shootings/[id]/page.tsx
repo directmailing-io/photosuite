@@ -116,7 +116,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               <div className="text-xs text-smoke">Anzahlung</div>
               <div className="font-medium tabular-nums">
                 {formatEUR(shooting.depositAmount)}
-                <span className="ml-2 text-xs" style={{ color: shooting.depositPaid ? "var(--accent)" : "var(--smoke)" }}>
+                <span className="ml-2 text-xs" style={{ color: shooting.depositPaid ? "rgb(var(--accent))" : "rgb(var(--smoke))" }}>
                   {shooting.depositPaid ? "✓ erhalten" : "ausstehend"}
                 </span>
               </div>
@@ -128,7 +128,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
           <div className="text-xs text-smoke">Restbetrag</div>
           <div className="font-medium tabular-nums">
             {formatEUR(remaining)}
-            <span className="ml-2 text-xs" style={{ color: shooting.finalPaid ? "var(--accent)" : "var(--smoke)" }}>
+            <span className="ml-2 text-xs" style={{ color: shooting.finalPaid ? "rgb(var(--accent))" : "rgb(var(--smoke))" }}>
               {shooting.finalPaid ? "✓ erhalten" : "ausstehend"}
             </span>
           </div>

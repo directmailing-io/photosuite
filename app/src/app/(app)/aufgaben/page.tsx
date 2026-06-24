@@ -177,7 +177,7 @@ function KPI({ label, value, sub, icon, accent }: { label: string; value: string
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 text-smoke">{icon}<div className="eyebrow eyebrow-muted">{label}</div></div>
-      <div className="font-serif text-3xl mt-2 tabular-nums" style={{ color: accent ? "var(--accent)" : undefined }}>{value}</div>
+      <div className="font-serif text-3xl mt-2 tabular-nums" style={{ color: accent ? "rgb(var(--accent))" : undefined }}>{value}</div>
       <div className="text-xs text-smoke mt-1">{sub}</div>
     </div>
   );

@@ -115,14 +115,14 @@ export default async function FragebogenPage({
                     {/* New-Indicator Strip */}
                     <span
                       className="w-1 self-stretch rounded-full shrink-0"
-                      style={{ background: isNew ? "var(--accent)" : "transparent" }}
+                      style={{ background: isNew ? "rgb(var(--accent))" : "transparent" }}
                     />
                     <Avatar url={c.avatarUrl} firstName={c.firstName} lastName={c.lastName} size={40} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="font-medium text-sm">{q.title}</div>
                         {isNew && (
-                          <span className="badge" style={{ background: "var(--accent)", color: "white", border: "none" }}>
+                          <span className="badge" style={{ background: "rgb(var(--accent))", color: "white", border: "none" }}>
                             <Sparkles size={10} /> Neu
                           </span>
                         )}
@@ -138,7 +138,7 @@ export default async function FragebogenPage({
                             <div
                               className="h-full"
                               style={{
-                                background: q.status === "SUBMITTED" ? "var(--ink)" : "var(--accent)",
+                                background: q.status === "SUBMITTED" ? "rgb(var(--ink))" : "rgb(var(--accent))",
                                 width: `${progress}%`,
                               }}
                             />
@@ -193,9 +193,9 @@ function FilterChip({
       href={`/fragebogen${value === "ALL" ? "" : `?filter=${value}`}`}
       className="badge transition"
       style={{
-        background: active ? "var(--ink)" : accent && count > 0 ? "var(--accent-soft)" : "var(--paper)",
-        color: active ? "var(--bg)" : accent && count > 0 ? "var(--accent-deep)" : "var(--smoke)",
-        border: active ? "none" : "1px solid var(--stone)",
+        background: active ? "rgb(var(--ink))" : accent && count > 0 ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
+        color: active ? "rgb(var(--bg))" : accent && count > 0 ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))",
+        border: active ? "none" : "1px solid rgb(var(--stone))",
         padding: "6px 12px",
       }}
     >

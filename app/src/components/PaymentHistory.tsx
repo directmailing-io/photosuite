@@ -101,7 +101,7 @@ export function PaymentHistory({
             <span>Offen: <strong className="text-ink tabular-nums">{eurFromCents(sumOutstanding)}</strong></span>
           )}
           {sumOverdue > 0 && (
-            <span style={{ color: "var(--accent)" }}>Überfällig: <strong className="tabular-nums">{eurFromCents(sumOverdue)}</strong></span>
+            <span style={{ color: "rgb(var(--accent))" }}>Überfällig: <strong className="tabular-nums">{eurFromCents(sumOverdue)}</strong></span>
           )}
         </div>
       </div>
@@ -126,11 +126,11 @@ export function PaymentHistory({
                   >
                     {inv.number ?? "(Entwurf)"}
                   </Link>
-                  <span className="badge" style={{ background: "var(--linen)", color: "var(--smoke)" }}>
+                  <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
                     {KIND_LABEL[inv.kind] ?? inv.kind}
                   </span>
                   {inv.reminderLevel > 0 && (
-                    <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent-deep)" }}>
+                    <span className="badge" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
                       <Bell size={9} />
                       {inv.reminderLevel === 1 ? "Erinnerung" : inv.reminderLevel === 2 ? "1. Mahnung" : "2. Mahnung"}
                     </span>
@@ -139,7 +139,7 @@ export function PaymentHistory({
                 <div className="text-xs text-smoke mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
                   <span>{formatDate(inv.issueDate)}</span>
                   {inv.status === "ISSUED" && (
-                    <span style={{ color: isOverdue ? "var(--accent)" : undefined }}>
+                    <span style={{ color: isOverdue ? "rgb(var(--accent))" : undefined }}>
                       fällig {formatDate(inv.dueDate)}
                       {isOverdue && ` (${daysOverdue} ${daysOverdue === 1 ? "Tag" : "Tage"} überfällig)`}
                     </span>
@@ -150,7 +150,7 @@ export function PaymentHistory({
               </div>
               <div className="text-right">
                 <div className="text-sm font-medium tabular-nums">{eurFromCents(inv.totalCents)}</div>
-                <span className="badge mt-1" style={{ background: `${statusMeta.color}15`, color: statusMeta.color }}>
+                <span className="badge mt-1" style={{ background: statusMeta.bg, color: statusMeta.color }}>
                   {statusMeta.label}
                 </span>
               </div>
@@ -168,7 +168,7 @@ export function PaymentHistory({
                   <button
                     onClick={() => onMarkPaid(inv.id)}
                     className="text-[10px] px-2 py-1 rounded text-white whitespace-nowrap"
-                    style={{ background: "var(--ink)" }}
+                    style={{ background: "rgb(var(--ink))" }}
                   >
                     bezahlt
                   </button>
@@ -186,9 +186,11 @@ export function PaymentHistory({
 }
 
 function getStatusMeta(status: string, isOverdue: boolean) {
-  if (status === "PAID")      return { Icon: CheckCircle2, color: "#19191A", label: "Bezahlt" };
-  if (status === "CANCELLED") return { Icon: CircleSlash,  color: "#7D7878", label: "Storniert" };
-  if (status === "DRAFT")     return { Icon: CircleDashed, color: "#9F877F", label: "Entwurf" };
-  if (isOverdue)              return { Icon: AlertTriangle, color: "#C8102E", label: "Überfällig" };
-  return { Icon: Receipt, color: "#19191A", label: "Offen" };
+  // Farben kommen aus dem aktiven Theme — funktioniert in Lisa/Studio/Midnight gleichermaßen.
+  // bg + color werden separat geliefert, weil `${color}15`-Concat mit rgb()-Strings nicht klappt.
+  if (status === "PAID")      return { Icon: CheckCircle2,  color: "rgb(var(--success))", bg: "rgb(var(--success-soft))", label: "Bezahlt" };
+  if (status === "CANCELLED") return { Icon: CircleSlash,   color: "rgb(var(--taupe))",   bg: "rgb(var(--linen))",        label: "Storniert" };
+  if (status === "DRAFT")     return { Icon: CircleDashed,  color: "rgb(var(--taupe))",   bg: "rgb(var(--linen))",        label: "Entwurf" };
+  if (isOverdue)              return { Icon: AlertTriangle, color: "rgb(var(--accent))",  bg: "rgb(var(--accent-soft))",  label: "Überfällig" };
+  return                              { Icon: Receipt,      color: "rgb(var(--ink))",     bg: "rgb(var(--linen))",        label: "Offen" };
 }

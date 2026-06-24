@@ -272,8 +272,8 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
               onClick={() => setShowOnlyFree((v) => !v)}
               className="btn-secondary text-xs h-9"
               style={{
-                borderColor: showOnlyFree ? "var(--accent)" : undefined,
-                color: showOnlyFree ? "var(--accent)" : undefined,
+                borderColor: showOnlyFree ? "rgb(var(--accent))" : undefined,
+                color: showOnlyFree ? "rgb(var(--accent))" : undefined,
               }}
               title="Nur Tage mit freien Slots hervorheben"
             >
@@ -293,7 +293,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
             <div
               key={w}
               className="px-3 py-2 text-[10px] uppercase tracking-wider text-smoke text-center"
-              style={{ color: i >= 5 ? "var(--taupe)" : undefined }}
+              style={{ color: i >= 5 ? "rgb(var(--taupe))" : undefined }}
             >
               {w}
             </div>
@@ -496,9 +496,9 @@ function AvailabilityPopover({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="h-1.5" style={{ background: isAvailable ? "rgb(120, 167, 119)" : "var(--taupe)" }} />
+        <div className="h-1.5" style={{ background: isAvailable ? "rgb(120, 167, 119)" : "rgb(var(--taupe))" }} />
         <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -519,8 +519,8 @@ function AvailabilityPopover({
           <div
             className="flex items-center justify-between gap-3 p-3 rounded-lg border"
             style={{
-              borderColor: "var(--stone)",
-              background: isAvailable ? "rgba(120, 167, 119, 0.10)" : "var(--linen)",
+              borderColor: "rgb(var(--stone))",
+              background: isAvailable ? "rgba(120, 167, 119, 0.10)" : "rgb(var(--linen))",
             }}
           >
             <div>
@@ -540,7 +540,7 @@ function AvailabilityPopover({
               onClick={() => setIsAvailable((v) => !v)}
               className="relative inline-flex h-6 w-11 items-center rounded-full transition"
               style={{
-                background: isAvailable ? "rgb(120, 167, 119)" : "var(--stone)",
+                background: isAvailable ? "rgb(120, 167, 119)" : "rgb(var(--stone))",
               }}
             >
               <span
@@ -560,8 +560,8 @@ function AvailabilityPopover({
                   onClick={() => setUseDefault(true)}
                   className="text-xs h-8 rounded transition"
                   style={{
-                    background: useDefault ? "var(--paper)" : "transparent",
-                    color: useDefault ? "var(--ink)" : "var(--smoke)",
+                    background: useDefault ? "rgb(var(--paper))" : "transparent",
+                    color: useDefault ? "rgb(var(--ink))" : "rgb(var(--smoke))",
                     boxShadow: useDefault ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
                   }}
                 >
@@ -578,8 +578,8 @@ function AvailabilityPopover({
                   }}
                   className="text-xs h-8 rounded transition"
                   style={{
-                    background: !useDefault ? "var(--paper)" : "transparent",
-                    color: !useDefault ? "var(--ink)" : "var(--smoke)",
+                    background: !useDefault ? "rgb(var(--paper))" : "transparent",
+                    color: !useDefault ? "rgb(var(--ink))" : "rgb(var(--smoke))",
                     boxShadow: !useDefault ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
                   }}
                 >
@@ -819,11 +819,11 @@ function DayCell({
   const isFull = !!(availability?.isAvailable && totalMins > 0 && freeMins === 0);
 
   let baseBg: string;
-  if (!inMonth) baseBg = "var(--linen)";
+  if (!inMonth) baseBg = "rgb(var(--linen))";
   else if (isClosed) baseBg = "rgba(236, 235, 232, 0.65)";
   else if (hasFreeTime) baseBg = "rgba(120, 167, 119, 0.16)";  // klares aber dezentes Grün
   else if (isWeekend) baseBg = "rgba(236, 235, 232, 0.45)";
-  else baseBg = "var(--paper)";
+  else baseBg = "rgb(var(--paper))";
 
   const dimmed = dimNonFree && inMonth && !hasFreeTime;
   const isOverride = !!availability?.isOverride;
@@ -837,10 +837,10 @@ function DayCell({
         !isLastCol && "border-r border-stone/60",
       )}
       style={{
-        background: isOver ? "var(--accent-soft)" : baseBg,
+        background: isOver ? "rgb(var(--accent-soft))" : baseBg,
         opacity: inMonth ? (dimmed ? 0.35 : 1) : 0.55,
         outline: isOver
-          ? "2px solid var(--accent)"
+          ? "2px solid rgb(var(--accent))"
           : (hasFreeTime && inMonth ? "1px solid rgba(120, 167, 119, 0.45)" : "none"),
         outlineOffset: -1,
       }}
@@ -849,7 +849,7 @@ function DayCell({
       {inMonth && isOverride && (
         <div
           className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full"
-          style={{ background: "var(--accent)" }}
+          style={{ background: "rgb(var(--accent))" }}
           title="Manuelle Ausnahme"
         />
       )}
@@ -865,8 +865,8 @@ function DayCell({
           )}
           title={inMonth ? "Verfügbarkeit für diesen Tag anpassen" : undefined}
           style={{
-            background: isToday ? "var(--accent)" : "transparent",
-            color: isToday ? "#fff" : inMonth ? "var(--ink)" : "var(--smoke)",
+            background: isToday ? "rgb(var(--accent))" : "transparent",
+            color: isToday ? "#fff" : inMonth ? "rgb(var(--ink))" : "rgb(var(--smoke))",
           }}
         >
           {date.getDate()}
@@ -893,7 +893,7 @@ function DayCell({
               className="text-[9px] tabular-nums px-1.5 py-0.5 rounded font-medium hover:ring-1 hover:ring-stone transition"
               style={{
                 background: "rgba(0,0,0,0.06)",
-                color: "var(--smoke)",
+                color: "rgb(var(--smoke))",
               }}
               title={`Voll belegt · ${formatRanges(availability.windows)} · klicken zum Anpassen`}
             >
@@ -917,7 +917,7 @@ function DayCell({
               className="opacity-0 group-hover/cell:opacity-100 transition w-5 h-5 rounded-md flex items-center justify-center hover:bg-linen"
               title="Termin anlegen"
               aria-label="Termin anlegen"
-              style={{ color: "var(--smoke)" }}
+              style={{ color: "rgb(var(--smoke))" }}
             >
               <Plus size={12} />
             </button>
@@ -970,7 +970,7 @@ function BookingTile({ booking, onClick }: { booking: CalendarBooking; onClick: 
       }}
       title={`Online-Buchung: ${booking.customerName} · ${booking.bookingTypeName} · ${isPending ? "Anfrage" : "Bestätigt"}`}
     >
-      <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "var(--ink)" }}>
+      <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "rgb(var(--ink))" }}>
         <Clock size={9} className="shrink-0 opacity-70" />
         <span className="font-medium">{time}</span>
         <span
@@ -983,7 +983,7 @@ function BookingTile({ booking, onClick }: { booking: CalendarBooking; onClick: 
           {isPending ? "Neu" : "✓"}
         </span>
       </div>
-      <div className="text-xs mt-0.5 truncate" style={{ color: "var(--ink)" }}>
+      <div className="text-xs mt-0.5 truncate" style={{ color: "rgb(var(--ink))" }}>
         {booking.customerName}
       </div>
     </button>
@@ -997,17 +997,17 @@ function ExternalEventTile({ event }: { event: ExternalEvent }) {
       className="rounded-md px-2 py-1 cursor-default"
       style={{
         background: "rgba(0,0,0,0.025)",
-        borderLeft: "2px dashed var(--stone)",
+        borderLeft: "2px dashed rgb(var(--stone))",
         opacity: 0.7,
       }}
       title={`Extern (${event.provider}): ${event.summary ?? "Termin"} · ${time}`}
     >
-      <div className="flex items-center gap-1.5 text-[10px] tabular-nums" style={{ color: "var(--smoke)" }}>
+      <div className="flex items-center gap-1.5 text-[10px] tabular-nums" style={{ color: "rgb(var(--smoke))" }}>
         <Clock size={8} className="shrink-0 opacity-50" />
         <span>{time}</span>
       </div>
       {event.summary && (
-        <div className="text-[11px] truncate italic" style={{ color: "var(--smoke)" }}>
+        <div className="text-[11px] truncate italic" style={{ color: "rgb(var(--smoke))" }}>
           {event.summary}
         </div>
       )}
@@ -1045,11 +1045,11 @@ function ShootingTile({ shooting, isOverlay }: { shooting: CalendarShooting; isO
         boxShadow: isOverlay ? "0 6px 20px rgba(25,25,26,0.15)" : undefined,
       }}
     >
-      <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "var(--ink)" }}>
+      <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "rgb(var(--ink))" }}>
         <Clock size={9} className="shrink-0 opacity-70" />
         <span className="font-medium">{time}</span>
       </div>
-      <div className="text-xs mt-0.5 truncate" style={{ color: "var(--ink)" }}>
+      <div className="text-xs mt-0.5 truncate" style={{ color: "rgb(var(--ink))" }}>
         {shooting.customerFirstName} {shooting.customerLastName}
       </div>
       {shooting.location && (
@@ -1207,7 +1207,7 @@ function QuickCreateModal({
 
   if (customers.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
         <div className="card max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
           <div className="font-serif text-lg mb-2">Noch keine Kundinnen</div>
           <div className="text-sm text-smoke mb-4">
@@ -1225,9 +1225,9 @@ function QuickCreateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="h-1.5" style={{ background: "var(--accent)" }} />
+        <div className="h-1.5" style={{ background: "rgb(var(--accent))" }} />
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -1248,11 +1248,11 @@ function QuickCreateModal({
           {availability && !availability.isAvailable && (
             <div
               className="flex items-start gap-3 p-3 rounded-lg border text-sm"
-              style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
+              style={{ borderColor: "rgb(var(--accent))", background: "rgb(var(--accent-soft))" }}
             >
-              <CalendarOff size={16} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+              <CalendarOff size={16} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
               <div>
-                <div className="font-medium" style={{ color: "var(--accent)" }}>
+                <div className="font-medium" style={{ color: "rgb(var(--accent))" }}>
                   Tag eigentlich nicht verfügbar
                 </div>
                 <div className="text-xs text-smoke mt-0.5">
@@ -1264,7 +1264,7 @@ function QuickCreateModal({
           {availability && availability.isAvailable && availability.freeMinutes === 0 && (
             <div
               className="flex items-start gap-3 p-3 rounded-lg border text-sm"
-              style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "var(--linen)" }}
+              style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "rgb(var(--linen))" }}
             >
               <AlertTriangle size={16} className="shrink-0 mt-0.5 text-taupe" />
               <div>
@@ -1325,9 +1325,9 @@ function QuickCreateModal({
                       onClick={() => setTime(hhmm)}
                       className="text-xs h-7 px-2 rounded border tabular-nums transition"
                       style={{
-                        borderColor: active ? "var(--accent)" : "var(--stone)",
-                        background: active ? "var(--accent-soft)" : "var(--paper)",
-                        color: active ? "var(--accent)" : "var(--ink)",
+                        borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
+                        background: active ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
+                        color: active ? "rgb(var(--accent))" : "rgb(var(--ink))",
                         fontWeight: active ? 500 : 400,
                       }}
                     >
@@ -1344,7 +1344,7 @@ function QuickCreateModal({
           {availability && availability.isAvailable && validStartTimes.length === 0 && packageId && (
             <div
               className="flex items-start gap-3 p-3 rounded-lg border text-sm"
-              style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "var(--linen)" }}
+              style={{ borderColor: "rgba(159, 135, 127, 0.5)", background: "rgb(var(--linen))" }}
             >
               <AlertTriangle size={16} className="shrink-0 mt-0.5 text-taupe" />
               <div>
@@ -1464,7 +1464,7 @@ function ShootingModal({ shooting, onClose }: { shooting: CalendarShooting; onCl
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -1474,7 +1474,7 @@ function ShootingModal({ shooting, onClose }: { shooting: CalendarShooting; onCl
         {/* Header mit Statusband oben */}
         <div
           className="h-1.5"
-          style={{ background: shooting.statusColor ?? "var(--taupe)" }}
+          style={{ background: shooting.statusColor ?? "rgb(var(--taupe))" }}
         />
         <div className="p-6">
           <div className="flex items-start justify-between gap-3 mb-4">
@@ -1482,7 +1482,7 @@ function ShootingModal({ shooting, onClose }: { shooting: CalendarShooting; onCl
               {shooting.statusLabel && (
                 <div
                   className="badge mb-2"
-                  style={{ background: `${shooting.statusColor ?? "#9F877F"}15`, color: shooting.statusColor ?? "var(--smoke)" }}
+                  style={{ background: `${shooting.statusColor ?? "#9F877F"}15`, color: shooting.statusColor ?? "rgb(var(--smoke))" }}
                 >
                   {shooting.statusLabel}
                 </div>
@@ -1575,7 +1575,7 @@ function BookingDetailModal({ booking, onClose }: { booking: CalendarBooking; on
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <div className="card max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="h-1.5" style={{ background: "rgb(70, 115, 70)" }} />
         <div className="p-6">

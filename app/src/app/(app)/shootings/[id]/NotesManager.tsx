@@ -64,8 +64,8 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
               onClick={() => setFilter(k)}
               className="px-2 py-1 rounded-md transition"
               style={{
-                background: filter === k ? "var(--ink)" : "transparent",
-                color: filter === k ? "var(--bg)" : "var(--smoke)",
+                background: filter === k ? "rgb(var(--ink))" : "transparent",
+                color: filter === k ? "rgb(var(--bg))" : "rgb(var(--smoke))",
               }}
             >
               {k === "ALL" ? "Alle" : STATUS[k].label}
@@ -131,8 +131,8 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
                 key={n.id}
                 className="group p-3 rounded-lg border"
                 style={{
-                  background: n.status === "IMPORTANT" ? `${meta.color}08` : "var(--paper)",
-                  borderColor: n.status === "IMPORTANT" ? `${meta.color}30` : "var(--stone)",
+                  background: n.status === "IMPORTANT" ? `${meta.color}08` : "rgb(var(--paper))",
+                  borderColor: n.status === "IMPORTANT" ? `${meta.color}30` : "rgb(var(--stone))",
                   borderLeftWidth: 3,
                   borderLeftColor: meta.color,
                 }}

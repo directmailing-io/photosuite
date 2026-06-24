@@ -4,7 +4,10 @@
 // Mittelfristig sollte die lokale Dev-DB ebenfalls Postgres sein (Docker / Supabase local).
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // rhel-openssl-3.0.x: Vercel-Serverless Linux Runtime.
+  // Ohne dies muss Prisma im Cold-Start den Binary erst herunterladen → spart 2–3s.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

@@ -13,8 +13,7 @@ import { AddonManager } from "./AddonManager";
 import { BookingTypeManager } from "./BookingTypeManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { EmptyState } from "@/components/EmptyState";
-import { auth } from "@/lib/auth";
-import { loadCurrentUser } from "@/lib/loadUser";
+import { requireUserId } from "@/lib/auth";
 import {
   createCustomerStatus,
   updateCustomerStatus,
@@ -38,8 +37,8 @@ export default async function EinstellungenPage({
   const sp = await searchParams;
   const tab: SettingsTab = (VALID.includes(sp.tab as SettingsTab) ? sp.tab : "studio") as SettingsTab;
 
-  const session = await auth();
-  const user = await loadCurrentUser(session);
+  const userId = await requireUserId();
+  const user = await prisma.user.findUnique({ where: { id: userId } });
 
   const invoiceIncomplete = !user ||
     !user.invoiceCompanyName ||
@@ -142,20 +141,21 @@ export default async function EinstellungenPage({
         )
       )}
 
-      {tab === "buchung" && <BuchungSection />}
+      {tab === "buchung" && <BuchungSection userId={userId} />}
 
-      {tab === "addons" && <AddonSection />}
+      {tab === "addons" && <AddonSection userId={userId} />}
 
-      {tab === "status" && <StatusSection />}
-      {tab === "tags" && <TagsSection />}
+      {tab === "status" && <StatusSection userId={userId} />}
+      {tab === "tags" && <TagsSection userId={userId} />}
     </>
   );
 }
 
-async function BuchungSection() {
+async function BuchungSection({ userId }: { userId: string }) {
   const [types, user] = await Promise.all([
-    prisma.bookingType.findMany({ orderBy: { position: "asc" } }),
-    prisma.user.findFirst({
+    prisma.bookingType.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
+    prisma.user.findUnique({
+      where: { id: userId },
       select: {
         zoomPersonalLink: true,
         googleMeetPersonalLink: true,
@@ -200,8 +200,8 @@ async function BuchungSection() {
   );
 }
 
-async function AddonSection() {
-  const addons = await prisma.addon.findMany({ orderBy: { position: "asc" } });
+async function AddonSection({ userId }: { userId: string }) {
+  const addons = await prisma.addon.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } });
   return (
     <AddonManager
       addons={addons.map((a) => ({
@@ -218,14 +218,14 @@ async function AddonSection() {
 }
 
 async function CalendarSection({ userId }: { userId: string }) {
-  await ensureWeeklyDefaults();
+  await ensureWeeklyDefaults(userId);
   const [conns, weekly, overrides, user] = await Promise.all([
     prisma.calendarConnection.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.availabilityWeekly.findMany({ orderBy: { weekday: "asc" } }),
-    prisma.availabilityOverride.findMany({ orderBy: { date: "asc" } }),
+    prisma.availabilityWeekly.findMany({ where: { ownerId: userId }, orderBy: { weekday: "asc" } }),
+    prisma.availabilityOverride.findMany({ where: { ownerId: userId }, orderBy: { date: "asc" } }),
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -288,10 +288,10 @@ async function CalendarSection({ userId }: { userId: string }) {
   );
 }
 
-async function StatusSection() {
+async function StatusSection({ userId }: { userId: string }) {
   const [cs, ss] = await Promise.all([
-    prisma.customerStatus.findMany({ orderBy: { position: "asc" } }),
-    prisma.shootingStatus.findMany({ orderBy: { position: "asc" } }),
+    prisma.customerStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
+    prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
   ]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -316,8 +316,8 @@ async function StatusSection() {
   );
 }
 
-async function TagsSection() {
-  const tags = await prisma.tag.findMany({ orderBy: { label: "asc" } });
+async function TagsSection({ userId }: { userId: string }) {
+  const tags = await prisma.tag.findMany({ where: { ownerId: userId }, orderBy: { label: "asc" } });
   return (
     <TagManager
       tags={tags.map((t) => ({ id: t.id, label: t.label, color: t.color }))}

@@ -1,14 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { saveUpload } from "@/lib/upload";
-
-async function requireSession() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Nicht angemeldet");
-}
 
 function s(v: FormDataEntryValue | null): string | undefined {
   if (v == null) return undefined;
@@ -24,7 +19,7 @@ function num(v: FormDataEntryValue | null): number | undefined {
 }
 
 export async function createAddon(formData: FormData) {
-  await requireSession();
+  const userId = await requireUserId();
   const name = s(formData.get("name"));
   const price = num(formData.get("price"));
   if (!name) throw new Error("Name ist Pflicht");
@@ -43,12 +38,14 @@ export async function createAddon(formData: FormData) {
   }
 
   const last = await prisma.addon.findFirst({
+    where: { ownerId: userId },
     orderBy: { position: "desc" },
     select: { position: true },
   });
 
   await prisma.addon.create({
     data: {
+      ownerId: userId,
       name,
       description: s(formData.get("description")),
       price,
@@ -65,8 +62,8 @@ export async function createAddon(formData: FormData) {
 }
 
 export async function updateAddon(id: string, formData: FormData) {
-  await requireSession();
-  const existing = await prisma.addon.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.addon.findFirst({ where: { id, ownerId: userId } });
   if (!existing) throw new Error("Add-On nicht gefunden");
 
   const file = formData.get("image") as File | null;
@@ -89,7 +86,7 @@ export async function updateAddon(id: string, formData: FormData) {
   }
 
   await prisma.addon.update({
-    where: { id },
+    where: { id: existing.id },
     data: {
       name: s(formData.get("name")) ?? existing.name,
       description: s(formData.get("description")) ?? null,
@@ -106,13 +103,15 @@ export async function updateAddon(id: string, formData: FormData) {
 }
 
 export async function deleteAddon(id: string): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
+  const existing = await prisma.addon.findFirst({ where: { id, ownerId: userId }, select: { id: true } });
+  if (!existing) throw new Error("Add-On nicht gefunden");
   // Wenn das Add-On bereits in Shootings gebucht ist, würde ein Hard-Delete den
   // Restrict-FK-Trigger der ShootingAddon-Tabelle werfen und Buchungshistorie zerstören.
   // Stattdessen: soft-deaktivieren und Hinweis geben.
-  const inUse = await prisma.shootingAddon.count({ where: { addonId: id } });
+  const inUse = await prisma.shootingAddon.count({ where: { addonId: existing.id } });
   if (inUse > 0) {
-    await prisma.addon.update({ where: { id }, data: { isActive: false } });
+    await prisma.addon.update({ where: { id: existing.id }, data: { isActive: false } });
     revalidatePath("/einstellungen");
     revalidatePath("/pakete");
     revalidatePath("/shootings");
@@ -120,15 +119,17 @@ export async function deleteAddon(id: string): Promise<void> {
       `In ${inUse} ${inUse === 1 ? "Shooting" : "Shootings"} gebucht — als „inaktiv" markiert, statt zu löschen.`,
     );
   }
-  await prisma.addon.delete({ where: { id } });
+  await prisma.addon.delete({ where: { id: existing.id } });
   revalidatePath("/einstellungen");
   revalidatePath("/pakete");
   revalidatePath("/shootings");
 }
 
 export async function toggleAddonActive(id: string, isActive: boolean): Promise<void> {
-  await requireSession();
-  await prisma.addon.update({ where: { id }, data: { isActive } });
+  const userId = await requireUserId();
+  const existing = await prisma.addon.findFirst({ where: { id, ownerId: userId }, select: { id: true } });
+  if (!existing) throw new Error("Add-On nicht gefunden");
+  await prisma.addon.update({ where: { id: existing.id }, data: { isActive } });
   revalidatePath("/einstellungen");
   revalidatePath("/pakete");
   revalidatePath("/shootings");

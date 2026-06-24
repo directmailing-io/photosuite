@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
@@ -8,7 +9,9 @@ import { Plus, UsersRound, Star, Mail, Phone } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
+  const userId = await requireUserId();
   const members = await prisma.teamMember.findMany({
+    where: { ownerId: userId },
     orderBy: [{ isOwner: "desc" }, { position: "asc" }, { firstName: "asc" }],
     include: { expertise: true, _count: { select: { shootingsPrimary: true, shootingsMembers: true } } },
   });

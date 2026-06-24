@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { saveUpload } from "@/lib/upload";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,6 +13,7 @@ function s(v: FormDataEntryValue | null): string | undefined {
 }
 
 export async function createTeamMember(formData: FormData) {
+  const userId = await requireUserId();
   const firstName = s(formData.get("firstName"));
   const lastName = s(formData.get("lastName"));
   if (!firstName || !lastName) throw new Error("Vor- und Nachname sind Pflicht.");
@@ -23,9 +25,18 @@ export async function createTeamMember(formData: FormData) {
     avatarUrl = r.url;
   }
   const expertiseIds = formData.getAll("expertiseIds").map(String).filter(Boolean);
+  // Expertise-Ownership prüfen — nur eigene Tags durchlassen.
+  const ownedExpertise = expertiseIds.length
+    ? await prisma.teamExpertise.findMany({
+        where: { id: { in: expertiseIds }, ownerId: userId },
+        select: { id: true },
+      })
+    : [];
+  const safeExpertiseIds = ownedExpertise.map((e) => e.id);
 
   const member = await prisma.teamMember.create({
     data: {
+      ownerId: userId,
       firstName,
       lastName,
       role: s(formData.get("role")),
@@ -37,7 +48,7 @@ export async function createTeamMember(formData: FormData) {
       facebook: s(formData.get("facebook")),
       tiktok: s(formData.get("tiktok")),
       website: s(formData.get("website")),
-      expertise: expertiseIds.length ? { connect: expertiseIds.map((id) => ({ id })) } : undefined,
+      expertise: safeExpertiseIds.length ? { connect: safeExpertiseIds.map((id) => ({ id })) } : undefined,
     },
   });
   revalidatePath("/team");
@@ -45,7 +56,9 @@ export async function createTeamMember(formData: FormData) {
 }
 
 export async function updateTeamMember(id: string, formData: FormData) {
-  const existing = await prisma.teamMember.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  // TeamMember-Tenant-Filter: NUR ownerId, nicht userId (userId = Self-Link auf Owner-Member).
+  const existing = await prisma.teamMember.findFirst({ where: { id, ownerId: userId } });
   if (!existing) throw new Error("Mitglied nicht gefunden");
 
   const file = formData.get("avatar") as File | null;
@@ -55,6 +68,14 @@ export async function updateTeamMember(id: string, formData: FormData) {
     avatarUrl = r.url;
   }
   const expertiseIds = formData.getAll("expertiseIds").map(String).filter(Boolean);
+  // Expertise-Ownership prüfen.
+  const ownedExpertise = expertiseIds.length
+    ? await prisma.teamExpertise.findMany({
+        where: { id: { in: expertiseIds }, ownerId: userId },
+        select: { id: true },
+      })
+    : [];
+  const safeExpertiseIds = ownedExpertise.map((e) => e.id);
 
   await prisma.teamMember.update({
     where: { id },
@@ -70,7 +91,7 @@ export async function updateTeamMember(id: string, formData: FormData) {
       facebook: s(formData.get("facebook")) ?? null,
       tiktok: s(formData.get("tiktok")) ?? null,
       website: s(formData.get("website")) ?? null,
-      expertise: { set: expertiseIds.map((id) => ({ id })) },
+      expertise: { set: safeExpertiseIds.map((id) => ({ id })) },
     },
   });
   revalidatePath("/team");
@@ -78,8 +99,10 @@ export async function updateTeamMember(id: string, formData: FormData) {
 }
 
 export async function deleteTeamMember(id: string) {
-  const m = await prisma.teamMember.findUnique({ where: { id } });
-  if (m?.isOwner) throw new Error("Eigenes Profil kann nicht gelöscht werden.");
+  const userId = await requireUserId();
+  const m = await prisma.teamMember.findFirst({ where: { id, ownerId: userId } });
+  if (!m) throw new Error("Mitglied nicht gefunden");
+  if (m.isOwner) throw new Error("Eigenes Profil kann nicht gelöscht werden.");
   await prisma.teamMember.delete({ where: { id } });
   revalidatePath("/team");
   redirect("/team");
@@ -87,15 +110,19 @@ export async function deleteTeamMember(id: string) {
 
 // Expertise-Tags
 export async function createExpertise(formData: FormData) {
+  const userId = await requireUserId();
   const label = s(formData.get("label"));
   const color = s(formData.get("color")) ?? "#9F877F";
   if (!label) return;
-  await prisma.teamExpertise.create({ data: { label, color } });
+  await prisma.teamExpertise.create({ data: { ownerId: userId, label, color } });
   revalidatePath("/team");
   revalidatePath("/einstellungen");
 }
 
 export async function deleteExpertise(id: string) {
+  const userId = await requireUserId();
+  const existing = await prisma.teamExpertise.findFirst({ where: { id, ownerId: userId } });
+  if (!existing) throw new Error("Expertise nicht gefunden");
   await prisma.teamExpertise.delete({ where: { id } });
   revalidatePath("/team");
   revalidatePath("/einstellungen");

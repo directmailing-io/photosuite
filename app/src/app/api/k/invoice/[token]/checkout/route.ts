@@ -36,9 +36,11 @@ export async function POST(
     return Response.json({ error: "Kein offener Betrag." }, { status: 409 });
   }
 
-  // Aussteller = User (Single-Tenant pro Account, MVP)
-  const studio = await prisma.user.findFirst({
-    where: { stripeSecretKeyEnc: { not: null } },
+  // Aussteller = Owner DIESER Invoice (Multi-Tenant) — NICHT findFirst, sonst
+  // landet die Zahlung im falschen Stripe-Account.
+  const studio = await prisma.user.findUnique({
+    where: { id: invoice.ownerId },
+    select: { id: true, stripeSecretKeyEnc: true, stripeWebhookSecretEnc: true, stripeChargesEnabled: true },
   });
   if (!studio || !studio.stripeSecretKeyEnc || !studio.stripeChargesEnabled) {
     return Response.json({ error: "Online-Zahlung ist gerade nicht verfügbar." }, { status: 503 });

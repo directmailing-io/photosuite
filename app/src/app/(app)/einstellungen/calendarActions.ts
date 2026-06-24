@@ -1,7 +1,6 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { loadCurrentUser } from "@/lib/loadUser";
+import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encryptSecret } from "@/lib/crypto";
 import { revalidatePath } from "next/cache";
@@ -10,21 +9,13 @@ import { revokeGoogleConnection, listGoogleCalendars } from "@/lib/calendar/goog
 import { syncConnection } from "@/lib/calendar/sync";
 import { PROVIDERS, type ProviderId } from "@/lib/calendar/providers";
 
-async function getUserOrThrow() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Nicht angemeldet");
-  const user = await loadCurrentUser(session);
-  if (!user) throw new Error("User nicht gefunden");
-  return user;
-}
-
 export async function connectCalDAV(provider: ProviderId, input: {
   serverUrl?: string;
   username: string;
   password: string;
   selectedCalendarUrl?: string;
 }): Promise<{ ok: true; calendars?: Array<{ url: string; displayName: string; timezone: string | null }> } | { ok: false; error: string }> {
-  const user = await getUserOrThrow();
+  const userId = await requireUserId();
   const config = PROVIDERS[provider];
   if (!config || config.kind !== "caldav") return { ok: false, error: "Ungültiger Provider" };
 
@@ -45,14 +36,14 @@ export async function connectCalDAV(provider: ProviderId, input: {
     if (!input.selectedCalendarUrl) {
       // Wenn es nur einen Kalender gibt: automatisch wählen
       if (calendars.length === 1) {
-        await persistCalDAV(user.id, provider, creds, calendars[0]);
+        await persistCalDAV(userId, provider, creds, calendars[0]);
         return { ok: true };
       }
       return { ok: true, calendars };
     }
 
     const chosen = calendars.find((c) => c.url === input.selectedCalendarUrl) ?? calendars[0];
-    await persistCalDAV(user.id, provider, creds, chosen);
+    await persistCalDAV(userId, provider, creds, chosen);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: friendlyCaldavError(err?.message ?? "Verbindung fehlgeschlagen") };
@@ -103,9 +94,9 @@ function friendlyCaldavError(msg: string): string {
 }
 
 export async function syncCalendarNow(connectionId: string): Promise<{ ok: true; applied: number; deleted: number; pushed: number } | { ok: false; error: string }> {
-  const user = await getUserOrThrow();
-  const conn = await prisma.calendarConnection.findUnique({ where: { id: connectionId } });
-  if (!conn || conn.userId !== user.id) return { ok: false, error: "Verbindung nicht gefunden" };
+  const userId = await requireUserId();
+  const conn = await prisma.calendarConnection.findFirst({ where: { id: connectionId, userId } });
+  if (!conn) return { ok: false, error: "Verbindung nicht gefunden" };
   try {
     const res = await syncConnection(connectionId);
     revalidatePath("/einstellungen");
@@ -117,14 +108,14 @@ export async function syncCalendarNow(connectionId: string): Promise<{ ok: true;
 }
 
 export async function disconnectCalendar(connectionId: string): Promise<void> {
-  const user = await getUserOrThrow();
-  const conn = await prisma.calendarConnection.findUnique({ where: { id: connectionId } });
-  if (!conn || conn.userId !== user.id) return;
+  const userId = await requireUserId();
+  const conn = await prisma.calendarConnection.findFirst({ where: { id: connectionId, userId } });
+  if (!conn) return;
   // Google: Tokens revoken
   if (conn.provider === "google") {
     try { await revokeGoogleConnection(conn); } catch { /* ignore */ }
   }
-  await prisma.calendarConnection.delete({ where: { id: connectionId } });
+  await prisma.calendarConnection.delete({ where: { id: conn.id } });
   revalidatePath("/einstellungen");
 }
 
@@ -133,9 +124,9 @@ export async function listAvailableCalendars(connectionId: string): Promise<
   | { ok: true; calendars: Array<{ id: string; summary: string; primary: boolean; timeZone: string | null; color: string | null; accessRole: string }>; selectedIds: string[]; pushTargetId: string | null }
   | { ok: false; error: string; needsReauth?: boolean }
 > {
-  const user = await getUserOrThrow();
-  const conn = await prisma.calendarConnection.findUnique({ where: { id: connectionId } });
-  if (!conn || conn.userId !== user.id) return { ok: false, error: "Verbindung nicht gefunden" };
+  const userId = await requireUserId();
+  const conn = await prisma.calendarConnection.findFirst({ where: { id: connectionId, userId } });
+  if (!conn) return { ok: false, error: "Verbindung nicht gefunden" };
 
   if (conn.provider !== "google") {
     // CalDAV-Liste wäre eigene Logik — Phase 2
@@ -164,9 +155,9 @@ export async function saveSelectedCalendars(connectionId: string, args: {
   selected: Array<{ id: string; summary: string; color: string | null; timezone: string | null }>;
   pushTargetId: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const user = await getUserOrThrow();
-  const conn = await prisma.calendarConnection.findUnique({ where: { id: connectionId } });
-  if (!conn || conn.userId !== user.id) return { ok: false, error: "Verbindung nicht gefunden" };
+  const userId = await requireUserId();
+  const conn = await prisma.calendarConnection.findFirst({ where: { id: connectionId, userId } });
+  if (!conn) return { ok: false, error: "Verbindung nicht gefunden" };
   if (args.selected.length === 0) return { ok: false, error: "Mindestens ein Kalender muss ausgewählt sein" };
   if (!args.selected.some((c) => c.id === args.pushTargetId)) {
     return { ok: false, error: "Der gewählte Push-Target-Kalender muss in der Auswahl enthalten sein" };
@@ -208,11 +199,11 @@ export async function saveSelectedCalendars(connectionId: string, args: {
 }
 
 export async function togglePseudonymize(connectionId: string): Promise<void> {
-  const user = await getUserOrThrow();
-  const conn = await prisma.calendarConnection.findUnique({ where: { id: connectionId } });
-  if (!conn || conn.userId !== user.id) return;
+  const userId = await requireUserId();
+  const conn = await prisma.calendarConnection.findFirst({ where: { id: connectionId, userId } });
+  if (!conn) return;
   await prisma.calendarConnection.update({
-    where: { id: connectionId },
+    where: { id: conn.id },
     data: { pseudonymize: !conn.pseudonymize },
   });
   revalidatePath("/einstellungen");

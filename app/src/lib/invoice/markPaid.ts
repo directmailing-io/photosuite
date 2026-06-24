@@ -60,6 +60,7 @@ export async function markInvoicePaidFromSession(
           : `Online-Zahlung bestätigt (${paymentMethodTypeOf(session) ?? "Stripe"}) — Stripe-Session-Verify`,
         customerId: inv.customerId,
         shootingId: inv.shootingId,
+        ownerId: inv.ownerId,
       },
     });
     if (eventId) {

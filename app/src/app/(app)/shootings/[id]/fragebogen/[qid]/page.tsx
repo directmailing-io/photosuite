@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { QuestionnaireEditor } from "./QuestionnaireEditor";
 import { ChevronLeft, ExternalLink } from "lucide-react";
@@ -14,8 +15,9 @@ export default async function QuestionnairePage({
   params: Promise<{ id: string; qid: string }>;
 }) {
   const { id, qid } = await params;
-  const q = await prisma.questionnaire.findUnique({
-    where: { id: qid },
+  const userId = await requireUserId();
+  const q = await prisma.questionnaire.findFirst({
+    where: { id: qid, shooting: { ownerId: userId } },
     include: {
       fields: { orderBy: { position: "asc" } },
       answers: true,

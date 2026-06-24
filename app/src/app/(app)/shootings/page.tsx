@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -36,20 +37,21 @@ export default async function ShootingsPage({
   const view: View = sp.view === "kanban" ? "kanban" : sp.view === "calendar" ? "calendar" : "table";
   const statusFilter = sp.status;
   const { year, month } = parseMonth(sp.month);
+  const userId = await requireUserId();
 
   const [shootings, statuses, customers, packages] = await Promise.all([
     prisma.shooting.findMany({
-      where: statusFilter ? { statusId: statusFilter } : undefined,
+      where: statusFilter ? { ownerId: userId, statusId: statusFilter } : { ownerId: userId },
       include: { customer: true, package: true, status: true },
       orderBy: [{ scheduledAt: "asc" }, { createdAt: "desc" }],
     }),
-    prisma.shootingStatus.findMany({ orderBy: { position: "asc" } }),
+    prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
     // Für Quick-Create im Kalender
     view === "calendar"
-      ? prisma.customer.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: [{ lastName: "asc" }, { firstName: "asc" }] })
+      ? prisma.customer.findMany({ where: { ownerId: userId }, select: { id: true, firstName: true, lastName: true }, orderBy: [{ lastName: "asc" }, { firstName: "asc" }] })
       : Promise.resolve([]),
     view === "calendar"
-      ? prisma.package.findMany({ where: { isActive: true }, select: { id: true, name: true, price: true, durationMin: true, bookingBufferBeforeMin: true, bookingBufferAfterMin: true }, orderBy: { position: "asc" } })
+      ? prisma.package.findMany({ where: { ownerId: userId, isActive: true }, select: { id: true, name: true, price: true, durationMin: true, bookingBufferBeforeMin: true, bookingBufferAfterMin: true }, orderBy: { position: "asc" } })
       : Promise.resolve([]),
   ]);
 
@@ -57,7 +59,7 @@ export default async function ShootingsPage({
   const externalEvents = view === "calendar"
     ? await prisma.externalCalendarEvent.findMany({
         where: {
-          connection: { syncEnabled: true, status: "active" },
+          connection: { userId, syncEnabled: true, status: "active" },
           startAt: { gte: new Date(year, month - 1, 1) },
           endAt: { lt: new Date(year, month, 1) },
           isOurs: false, // unsere eigenen Shootings nicht doppelt anzeigen
@@ -80,10 +82,11 @@ export default async function ShootingsPage({
   // Verfügbarkeit fürs angezeigte Grid + nächste freie Tage + Online-Buchungen
   const [availabilityDays, nextFreeDays, calendarBookings] = view === "calendar"
     ? await Promise.all([
-        getAvailability(calRangeStart, calRangeEnd),
-        findNextFreeDays(new Date(), 10, 90),
+        getAvailability(userId, calRangeStart, calRangeEnd),
+        findNextFreeDays(userId, new Date(), 10, 90),
         prisma.booking.findMany({
           where: {
+            ownerId: userId,
             status: { not: "CANCELLED" },
             shootingId: null,
             startAt: { gte: calRangeStart, lt: calRangeEnd },

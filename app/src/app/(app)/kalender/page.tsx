@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { CalendarView } from "../shootings/CalendarView";
 import { getAvailability, findNextFreeDays } from "@/lib/availability";
@@ -27,6 +28,7 @@ export default async function KalenderPage({
 }) {
   const sp = await searchParams;
   const { year, month } = parseMonth(sp.month);
+  const userId = await requireUserId();
 
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd = new Date(year, month, 1);
@@ -35,22 +37,23 @@ export default async function KalenderPage({
 
   const [shootings, customers, packages, externalEvents, availabilityDays, nextFreeDays, calendarBookings] = await Promise.all([
     prisma.shooting.findMany({
-      where: { scheduledAt: { gte: calRangeStart, lt: calRangeEnd } },
+      where: { ownerId: userId, scheduledAt: { gte: calRangeStart, lt: calRangeEnd } },
       include: { customer: true, package: true, status: true },
       orderBy: { scheduledAt: "asc" },
     }),
     prisma.customer.findMany({
+      where: { ownerId: userId },
       select: { id: true, firstName: true, lastName: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
     prisma.package.findMany({
-      where: { isActive: true },
+      where: { ownerId: userId, isActive: true },
       select: { id: true, name: true, price: true, durationMin: true, bookingBufferBeforeMin: true, bookingBufferAfterMin: true },
       orderBy: { position: "asc" },
     }),
     prisma.externalCalendarEvent.findMany({
       where: {
-        connection: { syncEnabled: true, status: "active" },
+        connection: { userId, syncEnabled: true, status: "active" },
         startAt: { gte: calRangeStart },
         endAt: { lt: calRangeEnd },
         isOurs: false,
@@ -58,12 +61,13 @@ export default async function KalenderPage({
       include: { connection: { select: { provider: true } } },
       orderBy: { startAt: "asc" },
     }),
-    getAvailability(calRangeStart, calRangeEnd),
-    findNextFreeDays(new Date(), 10, 90),
+    getAvailability(userId, calRangeStart, calRangeEnd),
+    findNextFreeDays(userId, new Date(), 10, 90),
     // Online-Buchungen ohne Shooting (PENDING + CONFIRMED) im Range —
     // damit Lisa sieht, dass da Anfragen liegen, bevor sie annimmt.
     prisma.booking.findMany({
       where: {
+        ownerId: userId,
         status: { not: "CANCELLED" },
         shootingId: null,
         startAt: { gte: calRangeStart, lt: calRangeEnd },

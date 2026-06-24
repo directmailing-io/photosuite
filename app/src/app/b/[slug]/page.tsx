@@ -34,11 +34,15 @@ export default async function PublicBookingPage({
   const { month: monthParam, embed: embedParam } = await searchParams;
   const embed = embedParam === "1" || embedParam === "true";
 
-  const type = await prisma.bookingType.findUnique({ where: { slug } });
-  if (!type || !type.isActive) return notFound();
+  // BookingType.slug ist composite-unique mit ownerId. Solange Lisa-Setup global
+  // einmalig Slugs vergibt, ist findFirst sicher. Bei mehreren Treffern: nimm den ersten
+  // (TODO: in einer zukünftigen Iteration auf URL-Schema mit User-Subdomain umstellen).
+  const type = await prisma.bookingType.findFirst({ where: { slug, isActive: true } });
+  if (!type) return notFound();
 
-  // Studio = einziger User-Account (single-tenant Lisa-Setup).
-  const studio = await prisma.user.findFirst({
+  // Studio aus type.ownerId (Multi-Tenant) — NICHT findFirst.
+  const studio = await prisma.user.findUnique({
+    where: { id: type.ownerId },
     select: {
       studioName: true,
       studioTagline: true,
@@ -64,7 +68,9 @@ export default async function PublicBookingPage({
     slotIntervalMin: type.slotIntervalMin,
   };
 
-  const days = await getDaysWithSlots(cfg, fromDate);
+  // Slots immer im Kontext des Tenants berechnen, damit fremde Buchungen nicht
+  // den Kalender blockieren.
+  const days = await getDaysWithSlots(type.ownerId, cfg, fromDate);
 
   // Plain-Object Type für Client-Component (nur Felder, die im UI gebraucht werden).
   const typeForClient = {

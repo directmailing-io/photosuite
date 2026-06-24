@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -17,8 +18,9 @@ export default async function KundenPage({
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
   const statusFilter = sp.status;
+  const userId = await requireUserId();
 
-  const where: any = {};
+  const where: any = { ownerId: userId };
   if (q) {
     where.OR = [
       { firstName: { contains: q } },
@@ -35,7 +37,7 @@ export default async function KundenPage({
       include: { status: true, tags: true, _count: { select: { shootings: true } } },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.customerStatus.findMany({ orderBy: { position: "asc" } }),
+    prisma.customerStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
   ]);
 
   return (

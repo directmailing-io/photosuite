@@ -10,7 +10,9 @@ export default async function PublicQuestionnaire({
   params: Promise<{ slug: string; qid: string }>;
 }) {
   const { slug, qid } = await params;
-  const shooting = await prisma.shooting.findUnique({
+  // Public-Route: kein Auth. publicSlug ist composite-unique → findFirst (Token ist krypto-eindeutig).
+  // Tenant-Bindung: qid MUSS zum Shooting mit diesem slug gehören (sonst IDOR).
+  const shooting = await prisma.shooting.findFirst({
     where: { publicSlug: slug },
     include: {
       customer: true,
@@ -30,7 +32,8 @@ export default async function PublicQuestionnaire({
   // Nur freigegebene Bögen erreichen die Kundin
   if (q.status === "DRAFT") return notFound();
 
-  const studio = await prisma.user.findFirst();
+  // Studio aus shooting.ownerId — NICHT findFirst, sonst falscher Tenant.
+  const studio = await prisma.user.findUnique({ where: { id: shooting.ownerId } });
 
   // Map answers to fieldId for prefilling
   const initialAnswers: Record<string, any> = {};

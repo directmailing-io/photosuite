@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { exchangeZoomCode } from "@/lib/integrations/zoom";
 
 // OAuth-Callback: tauscht den Code gegen Tokens, speichert sie verschlüsselt
 // am User und redirected zurück zur Settings-Page.
 export async function GET(req: NextRequest) {
-  const session = await auth();
   const baseUrl = process.env.APP_BASE_URL ?? new URL(req.url).origin;
-  if (!session?.user) return NextResponse.redirect(new URL("/login", baseUrl));
+
+  // Multi-Tenant: User-ID aus Session — NICHT findFirst().
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    return NextResponse.redirect(new URL("/login", baseUrl));
+  }
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
@@ -23,12 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/einstellungen?tab=kalender&zoomError=CSRF_FAIL", baseUrl));
   }
 
-  const user = await prisma.user.findFirst({ select: { id: true } });
-  if (!user) {
-    return NextResponse.redirect(new URL("/einstellungen?tab=kalender&zoomError=NO_USER", baseUrl));
-  }
-
-  const result = await exchangeZoomCode(code, user.id);
+  const result = await exchangeZoomCode(code, userId);
   if (!result.ok) {
     return NextResponse.redirect(new URL(`/einstellungen?tab=kalender&zoomError=${encodeURIComponent(result.reason)}`, baseUrl));
   }

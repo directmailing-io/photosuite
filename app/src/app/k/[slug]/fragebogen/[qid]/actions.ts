@@ -6,12 +6,14 @@ import { ALLOWED_MIME, MAX_FILE_BYTES } from "@/lib/questionnaire";
 import { revalidatePath } from "next/cache";
 
 async function loadShootingWithQuestionnaire(slug: string, qid: string) {
-  const shooting = await prisma.shooting.findUnique({
-    where: { publicSlug: slug },
-    include: { questionnaires: { where: { id: qid }, include: { fields: true } } },
+  // Public-Route — kein User-Auth. Tenant-Bindung via questionnaire → shooting.publicSlug.
+  // Validierung dass qid wirklich zum Shooting mit diesem slug gehört, sonst IDOR.
+  const questionnaire = await prisma.questionnaire.findFirst({
+    where: { id: qid, shooting: { publicSlug: slug } },
+    include: { fields: true, shooting: true },
   });
-  if (!shooting || shooting.questionnaires.length === 0) return null;
-  return { shooting, questionnaire: shooting.questionnaires[0] };
+  if (!questionnaire) return null;
+  return { shooting: questionnaire.shooting, questionnaire };
 }
 
 export async function trackOpen(slug: string, qid: string) {

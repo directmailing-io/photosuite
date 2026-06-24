@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { loadCurrentUser } from "@/lib/loadUser";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { InvoiceDetail } from "./InvoiceDetail";
 import { ChevronLeft } from "lucide-react";
@@ -17,10 +16,10 @@ export default async function InvoicePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = await auth();
+  const userId = await requireUserId();
   const [inv, user] = await Promise.all([
-    prisma.invoice.findUnique({
-      where: { id },
+    prisma.invoice.findFirst({
+      where: { id, ownerId: userId },
       include: {
         items: { orderBy: { position: "asc" } },
         customer: true,
@@ -30,7 +29,7 @@ export default async function InvoicePage({
         reminders: { orderBy: { level: "asc" } },
       },
     }),
-    loadCurrentUser(session),
+    prisma.user.findUnique({ where: { id: userId } }),
   ]);
   if (!inv) return notFound();
 

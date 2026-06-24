@@ -1,10 +1,10 @@
-// Verfügbarkeits-Logik (v2 — Zeitfenster-basiert).
+// Verfügbarkeits-Logik (v2 — Zeitfenster-basiert, Multi-Tenant).
 //
 // Modell:
-//   AvailabilityWeekly { weekday, isAvailable, slotsJson }
-//   AvailabilityOverride { date, isAvailable, slotsJson, note }
+//   AvailabilityWeekly { ownerId, weekday, isAvailable, slotsJson }
+//   AvailabilityOverride { ownerId, date, isAvailable, slotsJson, note }
 //
-// effektive Tagesfenster pro Datum:
+// effektive Tagesfenster pro Datum (pro User):
 //   override existiert  →  override.isAvailable ? parseSlots(override) : []
 //   sonst weekly        →  weekly.isAvailable   ? parseSlots(weekly)   : []
 //
@@ -15,6 +15,9 @@
 // Belegung pro Tag:
 //   gebuchte Shootings (mit ihrer durationMin + Paket-Buffer) belegen Zeit.
 //   freie Fenster = Tagesfenster MINUS belegte Zeiten.
+//
+// Multi-Tenancy: alle DB-Funktionen erwarten `userId: string` als ersten Parameter
+// und filtern strict per `ownerId: userId`.
 
 import { prisma } from "@/lib/prisma";
 
@@ -37,14 +40,16 @@ export type DayStatus = {
 const DEFAULT_DAY_START = 540;  // 09:00
 const DEFAULT_DAY_END   = 1080; // 18:00
 
-// Vernünftige Defaults: Mo-Sa verfügbar, So zu (ohne spezifische Slots → ganzer Tag).
-const WEEKLY_DEFAULTS = [false, true, true, true, true, true, true]; // [So..Sa]
+// Neue User starten BLANK: alle 7 Wochentage als isAvailable=false.
+// User muss aktiv konfigurieren, welche Tage offen sind (Lisa-Wunsch).
+const WEEKLY_DEFAULTS = [false, false, false, false, false, false, false]; // [So..Sa]
 
-export async function ensureWeeklyDefaults(): Promise<void> {
-  const count = await prisma.availabilityWeekly.count();
+export async function ensureWeeklyDefaults(userId: string): Promise<void> {
+  const count = await prisma.availabilityWeekly.count({ where: { ownerId: userId } });
   if (count > 0) return;
   await prisma.availabilityWeekly.createMany({
     data: WEEKLY_DEFAULTS.map((isAvail, weekday) => ({
+      ownerId: userId,
       weekday,
       isAvailable: isAvail,
       slotsJson: null,
@@ -160,22 +165,23 @@ export function subtractBusy(available: TimeWindow[], busy: TimeWindow[]): TimeW
 
 // --------------------- Hauptfunktion ---------------------
 
-export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]> {
-  await ensureWeeklyDefaults();
+export async function getAvailability(userId: string, from: Date, to: Date): Promise<DayStatus[]> {
+  await ensureWeeklyDefaults(userId);
 
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
   const [user, weekly, overrides, shootings, bookings] = await Promise.all([
-    prisma.user.findFirst({
+    prisma.user.findUnique({
+      where: { id: userId },
       select: { defaultDayStartMinutes: true, defaultDayEndMinutes: true },
     }),
-    prisma.availabilityWeekly.findMany(),
+    prisma.availabilityWeekly.findMany({ where: { ownerId: userId } }),
     prisma.availabilityOverride.findMany({
-      where: { date: { gte: ymdLocal(start), lt: ymdLocal(end) } },
+      where: { ownerId: userId, date: { gte: ymdLocal(start), lt: ymdLocal(end) } },
     }),
     prisma.shooting.findMany({
-      where: { scheduledAt: { gte: start, lt: end } },
+      where: { ownerId: userId, scheduledAt: { gte: start, lt: end } },
       select: {
         scheduledAt: true,
         durationMin: true,
@@ -193,6 +199,7 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
     // shootingId=null: angenommene Bookings sind bereits Shootings, doppelt zählen wäre falsch.
     prisma.booking.findMany({
       where: {
+        ownerId: userId,
         status: { not: "CANCELLED" },
         shootingId: null,
         startAt: { gte: start, lt: end },
@@ -287,18 +294,19 @@ export async function getAvailability(from: Date, to: Date): Promise<DayStatus[]
 }
 
 // Schneller Lookup für einen Einzeltag.
-export async function getAvailabilityForDate(ymd: string): Promise<DayStatus | null> {
+export async function getAvailabilityForDate(userId: string, ymd: string): Promise<DayStatus | null> {
   const d = parseYmd(ymd);
   if (!d) return null;
   const next = new Date(d);
   next.setDate(next.getDate() + 1);
-  const days = await getAvailability(d, next);
+  const days = await getAvailability(userId, d, next);
   return days[0] ?? null;
 }
 
 // Findet die nächsten N Tage mit mindestens `durationMin` zusammenhängender Freizeit.
 // Default: 60 Min (irgendwas geht).
 export async function findNextFreeDays(
+  userId: string,
   from: Date,
   count: number,
   maxHorizonDays = 90,
@@ -306,7 +314,7 @@ export async function findNextFreeDays(
 ): Promise<DayStatus[]> {
   const to = new Date(from);
   to.setDate(to.getDate() + maxHorizonDays + 1);
-  const days = await getAvailability(from, to);
+  const days = await getAvailability(userId, from, to);
   return days
     .filter((d) => d.freeWindows.some((w) => w.end - w.start >= minDurationMin))
     .slice(0, count);

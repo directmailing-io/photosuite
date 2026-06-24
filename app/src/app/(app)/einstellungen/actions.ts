@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 function s(v: FormDataEntryValue | null): string | undefined {
@@ -12,19 +13,31 @@ function s(v: FormDataEntryValue | null): string | undefined {
 // ---------- Customer Status ----------
 
 export async function createCustomerStatus(formData: FormData) {
+  const userId = await requireUserId();
   const label = s(formData.get("label"));
   const color = s(formData.get("color")) ?? "#9F877F";
   if (!label) return;
-  const max = await prisma.customerStatus.findFirst({ orderBy: { position: "desc" } });
-  await prisma.customerStatus.create({
-    data: { label, color, position: (max?.position ?? -1) + 1 },
+  const max = await prisma.customerStatus.findFirst({
+    where: { ownerId: userId },
+    orderBy: { position: "desc" },
+  });
+  await prisma.customerStatus.upsert({
+    where: { ownerId_label: { ownerId: userId, label } },
+    create: { ownerId: userId, label, color, position: (max?.position ?? -1) + 1 },
+    update: { color },
   });
   revalidatePath("/einstellungen");
 }
 
 export async function updateCustomerStatus(id: string, formData: FormData) {
+  const userId = await requireUserId();
+  const existing = await prisma.customerStatus.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Status nicht gefunden");
   await prisma.customerStatus.update({
-    where: { id },
+    where: { id: existing.id },
     data: {
       label: s(formData.get("label"))!,
       color: s(formData.get("color")) ?? "#9F877F",
@@ -34,27 +47,48 @@ export async function updateCustomerStatus(id: string, formData: FormData) {
 }
 
 export async function deleteCustomerStatus(id: string) {
-  await prisma.customer.updateMany({ where: { statusId: id }, data: { statusId: null } });
-  await prisma.customerStatus.delete({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.customerStatus.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Status nicht gefunden");
+  await prisma.customer.updateMany({
+    where: { statusId: existing.id, ownerId: userId },
+    data: { statusId: null },
+  });
+  await prisma.customerStatus.delete({ where: { id: existing.id } });
   revalidatePath("/einstellungen");
 }
 
 // ---------- Shooting Status ----------
 
 export async function createShootingStatus(formData: FormData) {
+  const userId = await requireUserId();
   const label = s(formData.get("label"));
   const color = s(formData.get("color")) ?? "#C8102E";
   if (!label) return;
-  const max = await prisma.shootingStatus.findFirst({ orderBy: { position: "desc" } });
-  await prisma.shootingStatus.create({
-    data: { label, color, position: (max?.position ?? -1) + 1 },
+  const max = await prisma.shootingStatus.findFirst({
+    where: { ownerId: userId },
+    orderBy: { position: "desc" },
+  });
+  await prisma.shootingStatus.upsert({
+    where: { ownerId_label: { ownerId: userId, label } },
+    create: { ownerId: userId, label, color, position: (max?.position ?? -1) + 1 },
+    update: { color },
   });
   revalidatePath("/einstellungen");
 }
 
 export async function updateShootingStatus(id: string, formData: FormData) {
+  const userId = await requireUserId();
+  const existing = await prisma.shootingStatus.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Status nicht gefunden");
   await prisma.shootingStatus.update({
-    where: { id },
+    where: { id: existing.id },
     data: {
       label: s(formData.get("label"))!,
       color: s(formData.get("color")) ?? "#C8102E",
@@ -65,37 +99,52 @@ export async function updateShootingStatus(id: string, formData: FormData) {
 }
 
 export async function deleteShootingStatus(id: string) {
-  await prisma.shooting.updateMany({ where: { statusId: id }, data: { statusId: null } });
-  await prisma.shootingStatus.delete({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.shootingStatus.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Status nicht gefunden");
+  await prisma.shooting.updateMany({
+    where: { statusId: existing.id, ownerId: userId },
+    data: { statusId: null },
+  });
+  await prisma.shootingStatus.delete({ where: { id: existing.id } });
   revalidatePath("/einstellungen");
 }
 
 // ---------- Tags ----------
 
 export async function createTag(formData: FormData) {
+  const userId = await requireUserId();
   const label = s(formData.get("label"));
   const color = s(formData.get("color")) ?? "#9F877F";
   if (!label) return;
-  await prisma.tag.create({ data: { label, color } });
+  await prisma.tag.upsert({
+    where: { ownerId_label: { ownerId: userId, label } },
+    create: { ownerId: userId, label, color },
+    update: { color },
+  });
   revalidatePath("/einstellungen");
 }
 
 export async function deleteTag(id: string) {
-  await prisma.tag.delete({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.tag.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Tag nicht gefunden");
+  await prisma.tag.delete({ where: { id: existing.id } });
   revalidatePath("/einstellungen");
 }
 
 // ---------- Studio-Profil ----------
 
 export async function updateStudioProfile(formData: FormData) {
-  const { auth } = await import("@/lib/auth");
-  const { loadCurrentUser } = await import("@/lib/loadUser");
-  const session = await auth();
-  const user = await loadCurrentUser(session);
-  if (!user) throw new Error("Nicht angemeldet");
-
+  const userId = await requireUserId();
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: {
       studioName: s(formData.get("studioName")) ?? null,
       studioTagline: s(formData.get("studioTagline")) ?? null,
@@ -116,13 +165,9 @@ export async function saveStudioLogo(args: {
   logoOriginalUrl: string;  // ungecroppte Original-Datei
   mimeType: string;         // image/svg+xml | image/png | image/jpeg
 }) {
-  const { auth } = await import("@/lib/auth");
-  const { loadCurrentUser } = await import("@/lib/loadUser");
-  const session = await auth();
-  const user = await loadCurrentUser(session);
-  if (!user) throw new Error("Nicht angemeldet");
+  const userId = await requireUserId();
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: {
       logoUrl: args.logoUrl,
       logoOriginalUrl: args.logoOriginalUrl,
@@ -134,13 +179,9 @@ export async function saveStudioLogo(args: {
 }
 
 export async function removeStudioLogo() {
-  const { auth } = await import("@/lib/auth");
-  const { loadCurrentUser } = await import("@/lib/loadUser");
-  const session = await auth();
-  const user = await loadCurrentUser(session);
-  if (!user) throw new Error("Nicht angemeldet");
+  const userId = await requireUserId();
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: { logoUrl: null, logoOriginalUrl: null, logoMimeType: null },
   });
   revalidatePath("/einstellungen");

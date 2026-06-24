@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import {
   parseYmd,
@@ -12,13 +12,8 @@ import {
   type TimeWindow,
 } from "@/lib/availability";
 
-async function requireSession() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Nicht angemeldet");
-}
-
-export async function ensureWeeklyDefaults() {
-  await _ensureWeeklyDefaults();
+export async function ensureWeeklyDefaults(userId: string) {
+  await _ensureWeeklyDefaults(userId);
 }
 
 function revalidateAll() {
@@ -55,7 +50,7 @@ function parseWindowsFromForm(fd: FormData, prefix: string): TimeWindow[] {
 //   weekly.<w>.slots.<i>.end    HH:MM
 //   weekly.<w>.useDefault    "on" → slotsJson=null („ganzer Tag" aus User-Default)
 export async function saveWeeklyRules(formData: FormData): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
   const upserts = [];
   for (let weekday = 0; weekday < 7; weekday++) {
     const isAvailable = formData.get(`weekly.${weekday}.available`) === "on";
@@ -67,8 +62,8 @@ export async function saveWeeklyRules(formData: FormData): Promise<void> {
     }
     upserts.push(
       prisma.availabilityWeekly.upsert({
-        where: { weekday },
-        create: { weekday, isAvailable, slotsJson },
+        where: { ownerId_weekday: { ownerId: userId, weekday } },
+        create: { ownerId: userId, weekday, isAvailable, slotsJson },
         update: { isAvailable, slotsJson },
       }),
     );
@@ -79,14 +74,12 @@ export async function saveWeeklyRules(formData: FormData): Promise<void> {
 
 // User-Default-Zeitfenster für „ganzer Tag" speichern.
 export async function saveDefaultDayWindow(formData: FormData): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
   const start = hhmmToMinutes(String(formData.get("defaultDayStart") ?? "")) ?? 540;
   const end = hhmmToMinutes(String(formData.get("defaultDayEnd") ?? "")) ?? 1080;
   if (end <= start) throw new Error("Endzeit muss nach der Startzeit liegen");
-  const user = await prisma.user.findFirst({ select: { id: true } });
-  if (!user) throw new Error("Kein User-Profil");
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: { defaultDayStartMinutes: start, defaultDayEndMinutes: end },
   });
   revalidateAll();
@@ -94,7 +87,7 @@ export async function saveDefaultDayWindow(formData: FormData): Promise<void> {
 
 // Tag-Override: optional Date-Range (Bulk).
 export async function upsertOverride(formData: FormData): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
   const date = String(formData.get("date") ?? "").trim();
   const dateEnd = String(formData.get("dateEnd") ?? "").trim();
   const start = parseYmd(date);
@@ -123,8 +116,8 @@ export async function upsertOverride(formData: FormData): Promise<void> {
   await prisma.$transaction(
     dates.map((d) =>
       prisma.availabilityOverride.upsert({
-        where: { date: d },
-        create: { date: d, isAvailable, slotsJson, note },
+        where: { ownerId_date: { ownerId: userId, date: d } },
+        create: { ownerId: userId, date: d, isAvailable, slotsJson, note },
         update: { isAvailable, slotsJson, note },
       }),
     ),
@@ -133,8 +126,13 @@ export async function upsertOverride(formData: FormData): Promise<void> {
 }
 
 export async function deleteOverride(id: string): Promise<void> {
-  await requireSession();
-  await prisma.availabilityOverride.delete({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.availabilityOverride.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!existing) return;
+  await prisma.availabilityOverride.delete({ where: { id: existing.id } });
   revalidateAll();
 }
 
@@ -151,10 +149,10 @@ export async function setDayAvailability(
     unset?: boolean;
   },
 ): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
   if (!parseYmd(date)) throw new Error("Ungültiges Datum");
   if (args.unset) {
-    await prisma.availabilityOverride.deleteMany({ where: { date } });
+    await prisma.availabilityOverride.deleteMany({ where: { ownerId: userId, date } });
     revalidateAll();
     return;
   }
@@ -163,8 +161,8 @@ export async function setDayAvailability(
     ? serializeSlots(args.windows)
     : null;
   await prisma.availabilityOverride.upsert({
-    where: { date },
-    create: { date, isAvailable, slotsJson, note: args.note ?? null },
+    where: { ownerId_date: { ownerId: userId, date } },
+    create: { ownerId: userId, date, isAvailable, slotsJson, note: args.note ?? null },
     update: { isAvailable, slotsJson, note: args.note ?? null },
   });
   revalidateAll();

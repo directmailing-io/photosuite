@@ -18,69 +18,90 @@ datasource db {
 // -------------------- AUTH --------------------
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  passwordHash           String
+  name                   String
   // Studio-Profil (für öffentliche Kundenansicht)
-  studioName     String?
-  studioPhone    String?
-  studioEmail    String?
-  studioWebsite  String?
-  studioAddress  String?   // mehrzeilig
-  studioInstagram String?
-  studioTagline  String?   // kleiner Satz unter dem Namen
+  studioName             String?
+  studioPhone            String?
+  studioEmail            String?
+  studioWebsite          String?
+  studioAddress          String? // mehrzeilig
+  studioInstagram        String?
+  studioTagline          String? // kleiner Satz unter dem Namen
   // Studio-Logo (für Customer-Portal + Rechnungs-PDF)
   // logoUrl: das verwendete Logo (gecropped bei Raster, original bei SVG)
   // logoOriginalUrl: das Ausgangsbild — erlaubt Re-Cropping ohne neuen Upload
-  logoUrl         String?
-  logoOriginalUrl String?
-  logoMimeType    String?   // image/svg+xml | image/png | image/jpeg
+  logoUrl                String?
+  logoOriginalUrl        String?
+  logoMimeType           String? // image/svg+xml | image/png | image/jpeg
   // Rechnungs-Profil (Pflichtangaben §14 UStG)
-  invoiceCompanyName    String?   // Firmenname / "Lisa Steiner Photography"
-  invoiceCompanyOwner   String?   // Inhaberin/Inhaber (bei Einzelunternehmen)
-  invoiceStreet         String?
-  invoiceZip            String?
-  invoiceCity           String?
-  invoiceCountry        String?  @default("Deutschland")
-  invoiceEmail          String?   // separate Rechnungs-Mail (Footer/Versand)
-  invoiceTaxId          String?   // Steuernummer (z.B. 207/123/45678)
-  invoiceVatId          String?   // USt-IdNr (DE123456789)
-  isSmallBusiness       Boolean   @default(true)   // §19 UStG Kleinunternehmer
-  defaultVatRate        Float     @default(19)     // 19, 7, 0
-  invoiceBankName       String?
-  invoiceIban           String?
-  invoiceBic            String?
-  invoiceFooterNote     String?
-  invoiceNumberFormat   String    @default("{YYYY}-{####}")  // Tokens YYYY, YY, MM, ####, ###
-  invoiceCounterYear    Int       @default(0)      // letzter zurückgesetzter Jahres-Counter
-  invoiceCounter        Int       @default(0)      // laufender Zähler (innerhalb des Jahres)
-  invoicePaymentDueDays Int       @default(14)
+  invoiceCompanyName     String? // Firmenname / "Lisa Steiner Photography"
+  invoiceCompanyOwner    String? // Inhaberin/Inhaber (bei Einzelunternehmen)
+  invoiceStreet          String?
+  invoiceZip             String?
+  invoiceCity            String?
+  invoiceCountry         String?                 @default("Deutschland")
+  invoiceEmail           String? // separate Rechnungs-Mail (Footer/Versand)
+  invoiceTaxId           String? // Steuernummer (z.B. 207/123/45678)
+  invoiceVatId           String? // USt-IdNr (DE123456789)
+  isSmallBusiness        Boolean                 @default(true) // §19 UStG Kleinunternehmer
+  defaultVatRate         Float                   @default(19) // 19, 7, 0
+  invoiceBankName        String?
+  invoiceIban            String?
+  invoiceBic             String?
+  invoiceFooterNote      String?
+  invoiceNumberFormat    String                  @default("{YYYY}-{####}") // Tokens YYYY, YY, MM, ####, ###
+  invoiceCounterYear     Int                     @default(0) // letzter zurückgesetzter Jahres-Counter
+  invoiceCounter         Int                     @default(0) // laufender Zähler (innerhalb des Jahres)
+  invoicePaymentDueDays  Int                     @default(14)
   // Mahnwesen-Defaults
-  reminderDays1         Int       @default(7)      // Zahlungserinnerung: X Tage nach Fälligkeit
-  reminderDays2         Int       @default(7)      // 1. Mahnung: X Tage nach Erinnerung
-  reminderDays3         Int       @default(14)     // 2. Mahnung: X Tage nach 1. Mahnung
-  reminderFee1Cents     Int       @default(0)      // Zahlungserinnerung: keine Gebühr
-  reminderFee2Cents     Int       @default(500)    // 1. Mahnung: 5,00 €
-  reminderFee3Cents     Int       @default(1000)   // 2. Mahnung: 10,00 €
+  reminderDays1          Int                     @default(7) // Zahlungserinnerung: X Tage nach Fälligkeit
+  reminderDays2          Int                     @default(7) // 1. Mahnung: X Tage nach Erinnerung
+  reminderDays3          Int                     @default(14) // 2. Mahnung: X Tage nach 1. Mahnung
+  reminderFee1Cents      Int                     @default(0) // Zahlungserinnerung: keine Gebühr
+  reminderFee2Cents      Int                     @default(500) // 1. Mahnung: 5,00 €
+  reminderFee3Cents      Int                     @default(1000) // 2. Mahnung: 10,00 €
   // Stripe-Konfiguration (per User → eigenes Stripe-Konto)
-  stripePublishableKey   String?   // pk_live_… oder pk_test_… (öffentlich, unverschlüsselt)
-  stripeSecretKeyEnc     String?   // sk_… AES-256-GCM verschlüsselt (siehe lib/crypto.ts)
-  stripeWebhookSecretEnc String?   // whsec_… AES-256-GCM verschlüsselt
-  stripeAccountId        String?   // gecacht aus accounts.retrieve() für Anzeige
+  stripePublishableKey   String? // pk_live_… oder pk_test_… (öffentlich, unverschlüsselt)
+  stripeSecretKeyEnc     String? // sk_… AES-256-GCM verschlüsselt (siehe lib/crypto.ts)
+  stripeWebhookSecretEnc String? // whsec_… AES-256-GCM verschlüsselt
+  stripeAccountId        String? // gecacht aus accounts.retrieve() für Anzeige
   stripeAccountName      String?
   stripeAccountCountry   String?
-  stripeChargesEnabled   Boolean   @default(false)  // gecacht: live/test ready?
-  stripeLivemode         Boolean   @default(false)
+  stripeChargesEnabled   Boolean                 @default(false) // gecacht: live/test ready?
+  stripeLivemode         Boolean                 @default(false)
   stripeKeysUpdatedAt    DateTime?
   // Team
-  teamMember     TeamMember?
+  teamMember             TeamMember?             @relation("UserSelfLink")
   // Externe Kalender-Verbindungen (Google, Microsoft, Apple, CalDAV)
-  calendarConnections CalendarConnection[]
+  calendarConnections    CalendarConnection[]
+  // --- Multi-Tenancy: alle owned-Entities die diesem User gehören ---
+  customers              Customer[]
+  customerStatuses       CustomerStatus[]
+  tags                   Tag[]
+  teamMembers            TeamMember[]            @relation("UserOwnsTeam")
+  teamExpertises         TeamExpertise[]
+  shootings              Shooting[]
+  shootingStatuses       ShootingStatus[]
+  packages               Package[]
+  addons                 Addon[]
+  bookingTypes           BookingType[]
+  bookings               Booking[]
+  invoices               Invoice[]
+  tasks                  Task[]
+  activities             Activity[]
+  paymentSchedules       PaymentSchedule[]
+  questionnaireTemplates QuestionnaireTemplate[]
+  availabilityWeekly     AvailabilityWeekly[]
+  availabilityOverrides  AvailabilityOverride[]
+  // Onboarding: nach erstem Login Setup-Wizard zeigen, bis User ihn schließt.
+  onboardingDismissed    Boolean                 @default(false)
   // "Ganzer Tag" — Standardfenster, das bei AvailabilityWeekly/Override ohne slotsJson greift.
   // Auch der "Ganzer Tag"-Quick-Button im Kalender füllt diese Range ein.
-  defaultDayStartMinutes Int @default(540)   // 09:00
-  defaultDayEndMinutes   Int @default(1080)  // 18:00
+  defaultDayStartMinutes Int                     @default(540) // 09:00
+  defaultDayEndMinutes   Int                     @default(1080) // 18:00
   // Persönliche Meeting-Räume pro Provider (Tier-1-Fallback). Wenn OAuth-Verbindung
   // existiert, wird stattdessen pro Buchung ein eigenes Meeting erstellt.
   zoomPersonalLink       String?
@@ -89,69 +110,90 @@ model User {
   wherebyPersonalLink    String?
   // OAuth-Tokens (Tier 2): AES-256-GCM verschlüsselt via lib/crypto.ts.
   // Bei vorhandenem Token wird pro Buchung ein unique Meeting via Provider-API erstellt.
-  zoomAccessTokenEnc      String?
-  zoomRefreshTokenEnc     String?
-  zoomTokenExpiresAt      DateTime?
-  zoomAccountEmail        String?
-  zoomUserId              String?
-  googleAccessTokenEnc    String?
-  googleRefreshTokenEnc   String?
-  googleTokenExpiresAt    DateTime?
-  googleAccountEmail      String?
-  createdAt    DateTime @default(now())
+  zoomAccessTokenEnc     String?
+  zoomRefreshTokenEnc    String?
+  zoomTokenExpiresAt     DateTime?
+  zoomAccountEmail       String?
+  zoomUserId             String?
+  googleAccessTokenEnc   String?
+  googleRefreshTokenEnc  String?
+  googleTokenExpiresAt   DateTime?
+  googleAccountEmail     String?
+  createdAt              DateTime                @default(now())
 }
 
 // -------------------- TEAM --------------------
 
 model TeamExpertise {
   id      String       @id @default(cuid())
-  label   String       @unique
+  label   String
   color   String       @default("#9F877F")
   members TeamMember[]
+  owner   User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String      
+
+  @@unique([ownerId, label])
+  @@index([ownerId])
 }
 
 model TeamMember {
-  id         String   @id @default(cuid())
-  firstName  String
-  lastName   String
-  role       String?         // "Inhaberin", "Assistenz Make-up", "Second Shooter" …
-  email      String?
-  phone      String?
-  avatarUrl  String?
-  bio        String?         // mehrzeilig
-  instagram  String?
-  facebook   String?
-  tiktok     String?
-  website    String?
-  expertise  TeamExpertise[]
-  isOwner    Boolean  @default(false)
-  user       User?    @relation(fields: [userId], references: [id])
-  userId     String?  @unique
-  position   Int      @default(0)
+  id               String          @id @default(cuid())
+  firstName        String
+  lastName         String
+  role             String? // "Inhaberin", "Assistenz Make-up", "Second Shooter" …
+  email            String?
+  phone            String?
+  avatarUrl        String?
+  bio              String? // mehrzeilig
+  instagram        String?
+  facebook         String?
+  tiktok           String?
+  website          String?
+  expertise        TeamExpertise[]
+  isOwner          Boolean         @default(false)
+  // Self-Link: wenn TeamMember = Owner (Lisa selbst), verknüpft mit Auth-User.
+  user             User?           @relation("UserSelfLink", fields: [linkedUserId], references: [id])
+  linkedUserId     String?         @unique
+  // Tenant-Owner: zu welchem Account/User gehört dieser TeamMember
+  owner            User            @relation("UserOwnsTeam", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          String         
+  position         Int             @default(0)
   // Beziehungen
-  packagesPrimary  Package[]  @relation("PackageDefaultContact")
-  packagesMembers  Package[]  @relation("PackageDefaultTeam")
-  shootingsPrimary Shooting[] @relation("ShootingPrimaryContact")
-  shootingsMembers Shooting[] @relation("ShootingTeam")
-  createdAt  DateTime @default(now())
+  packagesPrimary  Package[]       @relation("PackageDefaultContact")
+  packagesMembers  Package[]       @relation("PackageDefaultTeam")
+  shootingsPrimary Shooting[]      @relation("ShootingPrimaryContact")
+  shootingsMembers Shooting[]      @relation("ShootingTeam")
+  createdAt        DateTime        @default(now())
+
+  @@index([ownerId])
 }
 
 // -------------------- KUNDEN --------------------
 
 model CustomerStatus {
   id        String     @id @default(cuid())
-  label     String     @unique
-  color     String     // Hex, z.B. "#C8102E"
+  label     String
+  color     String // Hex, z.B. "#C8102E"
   position  Int        @default(0)
   isDefault Boolean    @default(false)
   customers Customer[]
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String    
+
+  @@unique([ownerId, label])
+  @@index([ownerId])
 }
 
 model Tag {
   id        String     @id @default(cuid())
-  label     String     @unique
+  label     String
   color     String     @default("#9F877F")
   customers Customer[] @relation("CustomerTags")
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String    
+
+  @@unique([ownerId, label])
+  @@index([ownerId])
 }
 
 // -------------------- RECHNUNGEN --------------------
@@ -160,112 +202,116 @@ model Tag {
 // und Nummer IMMUTABLE — Korrekturen nur via Stornorechnung (kind=CANCEL).
 
 model Invoice {
-  id                String   @id @default(cuid())
+  id                     String              @id @default(cuid())
   // Rechnungs-Lifecycle
-  number            String?  @unique     // wird erst bei ISSUED vergeben (lückenlos)
-  kind              String   @default("FINAL")   // DEPOSIT | INTERIM | FINAL | CANCEL
-  status            String   @default("DRAFT")   // DRAFT | ISSUED | PAID | OVERDUE | CANCELLED
+  number                 String?             @unique // wird erst bei ISSUED vergeben (lückenlos)
+  kind                   String              @default("FINAL") // DEPOSIT | INTERIM | FINAL | CANCEL
+  status                 String              @default("DRAFT") // DRAFT | ISSUED | PAID | OVERDUE | CANCELLED
   // Verknüpfung
-  customer          Customer  @relation(fields: [customerId], references: [id])
-  customerId        String
-  shooting          Shooting? @relation(fields: [shootingId], references: [id])
-  shootingId        String?
-  installment       PaymentInstallment? @relation("InstallmentInvoice")
+  customer               Customer            @relation(fields: [customerId], references: [id])
+  customerId             String
+  shooting               Shooting?           @relation(fields: [shootingId], references: [id])
+  shootingId             String?
+  installment            PaymentInstallment? @relation("InstallmentInvoice")
   // Bezug auf Anzahlungen (Schlussrechnung referenziert ihre Anzahlungen)
-  parentInvoice     Invoice?  @relation("InvoiceChain", fields: [parentInvoiceId], references: [id])
-  parentInvoiceId   String?
-  childInvoices     Invoice[] @relation("InvoiceChain")
+  parentInvoice          Invoice?            @relation("InvoiceChain", fields: [parentInvoiceId], references: [id])
+  parentInvoiceId        String?
+  childInvoices          Invoice[]           @relation("InvoiceChain")
   // Storno-Verkettung
-  cancelsInvoiceId  String?   @unique
-  cancelsInvoice    Invoice?  @relation("InvoiceCancel", fields: [cancelsInvoiceId], references: [id])
-  cancelledByInvoice Invoice? @relation("InvoiceCancel")
+  cancelsInvoiceId       String?             @unique
+  cancelsInvoice         Invoice?            @relation("InvoiceCancel", fields: [cancelsInvoiceId], references: [id])
+  cancelledByInvoice     Invoice?            @relation("InvoiceCancel")
   // Schnappschuss Empfänger (immutable bei ISSUED)
-  recipientName     String
-  recipientAddress  String    // mehrzeilig
+  recipientName          String
+  recipientAddress       String // mehrzeilig
   // Schnappschuss Aussteller (JSON, immutable)
-  issuerSnapshot    String    // JSON: { companyName, owner, street, zip, city, country, taxId, vatId, isSmallBusiness, bankName, iban, bic, email, phone, footerNote }
+  issuerSnapshot         String // JSON: { companyName, owner, street, zip, city, country, taxId, vatId, isSmallBusiness, bankName, iban, bic, email, phone, footerNote }
   // Pflichtdaten
-  issueDate         DateTime
-  serviceDate       DateTime?
-  serviceDateEnd    DateTime?
-  dueDate           DateTime
+  issueDate              DateTime
+  serviceDate            DateTime?
+  serviceDateEnd         DateTime?
+  dueDate                DateTime
   // Beträge in Cent
-  subtotalCents     Int       // Summe Netto
-  vatRate           Float     // 0 (KU), 7, 19
-  vatAmountCents    Int       // berechnet
-  totalCents        Int       // Brutto
+  subtotalCents          Int // Summe Netto
+  vatRate                Float // 0 (KU), 7, 19
+  vatAmountCents         Int // berechnet
+  totalCents             Int // Brutto
   // bereits bezahlt aus Anzahlungen (für Schlussrechnung)
-  prepaidCents      Int       @default(0)
-  amountDueCents    Int       // total - prepaid
+  prepaidCents           Int                 @default(0)
+  amountDueCents         Int // total - prepaid
   // KU-Flag im Snapshot
-  isSmallBusiness   Boolean
+  isSmallBusiness        Boolean
   // Items
-  items             InvoiceItem[]
+  items                  InvoiceItem[]
   // Tracking
-  sentAt            DateTime?
-  paidAt            DateTime?
-  internalNote      String?
+  sentAt                 DateTime?
+  paidAt                 DateTime?
+  internalNote           String?
   // Mahnwesen
-  reminderLevel     Int       @default(0)   // 0=keine, 1=Erinnerung, 2=1.Mahnung, 3=2.Mahnung
-  reminders         InvoiceReminder[]
+  reminderLevel          Int                 @default(0) // 0=keine, 1=Erinnerung, 2=1.Mahnung, 3=2.Mahnung
+  reminders              InvoiceReminder[]
   // PDF
-  pdfUrl            String?
+  pdfUrl                 String?
   // Online-Zahlung (Stripe)
-  paymentToken           String?    @unique  // unguessable Token für Public-URL /k/r/[token]
-  stripeSessionId        String?    @unique  // cs_… (Checkout Session)
-  stripeSessionUrl       String?            // session.url (gleichbleibend bis Expiry)
+  paymentToken           String?             @unique // unguessable Token für Public-URL /k/r/[token]
+  stripeSessionId        String?             @unique // cs_… (Checkout Session)
+  stripeSessionUrl       String? // session.url (gleichbleibend bis Expiry)
   stripeSessionExpiresAt DateTime?
   stripePaymentIntentId  String?
-  stripePaymentStatus    String?            // "open" | "processing" | "paid" | "failed" | "expired"
-  stripePaymentMethod    String?            // "card" | "sepa_debit" | "paypal" | "klarna" | "link" | …
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  stripePaymentStatus    String? // "open" | "processing" | "paid" | "failed" | "expired"
+  stripePaymentMethod    String? // "card" | "sepa_debit" | "paypal" | "klarna" | "link" | …
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  // Tenant
+  owner                  User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId                String             
 
   @@index([customerId])
   @@index([shootingId])
   @@index([status, dueDate])
   @@index([issueDate])
+  @@index([ownerId])
 }
 
 // Externer Kalender-Account (Google, Microsoft, Apple, Nextcloud, …) pro User.
 // Tokens und Passwörter NUR verschlüsselt (AES-256-GCM, AAD = userId) — siehe lib/crypto.ts.
 // Pro User max ein Account pro Provider (uniqueness).
 model CalendarConnection {
-  id                String   @id @default(cuid())
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String
-  provider          String   // "google" | "microsoft" | "apple" | "nextcloud" | "mailbox" | "posteo" | "caldav_custom"
-  status            String   @default("active")  // active | error | revoked
-  accountEmail      String?  // für Anzeige in UI
-  accountLabel      String?  // optional vom User vergeben
+  id                   String                  @id @default(cuid())
+  user                 User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String
+  provider             String // "google" | "microsoft" | "apple" | "nextcloud" | "mailbox" | "posteo" | "caldav_custom"
+  status               String                  @default("active") // active | error | revoked
+  accountEmail         String? // für Anzeige in UI
+  accountLabel         String? // optional vom User vergeben
   // OAuth (Google, Microsoft)
-  accessTokenEnc    String?
-  refreshTokenEnc   String?
-  tokenExpiresAt    DateTime?
-  oauthScope        String?
+  accessTokenEnc       String?
+  refreshTokenEnc      String?
+  tokenExpiresAt       DateTime?
+  oauthScope           String?
   // CalDAV (Apple, Nextcloud, Mailbox.org, Posteo, generic)
-  serverUrl         String?
-  username          String?
-  passwordEnc       String?  // verschlüsseltes App-Passwort
+  serverUrl            String?
+  username             String?
+  passwordEnc          String? // verschlüsseltes App-Passwort
   // Welcher Kalender innerhalb des Accounts wird synchronisiert
-  externalCalendarId   String?  // Google calendar ID oder CalDAV URL
+  externalCalendarId   String? // Google calendar ID oder CalDAV URL
   externalCalendarName String?
-  externalCalendarTz   String?  // IANA, z.B. "Europe/Berlin"
+  externalCalendarTz   String? // IANA, z.B. "Europe/Berlin"
   // Sync-State
-  syncToken         String?    // Google nextSyncToken / CalDAV sync-token
-  ctag              String?    // CalDAV CTag (für Pre-Check vor sync-collection)
-  channelId         String?    // Google Push-Channel ID
-  channelSecretEnc  String?    // Google Push-Channel-Token (verschlüsselt)
-  channelExpiresAt  DateTime?
-  lastSyncedAt      DateTime?
-  lastSyncError     String?
+  syncToken            String? // Google nextSyncToken / CalDAV sync-token
+  ctag                 String? // CalDAV CTag (für Pre-Check vor sync-collection)
+  channelId            String? // Google Push-Channel ID
+  channelSecretEnc     String? // Google Push-Channel-Token (verschlüsselt)
+  channelExpiresAt     DateTime?
+  lastSyncedAt         DateTime?
+  lastSyncError        String?
   // Sync-Einstellungen
-  pseudonymize      Boolean    @default(false)  // exportierte Events tragen Pseudonym statt Klarnamen
-  syncEnabled       Boolean    @default(true)
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  externalEvents    ExternalCalendarEvent[]
-  selectedCalendars SelectedCalendar[]
+  pseudonymize         Boolean                 @default(false) // exportierte Events tragen Pseudonym statt Klarnamen
+  syncEnabled          Boolean                 @default(true)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  externalEvents       ExternalCalendarEvent[]
+  selectedCalendars    SelectedCalendar[]
 
   @@unique([userId, provider])
   @@index([userId])
@@ -275,18 +321,18 @@ model CalendarConnection {
 // Genau einer davon ist `isPushTarget = true` — dort werden eigene Shootings angelegt.
 // Alle ausgewählten werden pull-gesynct und in der Konfliktanzeige berücksichtigt.
 model SelectedCalendar {
-  id              String   @id @default(cuid())
-  connection      CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  connectionId    String
-  externalId      String   // Google calendar ID oder CalDAV URL
-  displayName     String
-  color           String?  // Hex-Color aus dem Provider (Google liefert das)
-  timezone        String?
-  isPushTarget    Boolean  @default(false)
-  syncToken       String?  // pro Kalender separat
-  ctag            String?  // CalDAV
-  lastSyncedAt    DateTime?
-  createdAt       DateTime @default(now())
+  id           String             @id @default(cuid())
+  connection   CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  connectionId String
+  externalId   String // Google calendar ID oder CalDAV URL
+  displayName  String
+  color        String? // Hex-Color aus dem Provider (Google liefert das)
+  timezone     String?
+  isPushTarget Boolean            @default(false)
+  syncToken    String? // pro Kalender separat
+  ctag         String? // CalDAV
+  lastSyncedAt DateTime?
+  createdAt    DateTime           @default(now())
 
   @@unique([connectionId, externalId])
   @@index([connectionId])
@@ -296,19 +342,19 @@ model SelectedCalendar {
 // Bewusst minimal: nur Zeitfenster für Konflikterkennung. Keine Inhalte, keine Teilnehmer.
 // Bei Disconnect wird via onDelete Cascade alles gelöscht.
 model ExternalCalendarEvent {
-  id                 String   @id @default(cuid())
-  connection         CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  connectionId       String
-  externalEventId    String   // Google event.id ODER CalDAV-Href ODER iCal-UID
-  iCalUid            String?  // stabil über Move/Copy
-  startAt            DateTime
-  endAt              DateTime
-  summary            String?  // optional, nur für UI-Hint (max 80 chars), KEINE Description/Location
-  etag               String?
-  isOurs             Boolean  @default(false)   // von unserer App angelegt (extendedProperties / X-LISA-ORIGIN)
-  ourShootingId      String?                    // Verknüpfung zu Shooting (für Roundtrip)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id              String             @id @default(cuid())
+  connection      CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  connectionId    String
+  externalEventId String // Google event.id ODER CalDAV-Href ODER iCal-UID
+  iCalUid         String? // stabil über Move/Copy
+  startAt         DateTime
+  endAt           DateTime
+  summary         String? // optional, nur für UI-Hint (max 80 chars), KEINE Description/Location
+  etag            String?
+  isOurs          Boolean            @default(false) // von unserer App angelegt (extendedProperties / X-LISA-ORIGIN)
+  ourShootingId   String? // Verknüpfung zu Shooting (für Roundtrip)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@unique([connectionId, externalEventId])
   @@index([connectionId, startAt, endAt])
@@ -317,10 +363,10 @@ model ExternalCalendarEvent {
 
 // Idempotenz-Store für Stripe-Webhooks. Verhindert doppelte Verarbeitung bei Retries.
 model StripeWebhookEvent {
-  stripeEventId String   @id              // Stripe event.id
-  userId        String                    // welcher User-Account
-  type          String                    // event.type
-  invoiceId     String?                   // wenn auflösbar
+  stripeEventId String   @id // Stripe event.id
+  userId        String // welcher User-Account
+  type          String // event.type
+  invoiceId     String? // wenn auflösbar
   receivedAt    DateTime @default(now())
   processed     Boolean  @default(false)
   errorMessage  String?
@@ -329,108 +375,118 @@ model StripeWebhookEvent {
 }
 
 model InvoiceItem {
-  id              String   @id @default(cuid())
-  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  invoiceId       String
-  title           String   @default("Leistung")  // Hauptbezeichnung (einzeilig)
-  description     String?                         // optional, ausführlich
-  quantity        Float    @default(1)
-  unit            String?  @default("Pauschal")
-  unitPriceCents  Int
-  totalCents      Int
-  position        Int      @default(0)
+  id             String  @id @default(cuid())
+  invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId      String
+  title          String  @default("Leistung") // Hauptbezeichnung (einzeilig)
+  description    String? // optional, ausführlich
+  quantity       Float   @default(1)
+  unit           String? @default("Pauschal")
+  unitPriceCents Int
+  totalCents     Int
+  position       Int     @default(0)
 }
 
 model InvoiceReminder {
-  id          String   @id @default(cuid())
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  invoiceId   String
-  level       Int                // 1=Erinnerung, 2=1.Mahnung, 3=2.Mahnung
-  feeCents    Int      @default(0)
-  newDueDate  DateTime
-  sentAt      DateTime?
-  issuedAt    DateTime @default(now())
-  pdfUrl      String?
+  id         String    @id @default(cuid())
+  invoice    Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId  String
+  level      Int // 1=Erinnerung, 2=1.Mahnung, 3=2.Mahnung
+  feeCents   Int       @default(0)
+  newDueDate DateTime
+  sentAt     DateTime?
+  issuedAt   DateTime  @default(now())
+  pdfUrl     String?
 
   @@index([invoiceId, level])
 }
 
 model PaymentSchedule {
-  id            String   @id @default(cuid())
-  shooting      Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
-  shootingId    String   @unique
-  installments  PaymentInstallment[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String               @id @default(cuid())
+  shooting     Shooting             @relation(fields: [shootingId], references: [id], onDelete: Cascade)
+  shootingId   String               @unique
+  installments PaymentInstallment[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  // Tenant
+  owner        User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId      String              
+
+  @@index([ownerId])
 }
 
 model PaymentInstallment {
-  id            String   @id @default(cuid())
-  schedule      PaymentSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  scheduleId    String
-  label         String      // "Anzahlung bei Buchung", "Restbetrag am Shootingtag" …
-  kind          String      @default("INTERIM")  // DEPOSIT | INTERIM | FINAL
-  amountCents   Int
-  dueDate       DateTime?
-  position      Int         @default(0)
-  invoice       Invoice?    @relation("InstallmentInvoice", fields: [invoiceId], references: [id])
-  invoiceId     String?     @unique
-  paidAt        DateTime?
+  id          String          @id @default(cuid())
+  schedule    PaymentSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  scheduleId  String
+  label       String // "Anzahlung bei Buchung", "Restbetrag am Shootingtag" …
+  kind        String          @default("INTERIM") // DEPOSIT | INTERIM | FINAL
+  amountCents Int
+  dueDate     DateTime?
+  position    Int             @default(0)
+  invoice     Invoice?        @relation("InstallmentInvoice", fields: [invoiceId], references: [id])
+  invoiceId   String?         @unique
+  paidAt      DateTime?
 }
 
 model Customer {
-  id            String           @id @default(cuid())
+  id             String              @id @default(cuid())
   // Stammdaten
-  firstName     String
-  lastName      String
-  email         String?
-  phone         String?
-  birthday      DateTime?
-  avatarUrl     String?
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  birthday       DateTime?
+  avatarUrl      String?
   // Rechnungsadresse
-  billingStreet String?
-  billingZip    String?
-  billingCity   String?
-  billingCountry String?         @default("Deutschland")
+  billingStreet  String?
+  billingZip     String?
+  billingCity    String?
+  billingCountry String?             @default("Deutschland")
   // Social
-  instagram     String?
-  facebook      String?
-  tiktok        String?
-  website       String?
+  instagram      String?
+  facebook       String?
+  tiktok         String?
+  website        String?
   // CRM
-  status        CustomerStatus?  @relation(fields: [statusId], references: [id])
-  statusId      String?
-  source        String?          // "Wie hat sie/er von mir erfahren?"
-  internalNotes String?          // private Notizen, Markdown
-  tags          Tag[]            @relation("CustomerTags")
+  status         CustomerStatus?     @relation(fields: [statusId], references: [id])
+  statusId       String?
+  source         String? // "Wie hat sie/er von mir erfahren?"
+  internalNotes  String? // private Notizen, Markdown
+  tags           Tag[]               @relation("CustomerTags")
   // Beziehungen
-  shootings     Shooting[]
-  activities    Activity[]
-  tasks         Task[]
-  invoices      Invoice[]
-  companions    CustomerCompanion[]
-  bookings      Booking[]
+  shootings      Shooting[]
+  activities     Activity[]
+  tasks          Task[]
+  invoices       Invoice[]
+  companions     CustomerCompanion[]
+  bookings       Booking[]
+  // Tenant
+  owner          User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId        String             
   // Meta
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([ownerId])
 }
 
 // Begleitperson / Mit-Ansprechpartner — z.B. Partner:in bei Couple-Shooting, Familienmitglieder.
 // Bewusst am Kunden (nicht am Shooting) verankert, weil Beziehungen meist langfristig sind.
 model CustomerCompanion {
-  id            String   @id @default(cuid())
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId    String
-  firstName     String
-  lastName      String?
-  relationship  String?   // "Partner", "Kind", "Mutter", "Freundin", …
-  birthday      DateTime?
-  email         String?
-  phone         String?
-  notes         String?
-  position      Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId   String
+  firstName    String
+  lastName     String?
+  relationship String? // "Partner", "Kind", "Mutter", "Freundin", …
+  birthday     DateTime?
+  email        String?
+  phone        String?
+  notes        String?
+  position     Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([customerId])
 }
@@ -438,32 +494,37 @@ model CustomerCompanion {
 // -------------------- PAKETE --------------------
 
 model Package {
-  id            String     @id @default(cuid())
-  name          String
-  description   String?
-  coverUrl      String?
-  price         Float      // in EUR
+  id                     String                     @id @default(cuid())
+  name                   String
+  description            String?
+  coverUrl               String?
+  price                  Float // in EUR
   // Standard-Zahlungsbedingungen (Vorgabe, pro Shooting überschreibbar)
-  depositAmount Float?     // z.B. 100€ Anzahlung
-  paymentTerms  String?    // Freitext, z.B. "50% bei Buchung, Rest am Shootingtag"
-  durationMin   Int?       // Standard-Dauer in Minuten — wird im Kalender als Block reserviert
+  depositAmount          Float? // z.B. 100€ Anzahlung
+  paymentTerms           String? // Freitext, z.B. "50% bei Buchung, Rest am Shootingtag"
+  durationMin            Int? // Standard-Dauer in Minuten — wird im Kalender als Block reserviert
   // Vor-/Nach-Bereitungs-Puffer: Lisa braucht Zeit für Aufbau (z.B. Boudoir-Setup) und
   // Nachbereitung. Beim Slot-Finden wird dieser Puffer um die Termin-Dauer gespannt.
-  bookingBufferBeforeMin Int @default(0)
-  bookingBufferAfterMin  Int @default(15)
-  isActive      Boolean    @default(true)
-  position      Int        @default(0)
-  shootings     Shooting[]
-  checklistTemplates PackageChecklistTemplate[]
-  defaultQuestionnaires QuestionnaireTemplate[] @relation("PackageDefaultQuestionnaires")
+  bookingBufferBeforeMin Int                        @default(0)
+  bookingBufferAfterMin  Int                        @default(15)
+  isActive               Boolean                    @default(true)
+  position               Int                        @default(0)
+  shootings              Shooting[]
+  checklistTemplates     PackageChecklistTemplate[]
+  defaultQuestionnaires  QuestionnaireTemplate[]    @relation("PackageDefaultQuestionnaires")
   // Default-Team für neue Shootings
-  primaryContact   TeamMember?  @relation("PackageDefaultContact", fields: [primaryContactId], references: [id])
-  primaryContactId String?
-  defaultTeam      TeamMember[] @relation("PackageDefaultTeam")
+  primaryContact         TeamMember?                @relation("PackageDefaultContact", fields: [primaryContactId], references: [id])
+  primaryContactId       String?
+  defaultTeam            TeamMember[]               @relation("PackageDefaultTeam")
   // Verfügbare Zusatzprodukte für dieses Paket (Bilderbuch M, Leinwand …)
-  addons        Addon[]    @relation("PackageAddons")
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  addons                 Addon[]                    @relation("PackageAddons")
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  // Tenant
+  owner                  User                       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId                String                    
+
+  @@index([ownerId])
 }
 
 // Zusatzprodukte (Bilderbuch M, Leinwand 60x90, Make-up-Service …)
@@ -476,13 +537,18 @@ model Addon {
   imageUrl         String?
   imageOriginalUrl String?
   imageMimeType    String?
-  price            Float           // EUR — wird beim Buchen als unitPrice in ShootingAddon kopiert
+  price            Float // EUR — wird beim Buchen als unitPrice in ShootingAddon kopiert
   isActive         Boolean         @default(true)
   position         Int             @default(0)
   packages         Package[]       @relation("PackageAddons")
   bookings         ShootingAddon[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+  // Tenant
+  owner            User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          String         
+
+  @@index([ownerId])
 }
 
 // Buchung eines Add-Ons in einem Shooting.
@@ -495,7 +561,7 @@ model ShootingAddon {
   addon      Addon    @relation(fields: [addonId], references: [id], onDelete: Restrict)
   addonId    String
   quantity   Int      @default(1)
-  unitPrice  Float    // Snapshot bei Buchung
+  unitPrice  Float // Snapshot bei Buchung
   position   Int      @default(0)
   createdAt  DateTime @default(now())
 
@@ -505,94 +571,105 @@ model ShootingAddon {
 }
 
 model PackageChecklistTemplate {
-  id        String  @id @default(cuid())
-  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  id        String                 @id @default(cuid())
+  package   Package                @relation(fields: [packageId], references: [id], onDelete: Cascade)
   packageId String
   title     String
-  audience  String  @default("INTERNAL")   // INTERNAL | CUSTOMER
-  position  Int     @default(0)
+  audience  String                 @default("INTERNAL") // INTERNAL | CUSTOMER
+  position  Int                    @default(0)
   items     PackageChecklistItem[]
 
   @@index([packageId])
 }
 
 model PackageChecklistItem {
-  id          String                    @id @default(cuid())
-  template    PackageChecklistTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  templateId  String
-  label       String
-  position    Int                       @default(0)
+  id         String                   @id @default(cuid())
+  template   PackageChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+  label      String
+  position   Int                      @default(0)
 }
 
 // -------------------- SHOOTINGS --------------------
 
 model ShootingStatus {
   id        String     @id @default(cuid())
-  label     String     @unique
+  label     String
   color     String
   position  Int        @default(0)
   isDefault Boolean    @default(false)
   // Workflow-Flags
-  isDone    Boolean    @default(false)  // markiert "Abgeschlossen"-artige Status
+  isDone    Boolean    @default(false) // markiert "Abgeschlossen"-artige Status
   shootings Shooting[]
+  // Tenant
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String    
+
+  @@unique([ownerId, label])
+  @@index([ownerId])
 }
 
 model Shooting {
-  id            String          @id @default(cuid())
-  title         String          // z.B. "Boudoir-Shooting Anna"
-  publicSlug    String?         @unique  // für Kundenansicht /k/[slug]
-  customer      Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId    String
-  package       Package?        @relation(fields: [packageId], references: [id])
-  packageId     String?
-  status        ShootingStatus? @relation(fields: [statusId], references: [id])
-  statusId      String?
-  description   String?
-  scheduledAt   DateTime?
-  durationMin   Int?
-  location      String?
-  price         Float
-  depositAmount Float?
-  depositPaid   Boolean         @default(false)
-  finalPaid     Boolean         @default(false)
-  paymentTerms  String?
+  id               String           @id @default(cuid())
+  title            String // z.B. "Boudoir-Shooting Anna"
+  publicSlug       String? // für Kundenansicht /k/[slug]
+  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId       String
+  package          Package?         @relation(fields: [packageId], references: [id])
+  packageId        String?
+  status           ShootingStatus?  @relation(fields: [statusId], references: [id])
+  statusId         String?
+  description      String?
+  scheduledAt      DateTime?
+  durationMin      Int?
+  location         String?
+  price            Float
+  depositAmount    Float?
+  depositPaid      Boolean          @default(false)
+  finalPaid        Boolean          @default(false)
+  paymentTerms     String?
   // Team
-  primaryContact   TeamMember?  @relation("ShootingPrimaryContact", fields: [primaryContactId], references: [id])
+  primaryContact   TeamMember?      @relation("ShootingPrimaryContact", fields: [primaryContactId], references: [id])
   primaryContactId String?
-  team             TeamMember[] @relation("ShootingTeam")
+  team             TeamMember[]     @relation("ShootingTeam")
   // Gebuchte Zusatzprodukte (Bilderbuch M, Leinwand etc.) — Quantity + Preis-Snapshot in ShootingAddon
-  addons         ShootingAddon[]
+  addons           ShootingAddon[]
   // Inhalt
-  dates          ShootingDate[]
-  notes          ShootingNote[]
-  checklists     Checklist[]
-  attachments    Attachment[]
-  tasks          Task[]
-  activities     Activity[]
-  questionnaires Questionnaire[]
-  invoices       Invoice[]
-  paymentSchedule PaymentSchedule?
-  bookings       Booking[]
-  kanbanPosition Int            @default(0)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  dates            ShootingDate[]
+  notes            ShootingNote[]
+  checklists       Checklist[]
+  attachments      Attachment[]
+  tasks            Task[]
+  activities       Activity[]
+  questionnaires   Questionnaire[]
+  invoices         Invoice[]
+  paymentSchedule  PaymentSchedule?
+  bookings         Booking[]
+  kanbanPosition   Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  // Tenant
+  owner            User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          String          
 
+  @@unique([ownerId, publicSlug])
   @@index([customerId])
   @@index([statusId])
   @@index([scheduledAt])
+  @@index([ownerId])
 }
 
 model ShootingDate {
-  id          String   @id @default(cuid())
-  shooting    Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  shooting    Shooting  @relation(fields: [shootingId], references: [id], onDelete: Cascade)
   shootingId  String
-  label       String   // z.B. "Fitting", "Shooting", "Bildauswahl"
+  label       String // z.B. "Fitting", "Shooting", "Bildauswahl"
   startAt     DateTime
   endAt       DateTime?
   location    String?
-  locationUrl String?   // Maps-Link
-  description String?   // optional, kurze Info für die Kundin
-  position    Int      @default(0)
+  locationUrl String? // Maps-Link
+  description String? // optional, kurze Info für die Kundin
+  position    Int       @default(0)
 
   @@index([shootingId, startAt])
 }
@@ -602,7 +679,7 @@ model ShootingNote {
   shooting   Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
   shootingId String
   text       String
-  status     String   @default("OPEN")  // OPEN | DONE | IMPORTANT
+  status     String   @default("OPEN") // OPEN | DONE | IMPORTANT
   createdAt  DateTime @default(now())
 
   @@index([shootingId])
@@ -610,8 +687,8 @@ model ShootingNote {
 
 model Checklist {
   id         String          @id @default(cuid())
-  title      String          // z.B. "Was bringt die Kundin mit?"
-  audience   String          @default("INTERNAL")  // INTERNAL | CUSTOMER
+  title      String // z.B. "Was bringt die Kundin mit?"
+  audience   String          @default("INTERNAL") // INTERNAL | CUSTOMER
   position   Int             @default(0)
   shooting   Shooting        @relation(fields: [shootingId], references: [id], onDelete: Cascade)
   shootingId String
@@ -646,71 +723,76 @@ model Attachment {
 // -------------------- FRAGEBÖGEN --------------------
 
 model Questionnaire {
-  id          String   @id @default(cuid())
-  shooting    Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
-  shootingId  String
-  title       String
-  description String?
+  id             String                @id @default(cuid())
+  shooting       Shooting              @relation(fields: [shootingId], references: [id], onDelete: Cascade)
+  shootingId     String
+  title          String
+  description    String?
   // Lifecycle
-  status      String   @default("DRAFT")   // DRAFT | SENT | OPENED | IN_PROGRESS | SUBMITTED
-  sentAt      DateTime?
-  openedAt    DateTime?
-  lastSavedAt DateTime?
-  submittedAt DateTime?
-  seenByStudioAt DateTime?   // wann Studio den abgeschickten Bogen zuletzt angesehen hat
-  fields      QuestionnaireField[]
-  answers     QuestionnaireAnswer[]
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status         String                @default("DRAFT") // DRAFT | SENT | OPENED | IN_PROGRESS | SUBMITTED
+  sentAt         DateTime?
+  openedAt       DateTime?
+  lastSavedAt    DateTime?
+  submittedAt    DateTime?
+  seenByStudioAt DateTime? // wann Studio den abgeschickten Bogen zuletzt angesehen hat
+  fields         QuestionnaireField[]
+  answers        QuestionnaireAnswer[]
+  position       Int                   @default(0)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
   @@index([shootingId])
   @@index([status, submittedAt])
 }
 
 model QuestionnaireField {
-  id              String   @id @default(cuid())
-  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  id              String                @id @default(cuid())
+  questionnaire   Questionnaire         @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
   questionnaireId String
-  type            String   // TEXT TEXTAREA NUMBER EMAIL PHONE DATE SELECT_SINGLE SELECT_MULTI YES_NO RATING FILE
+  type            String // TEXT TEXTAREA NUMBER EMAIL PHONE DATE SELECT_SINGLE SELECT_MULTI YES_NO RATING FILE
   label           String
   helpText        String?
-  required        Boolean  @default(false)
-  options         String?  // JSON-Array für SELECT_*
-  position        Int      @default(0)
+  required        Boolean               @default(false)
+  options         String? // JSON-Array für SELECT_*
+  position        Int                   @default(0)
   answers         QuestionnaireAnswer[]
 
   @@index([questionnaireId])
 }
 
 model QuestionnaireTemplate {
-  id          String   @id @default(cuid())
+  id          String                       @id @default(cuid())
   title       String
   description String?
   fields      QuestionnaireTemplateField[]
-  packages    Package[] @relation("PackageDefaultQuestionnaires")
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  packages    Package[]                    @relation("PackageDefaultQuestionnaires")
+  position    Int                          @default(0)
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+  // Tenant
+  owner       User                         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String                      
+
+  @@index([ownerId])
 }
 
 model QuestionnaireTemplateField {
-  id          String   @id @default(cuid())
-  template    QuestionnaireTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  templateId  String
-  type        String
-  label       String
-  helpText    String?
-  required    Boolean  @default(false)
-  options     String?
-  position    Int      @default(0)
+  id         String                @id @default(cuid())
+  template   QuestionnaireTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+  type       String
+  label      String
+  helpText   String?
+  required   Boolean               @default(false)
+  options    String?
+  position   Int                   @default(0)
 
   @@index([templateId])
 }
 
 model QuestionnaireAnswer {
-  id              String   @id @default(cuid())
-  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  id              String             @id @default(cuid())
+  questionnaire   Questionnaire      @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
   questionnaireId String
   field           QuestionnaireField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
   fieldId         String
@@ -718,8 +800,8 @@ model QuestionnaireAnswer {
   numberValue     Float?
   dateValue       DateTime?
   boolValue       Boolean?
-  jsonValue       String?    // SELECT_MULTI, SELECT_SINGLE (Label), FILE ({url,filename,size,mime})
-  updatedAt       DateTime   @updatedAt
+  jsonValue       String? // SELECT_MULTI, SELECT_SINGLE (Label), FILE ({url,filename,size,mime})
+  updatedAt       DateTime           @updatedAt
 
   @@unique([questionnaireId, fieldId])
 }
@@ -739,27 +821,35 @@ model Task {
   shootingId  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  // Tenant
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String   
 
   @@index([done, dueAt])
   @@index([customerId])
   @@index([shootingId])
+  @@index([ownerId])
 }
 
 // -------------------- AKTIVITÄT (LOG) --------------------
 
 model Activity {
   id         String    @id @default(cuid())
-  kind       String    // "customer_created" | "customer_status_changed" | "note_added" | "shooting_created" | "shooting_status_changed" | "payment_received" | ...
-  message    String    // menschenlesbar
-  meta       String?   // optional JSON
+  kind       String // "customer_created" | "customer_status_changed" | "note_added" | "shooting_created" | "shooting_status_changed" | "payment_received" | ...
+  message    String // menschenlesbar
+  meta       String? // optional JSON
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String?
   shooting   Shooting? @relation(fields: [shootingId], references: [id], onDelete: Cascade)
   shootingId String?
   createdAt  DateTime  @default(now())
+  // Tenant
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId    String   
 
   @@index([customerId, createdAt])
   @@index([shootingId, createdAt])
+  @@index([ownerId])
 }
 
 // -------------------- VERFÜGBARKEIT --------------------
@@ -772,10 +862,16 @@ model Activity {
 //   (User.defaultDayStartMinutes/EndMinutes — z.B. „ganzer Tag 9-18 Uhr").
 model AvailabilityWeekly {
   id          String   @id @default(cuid())
-  weekday     Int      @unique  // 0..6
+  weekday     Int // 0..6
   isAvailable Boolean  @default(false)
   slotsJson   String?
   updatedAt   DateTime @updatedAt
+  // Tenant
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String  
+
+  @@unique([ownerId, weekday])
+  @@index([ownerId])
 }
 
 // Tag-Override: konkretes Datum überschreibt die Wochenregel.
@@ -783,12 +879,18 @@ model AvailabilityWeekly {
 // Semantik wie AvailabilityWeekly: isAvailable + slotsJson.
 model AvailabilityOverride {
   id          String   @id @default(cuid())
-  date        String   @unique  // "YYYY-MM-DD"
+  date        String // "YYYY-MM-DD"
   isAvailable Boolean  @default(false)
   slotsJson   String?
   note        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // Tenant
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String  
+
+  @@unique([ownerId, date])
+  @@index([ownerId])
 }
 
 // -------------------- ONLINE-BUCHUNG (Calendly-Double) --------------------
@@ -798,31 +900,31 @@ model AvailabilityOverride {
 // Public-URL: /b/[slug]. Verfügbare Slots werden aus AvailabilityWeekly + bestehenden
 // Shootings/Bookings dynamisch generiert (siehe lib/bookingSlots.ts).
 model BookingType {
-  id                String   @id @default(cuid())
-  slug              String   @unique
-  name              String
-  description       String?
-  durationMin       Int      @default(30)
+  id                 String    @id @default(cuid())
+  slug               String
+  name               String
+  description        String?
+  durationMin        Int       @default(30)
   // Preis in Cent (0 = kostenlos). Wird nur informativ auf der Buchungsseite gezeigt,
   // keine Zahlung im Online-Flow — Zahlung läuft bei Lisa weiter über Rechnung/Stripe.
-  priceCents        Int      @default(0)
+  priceCents         Int       @default(0)
   // Puffer in Minuten vor/nach dem Termin — verhindert dass Lisa zwei Termine direkt
   // hintereinander hat (Wechselzeit, Vorbereitung).
-  bufferBeforeMin   Int      @default(0)
-  bufferAfterMin    Int      @default(15)
+  bufferBeforeMin    Int       @default(0)
+  bufferAfterMin     Int       @default(15)
   // Mindest-Vorlaufzeit: keine Buchung weniger als X Stunden im Voraus möglich.
-  minLeadHours      Int      @default(24)
+  minLeadHours       Int       @default(24)
   // Maximaler Buchungs-Horizont: nicht weiter als N Tage in der Zukunft buchbar.
-  maxAheadDays      Int      @default(60)
+  maxAheadDays       Int       @default(60)
   // Slot-Raster: in welchen Intervallen werden Slots angeboten (15, 30, 60 Min).
-  slotIntervalMin   Int      @default(30)
-  location          String?  // Legacy-Fallback; neue UI nutzt locationsJson
+  slotIntervalMin    Int       @default(30)
+  location           String? // Legacy-Fallback; neue UI nutzt locationsJson
   // JSON-Array von Termin-Orten: [{ "key": "studio"|"phone"|"video"|"home"|"custom", "label": "..." }]
   // Multiple möglich — Kundin sieht alle als Info auf der Buchungsseite.
-  locationsJson     String?
+  locationsJson      String?
   // Wenn „video" als Ort aktiv ist: welcher Provider liefert den Meeting-Link?
   // Werte: "zoom" | "google_meet" | "teams" | "whereby" | "manual" | null
-  videoProvider     String?
+  videoProvider      String?
   // JSON-Array von zusätzlichen Pflicht-/Optional-Feldern für die Buchungs-Form.
   // Format: [{ "id", "type", "label", "placeholder"?, "required" }]
   // type: "text"|"textarea"|"phone"|"email"|"select"|"checkbox"
@@ -830,16 +932,22 @@ model BookingType {
   requiredFieldsJson String?
   // Auto-Confirm: PENDING springt sofort auf CONFIRMED beim Buchen.
   // Sonst muss Lisa in der Inbox manuell annehmen.
-  autoConfirm       Boolean  @default(false)
+  autoConfirm        Boolean   @default(false)
   // Welche Pflichtfelder im Formular: Name + Email immer; Phone und Message optional.
-  requirePhone      Boolean  @default(true)
-  requireMessage    Boolean  @default(false)
-  color             String   @default("#9F877F")
-  isActive          Boolean  @default(true)
-  position          Int      @default(0)
-  bookings          Booking[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  requirePhone       Boolean   @default(true)
+  requireMessage     Boolean   @default(false)
+  color              String    @default("#9F877F")
+  isActive           Boolean   @default(true)
+  position           Int       @default(0)
+  bookings           Booking[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  // Tenant
+  owner              User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId            String   
+
+  @@unique([ownerId, slug])
+  @@index([ownerId])
 }
 
 // BookingStatus als String — SQLite hat keine Enum-Unterstützung. Erlaubt: "PENDING" | "CONFIRMED" | "CANCELLED".
@@ -848,8 +956,8 @@ model BookingType {
 // Snapshot der Eingaben (customerName/Email/Phone/message) bleibt unabhängig vom
 // später ggf. verknüpften Customer-Record erhalten.
 model Booking {
-  id              String        @id @default(cuid())
-  bookingType     BookingType   @relation(fields: [bookingTypeId], references: [id], onDelete: Cascade)
+  id              String      @id @default(cuid())
+  bookingType     BookingType @relation(fields: [bookingTypeId], references: [id], onDelete: Cascade)
   bookingTypeId   String
   // Kundinnen-Daten als Snapshot zum Buchungszeitpunkt
   customerName    String
@@ -859,11 +967,11 @@ model Booking {
   // Termin
   startAt         DateTime
   endAt           DateTime
-  status          String        @default("PENDING")   // PENDING | CONFIRMED | CANCELLED
+  status          String      @default("PENDING") // PENDING | CONFIRMED | CANCELLED
   // Nach „Annehmen" im CRM: optional verknüpfte Customer/Shooting-Records
-  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customer        Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerId      String?
-  shooting        Shooting?     @relation(fields: [shootingId], references: [id], onDelete: SetNull)
+  shooting        Shooting?   @relation(fields: [shootingId], references: [id], onDelete: SetNull)
   shootingId      String?
   // Online-Meeting-Link, falls BookingType.videoProvider gesetzt war beim Anlegen.
   // Snapshot — bleibt stabil auch wenn Lisa später ihren persönlichen Link ändert.
@@ -873,9 +981,13 @@ model Booking {
   confirmedAt     DateTime?
   cancelledAt     DateTime?
   cancelReason    String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  // Tenant
+  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId         String     
 
   @@index([bookingTypeId, startAt])
   @@index([status, startAt])
+  @@index([ownerId])
 }

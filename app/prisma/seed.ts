@@ -36,18 +36,22 @@ async function main() {
     { label: "Make-up", color: "#9F877F" },
   ];
   for (const e of expertiseSeed) {
-    await prisma.teamExpertise.upsert({ where: { label: e.label }, update: {}, create: e });
+    await prisma.teamExpertise.upsert({
+      where: { ownerId_label: { ownerId: user.id, label: e.label } },
+      update: {},
+      create: { ...e, ownerId: user.id },
+    });
   }
   console.log(`✓ ${expertiseSeed.length} Team-Expertisen`);
 
   // -------- Team-Mitglieder --------
-  const teamCount = await prisma.teamMember.count();
+  const teamCount = await prisma.teamMember.count({ where: { ownerId: user.id } });
   if (teamCount === 0) {
-    const exBoudoir = await prisma.teamExpertise.findUnique({ where: { label: "Boudoir" } });
-    const exAkt = await prisma.teamExpertise.findUnique({ where: { label: "Akt" } });
-    const exHochzeit = await prisma.teamExpertise.findUnique({ where: { label: "Hochzeit" } });
-    const exCouples = await prisma.teamExpertise.findUnique({ where: { label: "Couples" } });
-    const exMakeup = await prisma.teamExpertise.findUnique({ where: { label: "Make-up" } });
+    const exBoudoir = await prisma.teamExpertise.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Boudoir" } } });
+    const exAkt = await prisma.teamExpertise.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Akt" } } });
+    const exHochzeit = await prisma.teamExpertise.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Hochzeit" } } });
+    const exCouples = await prisma.teamExpertise.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Couples" } } });
+    const exMakeup = await prisma.teamExpertise.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Make-up" } } });
 
     await prisma.teamMember.create({
       data: {
@@ -59,7 +63,8 @@ async function main() {
         bio: "Seit 8 Jahren am Set. Mein Ding: ehrliche, ruhige Boudoir-Bilder, die du dir später noch traust anzuschauen. Studio in Bamberg, ich arbeite mit Tageslicht und einem kleinen, sehr empathischen Team.",
         instagram: "@lisa.boudoir",
         isOwner: true,
-        userId: user.id,
+        linkedUserId: user.id,
+        ownerId: user.id,
         position: 0,
         expertise: { connect: [{ id: exBoudoir!.id }, { id: exAkt!.id }, { id: exCouples!.id }] },
       },
@@ -74,6 +79,7 @@ async function main() {
         bio: "Mira sorgt dafür, dass du dich vor der Kamera wie deine beste Version fühlst — ohne dass du dich danach fremd siehst.",
         instagram: "@mira.beauty",
         position: 1,
+        ownerId: user.id,
         expertise: { connect: [{ id: exMakeup!.id }, { id: exBoudoir!.id }] },
       },
     });
@@ -85,6 +91,7 @@ async function main() {
         email: "tom@example.com",
         bio: "Tom kommt bei Hochzeiten und größeren Editorials dazu. Schnelles Auge, ruhige Hand.",
         position: 2,
+        ownerId: user.id,
         expertise: { connect: [{ id: exHochzeit!.id }, { id: exCouples!.id }] },
       },
     });
@@ -101,9 +108,9 @@ async function main() {
   ];
   for (const s of customerStatuses) {
     await prisma.customerStatus.upsert({
-      where: { label: s.label },
+      where: { ownerId_label: { ownerId: user.id, label: s.label } },
       update: {},
-      create: s,
+      create: { ...s, ownerId: user.id },
     });
   }
   console.log(`✓ ${customerStatuses.length} Kundenstatus`);
@@ -120,9 +127,9 @@ async function main() {
   ];
   for (const s of shootingStatuses) {
     await prisma.shootingStatus.upsert({
-      where: { label: s.label },
+      where: { ownerId_label: { ownerId: user.id, label: s.label } },
       update: {},
-      create: s,
+      create: { ...s, ownerId: user.id },
     });
   }
   console.log(`✓ ${shootingStatuses.length} Shooting-Status`);
@@ -136,12 +143,16 @@ async function main() {
     { label: "Couples", color: "#7D7878" },
   ];
   for (const t of tags) {
-    await prisma.tag.upsert({ where: { label: t.label }, update: {}, create: t });
+    await prisma.tag.upsert({
+      where: { ownerId_label: { ownerId: user.id, label: t.label } },
+      update: {},
+      create: { ...t, ownerId: user.id },
+    });
   }
   console.log(`✓ ${tags.length} Tags`);
 
   // -------- Fragebogen-Vorlagen --------
-  const tplCount = await prisma.questionnaireTemplate.count();
+  const tplCount = await prisma.questionnaireTemplate.count({ where: { ownerId: user.id } });
   if (tplCount === 0) {
     await prisma.questionnaireTemplate.create({
       data: {
@@ -149,6 +160,7 @@ async function main() {
         description:
           "Hi! Damit wir deinen Shootingtag perfekt vorbereiten, beantworte uns bitte in Ruhe ein paar Fragen. Dauert 5–7 Minuten.",
         position: 0,
+        ownerId: user.id,
         fields: { create: [
           { type: "TEXT", label: "Wie sollen wir dich nennen?", required: true, position: 0 },
           { type: "EMAIL", label: "Deine Mail für die finalen Bilder", required: true, position: 1 },
@@ -185,6 +197,7 @@ async function main() {
         title: "Feedback nach dem Shooting",
         description: "Schön, dass du da warst! Hilf uns kurz, besser zu werden.",
         position: 1,
+        ownerId: user.id,
         fields: { create: [
           { type: "RATING", label: "Wie war das Shooting insgesamt für dich?", required: true, position: 0 },
           { type: "TEXTAREA", label: "Was hat dir besonders gut gefallen?", required: false, position: 1 },
@@ -197,13 +210,13 @@ async function main() {
   }
 
   // -------- Beispiel-Pakete --------
-  const existingPackages = await prisma.package.count();
+  const existingPackages = await prisma.package.count({ where: { ownerId: user.id } });
   if (existingPackages === 0) {
-    const owner = await prisma.teamMember.findFirst({ where: { isOwner: true } });
-    const mira = await prisma.teamMember.findFirst({ where: { firstName: "Mira" } });
-    const tom = await prisma.teamMember.findFirst({ where: { firstName: "Tom" } });
-    const briefingTpl = await prisma.questionnaireTemplate.findFirst({ where: { title: "Briefing Boudoir" } });
-    const feedbackTpl = await prisma.questionnaireTemplate.findFirst({ where: { title: "Feedback nach dem Shooting" } });
+    const owner = await prisma.teamMember.findFirst({ where: { ownerId: user.id, isOwner: true } });
+    const mira = await prisma.teamMember.findFirst({ where: { ownerId: user.id, firstName: "Mira" } });
+    const tom = await prisma.teamMember.findFirst({ where: { ownerId: user.id, firstName: "Tom" } });
+    const briefingTpl = await prisma.questionnaireTemplate.findFirst({ where: { ownerId: user.id, title: "Briefing Boudoir" } });
+    const feedbackTpl = await prisma.questionnaireTemplate.findFirst({ where: { ownerId: user.id, title: "Feedback nach dem Shooting" } });
 
     await prisma.package.create({
       data: {
@@ -215,6 +228,7 @@ async function main() {
         paymentTerms: "150 € Anzahlung bei Buchung, Rest am Shootingtag in bar oder per Überweisung.",
         durationMin: 120,
         position: 0,
+        ownerId: user.id,
         primaryContactId: owner?.id,
         defaultTeam: owner && mira ? { connect: [{ id: owner.id }, { id: mira.id }] } : undefined,
         defaultQuestionnaires: briefingTpl && feedbackTpl
@@ -268,6 +282,7 @@ async function main() {
         paymentTerms: "300 € Anzahlung, 50 % zwei Wochen vor Termin, Rest am Shootingtag.",
         durationMin: 210,
         position: 1,
+        ownerId: user.id,
         primaryContactId: owner?.id,
         defaultTeam: owner && mira ? { connect: [{ id: owner.id }, { id: mira.id }] } : undefined,
         defaultQuestionnaires: briefingTpl ? { connect: [{ id: briefingTpl.id }] } : undefined,
@@ -317,6 +332,7 @@ async function main() {
         paymentTerms: "200 € Anzahlung, Rest am Shootingtag.",
         durationMin: 240,
         position: 2,
+        ownerId: user.id,
         primaryContactId: owner?.id,
         defaultTeam: owner ? { connect: [{ id: owner.id }] } : undefined,
       },
@@ -325,13 +341,13 @@ async function main() {
   }
 
   // -------- Beispiel-Kundinnen --------
-  const customerCount = await prisma.customer.count();
+  const customerCount = await prisma.customer.count({ where: { ownerId: user.id } });
   if (customerCount === 0) {
-    const gebucht = await prisma.customerStatus.findUnique({ where: { label: "Gebucht" } });
-    const interess = await prisma.customerStatus.findUnique({ where: { label: "Interessent" } });
-    const bestand = await prisma.customerStatus.findUnique({ where: { label: "Bestandskunde" } });
-    const tagBoudoir = await prisma.tag.findUnique({ where: { label: "Boudoir" } });
-    const tagVIP = await prisma.tag.findUnique({ where: { label: "VIP" } });
+    const gebucht = await prisma.customerStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Gebucht" } } });
+    const interess = await prisma.customerStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Interessent" } } });
+    const bestand = await prisma.customerStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Bestandskunde" } } });
+    const tagBoudoir = await prisma.tag.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Boudoir" } } });
+    const tagVIP = await prisma.tag.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "VIP" } } });
 
     await prisma.customer.create({
       data: {
@@ -347,6 +363,7 @@ async function main() {
         source: "Empfehlung von Anna K.",
         internalNotes: "Sehr entspannt im Shooting. Liebt klassische Schwarzweiß-Looks.",
         statusId: bestand?.id,
+        ownerId: user.id,
         tags: { connect: [{ id: tagBoudoir!.id }, { id: tagVIP!.id }] },
       },
     });
@@ -362,6 +379,7 @@ async function main() {
         instagram: "@anna.k",
         source: "Instagram",
         statusId: gebucht?.id,
+        ownerId: user.id,
         tags: { connect: [{ id: tagBoudoir!.id }] },
       },
     });
@@ -372,20 +390,21 @@ async function main() {
         email: "sophia@example.com",
         source: "Google",
         statusId: interess?.id,
+        ownerId: user.id,
       },
     });
     console.log(`✓ 3 Beispiel-Kundinnen`);
   }
 
   // -------- Beispiel-Shootings --------
-  const shootingCount = await prisma.shooting.count();
+  const shootingCount = await prisma.shooting.count({ where: { ownerId: user.id } });
   if (shootingCount === 0) {
-    const allCustomers = await prisma.customer.findMany({ orderBy: { firstName: "asc" } });
-    const allPackages = await prisma.package.findMany({ orderBy: { position: "asc" } });
-    const stPlanned = await prisma.shootingStatus.findUnique({ where: { label: "Geplant" } });
-    const stConfirmed = await prisma.shootingStatus.findUnique({ where: { label: "Bestätigt" } });
-    const stRequested = await prisma.shootingStatus.findUnique({ where: { label: "Angefragt" } });
-    const stDone = await prisma.shootingStatus.findUnique({ where: { label: "Abgeschlossen" } });
+    const allCustomers = await prisma.customer.findMany({ where: { ownerId: user.id }, orderBy: { firstName: "asc" } });
+    const allPackages = await prisma.package.findMany({ where: { ownerId: user.id }, orderBy: { position: "asc" } });
+    const stPlanned = await prisma.shootingStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Geplant" } } });
+    const stConfirmed = await prisma.shootingStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Bestätigt" } } });
+    const stRequested = await prisma.shootingStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Angefragt" } } });
+    const stDone = await prisma.shootingStatus.findUnique({ where: { ownerId_label: { ownerId: user.id, label: "Abgeschlossen" } } });
 
     const anna = allCustomers.find((c) => c.firstName === "Anna");
     const melanie = allCustomers.find((c) => c.firstName === "Melanie");
@@ -401,14 +420,15 @@ async function main() {
       return date;
     };
 
-    const ownerM = await prisma.teamMember.findFirst({ where: { isOwner: true } });
-    const miraM = await prisma.teamMember.findFirst({ where: { firstName: "Mira" } });
+    const ownerM = await prisma.teamMember.findFirst({ where: { ownerId: user.id, isOwner: true } });
+    const miraM = await prisma.teamMember.findFirst({ where: { ownerId: user.id, firstName: "Mira" } });
 
     if (anna && classic && stConfirmed) {
       const s = await prisma.shooting.create({
         data: {
           title: `Boudoir-Shooting ${anna.firstName}`,
           publicSlug: `anna-${Math.random().toString(36).slice(2, 8)}`,
+          ownerId: user.id,
           customerId: anna.id,
           packageId: classic.id,
           statusId: stConfirmed.id,
@@ -530,6 +550,7 @@ async function main() {
         data: {
           title: `Premium-Shooting ${melanie.firstName}`,
           publicSlug: `melanie-${Math.random().toString(36).slice(2, 8)}`,
+          ownerId: user.id,
           customerId: melanie.id,
           packageId: premium.id,
           statusId: stPlanned.id,
@@ -569,6 +590,7 @@ async function main() {
         data: {
           title: `Erstgespräch & Probebild ${sophia.firstName}`,
           publicSlug: `sophia-${Math.random().toString(36).slice(2, 8)}`,
+          ownerId: user.id,
           customerId: sophia.id,
           packageId: classic.id,
           statusId: stRequested.id,
@@ -587,6 +609,7 @@ async function main() {
       await prisma.shooting.create({
         data: {
           title: `Editorial-Akt ${anna.firstName}`,
+          ownerId: user.id,
           customerId: anna.id,
           packageId: editorial.id,
           statusId: stDone.id,
@@ -607,16 +630,17 @@ async function main() {
   }
 
   // -------- Beispiel-Aufgaben --------
-  const taskCount = await prisma.task.count();
+  const taskCount = await prisma.task.count({ where: { ownerId: user.id } });
   if (taskCount === 0) {
-    const anna = await prisma.customer.findFirst({ where: { firstName: "Anna" } });
-    const sophia = await prisma.customer.findFirst({ where: { firstName: "Sophia" } });
+    const anna = await prisma.customer.findFirst({ where: { ownerId: user.id, firstName: "Anna" } });
+    const sophia = await prisma.customer.findFirst({ where: { ownerId: user.id, firstName: "Sophia" } });
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const inThreeDays = new Date(); inThreeDays.setDate(inThreeDays.getDate() + 3);
     await prisma.task.create({
       data: {
         title: "Briefing-Mail an Anna schicken",
         description: "Outfit-Empfehlungen, Adresse, Parkhinweis.",
+        ownerId: user.id,
         customerId: anna?.id,
         dueAt: tomorrow,
       },
@@ -624,6 +648,7 @@ async function main() {
     await prisma.task.create({
       data: {
         title: "Sophia nach Erstgespräch zurückrufen",
+        ownerId: user.id,
         customerId: sophia?.id,
         dueAt: inThreeDays,
       },
@@ -631,6 +656,7 @@ async function main() {
     await prisma.task.create({
       data: {
         title: "Studio-Snacks nachbestellen",
+        ownerId: user.id,
       },
     });
     console.log(`✓ Beispiel-Aufgaben`);

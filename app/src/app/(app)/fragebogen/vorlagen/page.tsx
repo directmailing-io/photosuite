@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { FileQuestion, Plus, Package as PackageIcon, ChevronRight } from "lucide-react";
@@ -9,7 +10,9 @@ import { NewTemplateButton } from "./NewTemplateButton";
 export const dynamic = "force-dynamic";
 
 export default async function VorlagenPage() {
+  const userId = await requireUserId();
   const templates = await prisma.questionnaireTemplate.findMany({
+    where: { ownerId: userId },
     orderBy: [{ position: "asc" }, { createdAt: "desc" }],
     include: {
       _count: { select: { fields: true, packages: true } },

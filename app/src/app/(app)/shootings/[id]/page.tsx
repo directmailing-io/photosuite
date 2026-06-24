@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { ShootingForm } from "../ShootingForm";
@@ -21,9 +22,10 @@ export const dynamic = "force-dynamic";
 
 export default async function ShootingDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = await requireUserId();
   const [shooting, customers, packages, statuses, team, qTemplates, allAddons] = await Promise.all([
-    prisma.shooting.findUnique({
-      where: { id },
+    prisma.shooting.findFirst({
+      where: { id, ownerId: userId },
       include: {
         customer: true,
         package: true,
@@ -50,15 +52,16 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         invoices: { orderBy: { createdAt: "desc" } },
       },
     }),
-    prisma.customer.findMany({ orderBy: [{ firstName: "asc" }] }),
-    prisma.package.findMany({ orderBy: { position: "asc" }, include: { addons: true } }),
-    prisma.shootingStatus.findMany({ orderBy: { position: "asc" } }),
-    prisma.teamMember.findMany({ orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
+    prisma.customer.findMany({ where: { ownerId: userId }, orderBy: [{ firstName: "asc" }] }),
+    prisma.package.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" }, include: { addons: true } }),
+    prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
+    prisma.teamMember.findMany({ where: { ownerId: userId }, orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
     prisma.questionnaireTemplate.findMany({
+      where: { ownerId: userId },
       orderBy: [{ position: "asc" }],
       include: { _count: { select: { fields: true } } },
     }),
-    prisma.addon.findMany({ orderBy: { position: "asc" } }),
+    prisma.addon.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
   ]);
   if (!shooting) return notFound();
 

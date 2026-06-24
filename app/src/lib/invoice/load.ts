@@ -77,7 +77,10 @@ export async function loadInvoiceForPdf(id: string): Promise<InvoiceForPdf | nul
   let logoUrl = issuer.logoUrl;
   let logoMime = issuer.logoMimeType;
   if (!logoUrl) {
-    const owner = await prisma.user.findFirst({ select: { logoUrl: true, logoMimeType: true } });
+    const owner = await prisma.user.findUnique({
+      where: { id: invoice.ownerId },
+      select: { logoUrl: true, logoMimeType: true },
+    });
     if (owner?.logoUrl) {
       logoUrl = owner.logoUrl;
       logoMime = owner.logoMimeType;

@@ -1,4 +1,5 @@
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { renderCombinedInvoicePdf } from "@/lib/invoice/pdf";
 import { loadCancelPair } from "@/lib/invoice/load";
 
@@ -8,12 +9,28 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const { id } = await params;
+  const owned = await prisma.invoice.findFirst({
+    where: { id, ownerId: userId },
+    select: { id: true },
+  });
+  if (!owned) return new Response("Not found", { status: 404 });
+
   const pair = await loadCancelPair(id);
   if (!pair) return new Response("Keine Storno-Beziehung an dieser Rechnung", { status: 404 });
+
+  // Defense-in-Depth: stelle sicher, dass auch der Storno-Partner dem User gehört.
+  const partnerCheck = await prisma.invoice.count({
+    where: { id: { in: [pair.originalId, pair.cancelId] }, ownerId: userId },
+  });
+  if (partnerCheck !== 2) return new Response("Not found", { status: 404 });
 
   const stream = await renderCombinedInvoicePdf(pair.original, pair.cancel);
 

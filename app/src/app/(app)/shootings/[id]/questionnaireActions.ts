@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -15,7 +16,34 @@ const VALID_TYPES = new Set([
   "SELECT_SINGLE","SELECT_MULTI","YES_NO","RATING","FILE",
 ]);
 
+async function loadOwnedShooting(userId: string, shootingId: string) {
+  const sh = await prisma.shooting.findFirst({
+    where: { id: shootingId, ownerId: userId },
+    select: { id: true },
+  });
+  if (!sh) throw new Error("Shooting nicht gefunden");
+  return sh;
+}
+
+async function loadOwnedQuestionnaire(userId: string, id: string) {
+  const q = await prisma.questionnaire.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+  });
+  if (!q) throw new Error("Fragebogen nicht gefunden");
+  return q;
+}
+
+async function loadOwnedField(userId: string, id: string) {
+  const f = await prisma.questionnaireField.findFirst({
+    where: { id, questionnaire: { shooting: { ownerId: userId } } },
+  });
+  if (!f) throw new Error("Feld nicht gefunden");
+  return f;
+}
+
 export async function createQuestionnaire(shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  await loadOwnedShooting(userId, shootingId);
   const title = s(formData.get("title")) ?? "Neuer Fragebogen";
   const max = await prisma.questionnaire.findFirst({
     where: { shootingId },
@@ -29,8 +57,10 @@ export async function createQuestionnaire(shootingId: string, formData: FormData
 }
 
 export async function createQuestionnaireFromTemplate(shootingId: string, templateId: string) {
-  const tpl = await prisma.questionnaireTemplate.findUnique({
-    where: { id: templateId },
+  const userId = await requireUserId();
+  await loadOwnedShooting(userId, shootingId);
+  const tpl = await prisma.questionnaireTemplate.findFirst({
+    where: { id: templateId, ownerId: userId },
     include: { fields: { orderBy: { position: "asc" } } },
   });
   if (!tpl) throw new Error("Vorlage nicht gefunden");
@@ -61,8 +91,8 @@ export async function createQuestionnaireFromTemplate(shootingId: string, templa
 }
 
 export async function updateQuestionnaireMeta(id: string, formData: FormData) {
-  const q = await prisma.questionnaire.findUnique({ where: { id } });
-  if (!q) throw new Error("Fragebogen nicht gefunden");
+  const userId = await requireUserId();
+  const q = await loadOwnedQuestionnaire(userId, id);
   await prisma.questionnaire.update({
     where: { id },
     data: {
@@ -75,15 +105,19 @@ export async function updateQuestionnaireMeta(id: string, formData: FormData) {
 }
 
 export async function deleteQuestionnaire(id: string) {
-  const q = await prisma.questionnaire.findUnique({ where: { id } });
-  if (!q) return;
+  const userId = await requireUserId();
+  const q = await loadOwnedQuestionnaire(userId, id);
   await prisma.questionnaire.delete({ where: { id } });
   revalidatePath(`/shootings/${q.shootingId}`);
   redirect(`/shootings/${q.shootingId}`);
 }
 
 export async function sendQuestionnaire(id: string) {
-  const q = await prisma.questionnaire.findUnique({ where: { id }, include: { fields: true } });
+  const userId = await requireUserId();
+  const q = await prisma.questionnaire.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+    include: { fields: true },
+  });
   if (!q) throw new Error("Fragebogen nicht gefunden");
   if (q.fields.length === 0) throw new Error("Lege mindestens ein Feld an, bevor du den Bogen versendest.");
   await prisma.questionnaire.update({
@@ -95,8 +129,8 @@ export async function sendQuestionnaire(id: string) {
 }
 
 export async function reopenQuestionnaire(id: string) {
-  const q = await prisma.questionnaire.findUnique({ where: { id } });
-  if (!q) return;
+  const userId = await requireUserId();
+  const q = await loadOwnedQuestionnaire(userId, id);
   await prisma.questionnaire.update({ where: { id }, data: { status: "DRAFT" } });
   revalidatePath(`/shootings/${q.shootingId}/fragebogen/${id}`);
 }
@@ -104,6 +138,8 @@ export async function reopenQuestionnaire(id: string) {
 // ---------- Felder ----------
 
 export async function addField(questionnaireId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const q = await loadOwnedQuestionnaire(userId, questionnaireId);
   const type = s(formData.get("type"));
   const label = s(formData.get("label"));
   if (!type || !VALID_TYPES.has(type)) throw new Error("Ungültiger Feld-Typ");
@@ -129,13 +165,12 @@ export async function addField(questionnaireId: string, formData: FormData) {
       position: (max?.position ?? -1) + 1,
     },
   });
-  const q = await prisma.questionnaire.findUnique({ where: { id: questionnaireId } });
-  if (q) revalidatePath(`/shootings/${q.shootingId}/fragebogen/${questionnaireId}`);
+  revalidatePath(`/shootings/${q.shootingId}/fragebogen/${questionnaireId}`);
 }
 
 export async function updateField(id: string, formData: FormData) {
-  const f = await prisma.questionnaireField.findUnique({ where: { id } });
-  if (!f) return;
+  const userId = await requireUserId();
+  const f = await loadOwnedField(userId, id);
   const type = s(formData.get("type")) ?? f.type;
   const optionsRaw = s(formData.get("options"));
   let optionsJson: string | null = f.options;
@@ -162,16 +197,16 @@ export async function updateField(id: string, formData: FormData) {
 }
 
 export async function deleteField(id: string) {
-  const f = await prisma.questionnaireField.findUnique({ where: { id } });
-  if (!f) return;
+  const userId = await requireUserId();
+  const f = await loadOwnedField(userId, id);
   await prisma.questionnaireField.delete({ where: { id } });
   const q = await prisma.questionnaire.findUnique({ where: { id: f.questionnaireId } });
   if (q) revalidatePath(`/shootings/${q.shootingId}/fragebogen/${f.questionnaireId}`);
 }
 
 export async function moveField(id: string, direction: "up" | "down") {
-  const f = await prisma.questionnaireField.findUnique({ where: { id } });
-  if (!f) return;
+  const userId = await requireUserId();
+  const f = await loadOwnedField(userId, id);
   const siblings = await prisma.questionnaireField.findMany({
     where: { questionnaireId: f.questionnaireId },
     orderBy: { position: "asc" },

@@ -1,10 +1,13 @@
-// Slot-Generation für Online-Buchungen (v2 — auf Zeitfenster-Verfügbarkeit).
+// Slot-Generation für Online-Buchungen (v2 — auf Zeitfenster-Verfügbarkeit, Multi-Tenant).
 //
 // Pro Tag im Range:
 //   1. Verfügbarkeit holen → DayStatus mit freeWindows[] (nach Abzug der Shootings).
 //   2. Für jedes freie Fenster: Slots in slotIntervalMin rastern.
 //   3. Pro Slot: durationMin + Buffer prüfen, minLeadHours respektieren,
 //      Konflikt mit anderen Online-Bookings ausschließen.
+//
+// Multi-Tenancy: alle Funktionen erwarten `userId: string` als ersten Parameter
+// und filtern alle DB-Queries strict per `ownerId: userId`.
 
 import { prisma } from "@/lib/prisma";
 import { getAvailability, ymdLocal, subtractBusy, type TimeWindow } from "@/lib/availability";
@@ -32,6 +35,7 @@ export type BookingTypeConfig = {
 };
 
 export async function getDaysWithSlots(
+  userId: string,
   cfg: BookingTypeConfig,
   fromDate: Date,
 ): Promise<DayWithSlots[]> {
@@ -55,6 +59,7 @@ export async function getDaysWithSlots(
   // als zusätzliche Busy-Fenster pro Tag.
   const bookings = await prisma.booking.findMany({
     where: {
+      ownerId: userId,
       status: { not: "CANCELLED" },
       startAt: { gte: start },
       endAt: { lt: rangeEnd },
@@ -76,7 +81,7 @@ export async function getDaysWithSlots(
     else otherBusyByDay.set(key, [blocked]);
   }
 
-  const availability = await getAvailability(start, rangeEnd);
+  const availability = await getAvailability(userId, start, rangeEnd);
 
   const result: DayWithSlots[] = [];
   for (const day of availability) {
@@ -125,6 +130,7 @@ export async function getDaysWithSlots(
 // Race-Safe-Check vor dem Persistieren: passt der Slot mit seiner Dauer/Buffer
 // noch in ein freies Fenster?
 export async function isSlotStillAvailable(
+  userId: string,
   cfg: BookingTypeConfig,
   startAt: Date,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
@@ -144,7 +150,7 @@ export async function isSlotStillAvailable(
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + 1);
-  const availability = await getAvailability(dayStart, dayEnd);
+  const availability = await getAvailability(userId, dayStart, dayEnd);
   const day = availability[0];
   if (!day || !day.isAvailable) {
     return { ok: false, reason: "An diesem Tag werden keine Termine angeboten." };
@@ -152,7 +158,11 @@ export async function isSlotStillAvailable(
 
   // Andere Bookings am selben Tag als zusätzliche Belegung
   const otherBookings = await prisma.booking.findMany({
-    where: { status: { not: "CANCELLED" }, startAt: { gte: dayStart, lt: dayEnd } },
+    where: {
+      ownerId: userId,
+      status: { not: "CANCELLED" },
+      startAt: { gte: dayStart, lt: dayEnd },
+    },
     select: { startAt: true, endAt: true },
   });
   const extraBusy: TimeWindow[] = otherBookings.map((b) => {

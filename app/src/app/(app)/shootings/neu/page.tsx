@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { ShootingWizard } from "./ShootingWizard";
 import { createShooting } from "../actions";
@@ -9,14 +10,15 @@ export default async function NeuShootingPage({
   searchParams: Promise<{ customerId?: string }>;
 }) {
   const sp = await searchParams;
+  const userId = await requireUserId();
   const [customers, packages, statuses] = await Promise.all([
-    prisma.customer.findMany({ orderBy: [{ firstName: "asc" }] }),
+    prisma.customer.findMany({ where: { ownerId: userId }, orderBy: [{ firstName: "asc" }] }),
     prisma.package.findMany({
-      where: { isActive: true },
+      where: { ownerId: userId, isActive: true },
       orderBy: { position: "asc" },
       include: { _count: { select: { checklistTemplates: true } } },
     }),
-    prisma.shootingStatus.findMany({ orderBy: { position: "asc" } }),
+    prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
   ]);
   return (
     <>

@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { getZoomAuthUrl } from "@/lib/integrations/zoom";
 
 // Initiates the OAuth flow: generate a CSRF state, store it in a httpOnly cookie,
 // and redirect to Zoom's authorize URL.
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.redirect(new URL("/login", process.env.APP_BASE_URL ?? "http://localhost:3006"));
+  // Auth-protected: nur eingeloggte Studio-User dürfen OAuth starten.
+  try {
+    await requireUserId();
+  } catch {
+    return NextResponse.redirect(new URL("/login", process.env.APP_BASE_URL ?? "http://localhost:3006"));
+  }
 
   const state = randomBytes(16).toString("hex");
   let url: string;

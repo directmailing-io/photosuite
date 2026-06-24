@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth, requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { computeTotals } from "@/lib/invoice/calc";
@@ -71,32 +71,34 @@ type CreateOptions = {
 
 export async function createDraftInvoice(opts: CreateOptions) {
   const user = await getUserOrThrow();
+  const userId = user.id;
   // Bei "fromInstallment": shooting + customer aus der Rate ableiten
   let resolvedCustomerId = opts.customerId;
   let resolvedShootingId = opts.shootingId;
   if (opts.preset === "fromInstallment" && opts.installmentId) {
-    const inst = await prisma.paymentInstallment.findUnique({
-      where: { id: opts.installmentId },
+    const inst = await prisma.paymentInstallment.findFirst({
+      where: { id: opts.installmentId, schedule: { ownerId: userId } },
       include: { schedule: { include: { shooting: true } } },
     });
     if (!inst) throw new Error("Rate nicht gefunden");
     resolvedShootingId = inst.schedule.shootingId;
     resolvedCustomerId = inst.schedule.shooting.customerId;
   } else if (!resolvedCustomerId && resolvedShootingId) {
-    const sh = await prisma.shooting.findUnique({ where: { id: resolvedShootingId } });
+    const sh = await prisma.shooting.findFirst({ where: { id: resolvedShootingId, ownerId: userId } });
     if (!sh) throw new Error("Shooting nicht gefunden");
     resolvedCustomerId = sh.customerId;
   }
   if (!resolvedCustomerId) throw new Error("Kunde fehlt");
-  const customer = await prisma.customer.findUnique({ where: { id: resolvedCustomerId } });
+  const customer = await prisma.customer.findFirst({ where: { id: resolvedCustomerId, ownerId: userId } });
   if (!customer) throw new Error("Kunde nicht gefunden");
-  const shooting = resolvedShootingId ? await prisma.shooting.findUnique({
-    where: { id: resolvedShootingId },
+  const shooting = resolvedShootingId ? await prisma.shooting.findFirst({
+    where: { id: resolvedShootingId, ownerId: userId },
     include: {
       package: true,
       addons: { orderBy: { position: "asc" }, include: { addon: true } },
     },
   }) : null;
+  if (resolvedShootingId && !shooting) throw new Error("Shooting nicht gefunden");
 
   const issuer = snapshotFromUser(user);
 
@@ -159,8 +161,8 @@ export async function createDraftInvoice(opts: CreateOptions) {
     }];
     kind = "DEPOSIT";
   } else if (opts.preset === "fromInstallment" && opts.installmentId) {
-    const inst = await prisma.paymentInstallment.findUnique({
-      where: { id: opts.installmentId },
+    const inst = await prisma.paymentInstallment.findFirst({
+      where: { id: opts.installmentId, schedule: { ownerId: userId } },
       include: { schedule: { include: { shooting: { include: { package: true } } } } },
     });
     if (!inst) throw new Error("Rate nicht gefunden");
@@ -180,6 +182,7 @@ export async function createDraftInvoice(opts: CreateOptions) {
     if (kind === "FINAL") {
       const depInvoices = await prisma.invoice.findMany({
         where: {
+          ownerId: userId,
           shootingId: sh.id,
           kind: "DEPOSIT",
           status: { not: "CANCELLED" },
@@ -205,6 +208,7 @@ export async function createDraftInvoice(opts: CreateOptions) {
   if (kind === "FINAL" && resolvedShootingId) {
     const deps = await prisma.invoice.findMany({
       where: {
+        ownerId: userId,
         shootingId: resolvedShootingId,
         kind: "DEPOSIT",
         status: { not: "CANCELLED" },
@@ -235,6 +239,7 @@ export async function createDraftInvoice(opts: CreateOptions) {
       amountDueCents,
       isSmallBusiness: user.isSmallBusiness,
       parentInvoiceId,
+      ownerId: userId,
       items: { create: items },
     },
   });
@@ -255,11 +260,15 @@ export async function createDraftInvoice(opts: CreateOptions) {
 // ---------- DRAFT bearbeiten ----------
 
 export async function updateDraftInvoice(id: string, formData: FormData) {
-  const inv = await prisma.invoice.findUnique({ where: { id }, include: { items: true } });
+  const user = await getUserOrThrow();
+  const userId = user.id;
+  const inv = await prisma.invoice.findFirst({
+    where: { id, ownerId: userId },
+    include: { items: true },
+  });
   if (!inv) throw new Error("Rechnung nicht gefunden");
   if (inv.status !== "DRAFT") throw new Error("Nur Entwürfe können bearbeitet werden");
 
-  const user = await getUserOrThrow();
   const isSmallBusiness = formData.get("isSmallBusiness") === "on";
   // Wenn KU aktiv: vatRate=0 erzwingen (sonst wäre Snapshot inkonsistent).
   // Wenn KU aus: vom Form gesendeten Wert nehmen, mindestens defaultVatRate, fallback 19.
@@ -332,7 +341,11 @@ export async function updateDraftInvoice(id: string, formData: FormData) {
 
 export async function issueInvoice(id: string) {
   const user = await getUserOrThrow();
-  const inv = await prisma.invoice.findUnique({ where: { id }, include: { items: true } });
+  const userId = user.id;
+  const inv = await prisma.invoice.findFirst({
+    where: { id, ownerId: userId },
+    include: { items: true },
+  });
   if (!inv) throw new Error("Rechnung nicht gefunden");
   if (inv.status !== "DRAFT") throw new Error("Rechnung wurde bereits ausgestellt");
   if (inv.items.length === 0) throw new Error("Mindestens eine Position erforderlich");
@@ -364,7 +377,8 @@ export async function issueInvoice(id: string) {
 // ---------- Status-Übergänge ----------
 
 export async function markInvoicePaid(id: string) {
-  const inv = await prisma.invoice.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const inv = await prisma.invoice.findFirst({ where: { id, ownerId: userId } });
   if (!inv) return;
   await prisma.invoice.update({
     where: { id },
@@ -381,6 +395,9 @@ export async function markInvoicePaid(id: string) {
 }
 
 export async function markInvoiceSent(id: string) {
+  const userId = await requireUserId();
+  const inv = await prisma.invoice.findFirst({ where: { id, ownerId: userId } });
+  if (!inv) throw new Error("Rechnung nicht gefunden");
   await prisma.invoice.update({
     where: { id },
     data: { sentAt: new Date() },
@@ -392,8 +409,9 @@ export async function markInvoiceSent(id: string) {
 
 export async function cancelInvoice(id: string) {
   const user = await getUserOrThrow();
-  const inv = await prisma.invoice.findUnique({
-    where: { id },
+  const userId = user.id;
+  const inv = await prisma.invoice.findFirst({
+    where: { id, ownerId: userId },
     include: { items: true, cancelledByInvoice: true },
   });
   if (!inv) throw new Error("Rechnung nicht gefunden");
@@ -430,6 +448,7 @@ export async function cancelInvoice(id: string) {
       amountDueCents: -inv.totalCents,
       isSmallBusiness: inv.isSmallBusiness,
       cancelsInvoiceId: inv.id,
+      ownerId: userId,
       items: {
         create: inv.items.map((it) => ({
           title: `Storno: ${it.title}`,
@@ -494,8 +513,9 @@ export async function createReminder(invoiceId: string, level: number) {
   if (![1, 2, 3].includes(level)) throw new Error("Ungültige Mahnstufe");
 
   const user = await getUserOrThrow();
-  const inv = await prisma.invoice.findUnique({
-    where: { id: invoiceId },
+  const userId = user.id;
+  const inv = await prisma.invoice.findFirst({
+    where: { id: invoiceId, ownerId: userId },
     include: { reminders: true },
   });
   if (!inv) throw new Error("Rechnung nicht gefunden");
@@ -538,7 +558,11 @@ export async function createReminder(invoiceId: string, level: number) {
 }
 
 export async function markReminderSent(reminderId: string) {
-  const r = await prisma.invoiceReminder.findUnique({ where: { id: reminderId } });
+  const userId = await requireUserId();
+  // Reminder hat selbst kein ownerId — über invoice joinen
+  const r = await prisma.invoiceReminder.findFirst({
+    where: { id: reminderId, invoice: { ownerId: userId } },
+  });
   if (!r) return;
   await prisma.invoiceReminder.update({ where: { id: reminderId }, data: { sentAt: new Date() } });
   revalidatePath(`/buchhaltung/${r.invoiceId}`);
@@ -547,7 +571,8 @@ export async function markReminderSent(reminderId: string) {
 // ---------- Zahlungsplan ----------
 
 export async function upsertPaymentSchedule(shootingId: string, formData: FormData) {
-  const shooting = await prisma.shooting.findUnique({ where: { id: shootingId } });
+  const userId = await requireUserId();
+  const shooting = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
   if (!shooting) throw new Error("Shooting nicht gefunden");
 
   const labels = formData.getAll("inst.label").map(String);
@@ -561,7 +586,7 @@ export async function upsertPaymentSchedule(shootingId: string, formData: FormDa
   await prisma.$transaction(async (tx) => {
     let sched = await tx.paymentSchedule.findUnique({ where: { shootingId } });
     if (!sched) {
-      sched = await tx.paymentSchedule.create({ data: { shootingId } });
+      sched = await tx.paymentSchedule.create({ data: { shootingId, ownerId: userId } });
     } else {
       // Behalte Installments, die bereits eine Rechnung haben — sonst löschen
       await tx.paymentInstallment.deleteMany({
@@ -586,7 +611,10 @@ export async function upsertPaymentSchedule(shootingId: string, formData: FormDa
 }
 
 export async function deletePaymentSchedule(shootingId: string) {
-  const sched = await prisma.paymentSchedule.findUnique({ where: { shootingId } });
+  const userId = await requireUserId();
+  const sched = await prisma.paymentSchedule.findFirst({
+    where: { shootingId, ownerId: userId },
+  });
   if (!sched) return;
   // Schutz: nicht löschen wenn Rechnungen verknüpft
   const hasInvoices = await prisma.paymentInstallment.findFirst({

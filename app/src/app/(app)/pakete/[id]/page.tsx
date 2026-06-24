@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { PackageForm } from "../PackageForm";
 import { ChecklistTemplates } from "./ChecklistTemplates";
@@ -7,9 +8,10 @@ import { updatePackage, deletePackage } from "../actions";
 
 export default async function EditPackagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = await requireUserId();
   const [pkg, team, questionnaires, addons] = await Promise.all([
-    prisma.package.findUnique({
-      where: { id },
+    prisma.package.findFirst({
+      where: { id, ownerId: userId },
       include: {
         defaultTeam: true,
         defaultQuestionnaires: true,
@@ -20,12 +22,13 @@ export default async function EditPackagePage({ params }: { params: Promise<{ id
         },
       },
     }),
-    prisma.teamMember.findMany({ orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
+    prisma.teamMember.findMany({ where: { ownerId: userId }, orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
     prisma.questionnaireTemplate.findMany({
+      where: { ownerId: userId },
       orderBy: [{ position: "asc" }],
       include: { _count: { select: { fields: true } } },
     }),
-    prisma.addon.findMany({ where: { isActive: true }, orderBy: { position: "asc" } }),
+    prisma.addon.findMany({ where: { ownerId: userId, isActive: true }, orderBy: { position: "asc" } }),
   ]);
   if (!pkg) return notFound();
 

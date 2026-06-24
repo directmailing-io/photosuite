@@ -1,17 +1,26 @@
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { loadCurrentUser } from "@/lib/loadUser";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  // Defensiv: wenn die Middleware die Session-Prüfung verschluckt hat (z.B. abgelaufene
+  // Session zwischen Middleware-Pass und Layout-Render), gehen wir zurück auf /login,
+  // statt eine kryptische Server-Exception zu zeigen.
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    redirect("/login");
+  }
+
   const [user, submittedRaw, pendingBookings] = await Promise.all([
-    loadCurrentUser(session),
+    prisma.user.findUnique({ where: { id: userId } }),
     prisma.questionnaire.findMany({
-      where: { status: "SUBMITTED" },
+      where: { status: "SUBMITTED", shooting: { ownerId: userId } },
       select: { seenByStudioAt: true, submittedAt: true },
     }),
-    prisma.booking.count({ where: { status: "PENDING" } }),
+    prisma.booking.count({ where: { status: "PENDING", ownerId: userId } }),
   ]);
   const newSubmissions = submittedRaw.filter(
     (q) => !q.seenByStudioAt || (q.submittedAt && q.seenByStudioAt < q.submittedAt),
@@ -19,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen">
       <Sidebar
-        userName={session?.user?.name}
+        userName={user?.name}
         studioName={user?.studioName}
         newQuestionnaireSubmissions={newSubmissions}
         pendingBookings={pendingBookings}

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { StatusBadge } from "@/components/StatusBadge";
+import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { CalendarDays, MapPin, Cake, Plus, Camera, CheckSquare, Users, TrendingUp, Inbox, FileQuestion, Sparkles, ChevronRight } from "lucide-react";
 import { formatDateTime, formatEUR, formatDate, relativeDate } from "@/lib/utils";
 
@@ -20,35 +22,37 @@ function upcomingBirthday(birthday: Date | null): { date: Date; daysAway: number
 }
 
 export default async function Dashboard() {
+  const userId = await requireUserId();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  const [upcoming, openTasks, customers, monthShootings, allShootingsWithRevenue, recentSubmissions] = await Promise.all([
+  const [user, upcoming, openTasks, customers, monthShootings, allShootingsWithRevenue, recentSubmissions] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
     prisma.shooting.findMany({
-      where: { scheduledAt: { gte: now } },
+      where: { ownerId: userId, scheduledAt: { gte: now } },
       include: { customer: true, status: true, package: true },
       orderBy: { scheduledAt: "asc" },
       take: 5,
     }),
     prisma.task.findMany({
-      where: { done: false },
+      where: { ownerId: userId, done: false },
       include: { customer: true, shooting: true },
       orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
       take: 6,
     }),
     prisma.customer.findMany({
-      where: { birthday: { not: null } },
+      where: { ownerId: userId, birthday: { not: null } },
       orderBy: { birthday: "asc" },
     }),
     prisma.shooting.count({
-      where: { scheduledAt: { gte: monthStart, lt: monthEnd } },
+      where: { ownerId: userId, scheduledAt: { gte: monthStart, lt: monthEnd } },
     }),
     prisma.shooting.findMany({
-      where: { scheduledAt: { gte: monthStart, lt: monthEnd } },
+      where: { ownerId: userId, scheduledAt: { gte: monthStart, lt: monthEnd } },
     }),
     prisma.questionnaire.findMany({
-      where: { status: "SUBMITTED" },
+      where: { status: "SUBMITTED", shooting: { ownerId: userId } },
       include: { shooting: { include: { customer: true } } },
       orderBy: { submittedAt: "desc" },
       take: 5,
@@ -76,6 +80,20 @@ export default async function Dashboard() {
     return "Guten Abend";
   })();
 
+  // Onboarding-Status nur laden, wenn noch nicht dismissed
+  const showOnboarding = !user?.onboardingDismissed;
+  const [pkgCount, teamCount, statusCount, custCount, invoiceProfileOk] = showOnboarding
+    ? await Promise.all([
+        prisma.package.count({ where: { ownerId: userId } }),
+        prisma.teamMember.count({ where: { ownerId: userId } }),
+        prisma.customerStatus.count({ where: { ownerId: userId } }),
+        prisma.customer.count({ where: { ownerId: userId } }),
+        prisma.user
+          .findUnique({ where: { id: userId }, select: { invoiceCompanyName: true } })
+          .then((u) => !!u?.invoiceCompanyName),
+      ])
+    : [0, 0, 0, 0, false];
+
   return (
     <>
       <PageHeader
@@ -90,6 +108,16 @@ export default async function Dashboard() {
           <Plus size={15} /> Kundin
         </Link>
       </PageHeader>
+
+      {showOnboarding && (
+        <OnboardingBanner steps={[
+          { key: "studio", label: "Studio-Profil + Rechnungsdaten ausfüllen", href: "/einstellungen?tab=studio", done: invoiceProfileOk },
+          { key: "team", label: "Team-Mitglied(er) anlegen", href: "/team", done: teamCount > 0 },
+          { key: "status", label: "Status & Tags einrichten", href: "/einstellungen?tab=status", done: statusCount > 0 },
+          { key: "pakete", label: "Erstes Paket erstellen", href: "/pakete/neu", done: pkgCount > 0 },
+          { key: "kunde", label: "Erste Kundin anlegen", href: "/kunden/neu", done: custCount > 0 },
+        ]} />
+      )}
 
       {/* KPI-Kacheln */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">

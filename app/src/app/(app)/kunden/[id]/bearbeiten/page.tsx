@@ -1,15 +1,17 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { CustomerForm } from "../../CustomerForm";
 import { updateCustomer, deleteCustomer } from "../../actions";
 
 export default async function EditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = await requireUserId();
   const [customer, statuses, tags] = await Promise.all([
-    prisma.customer.findUnique({ where: { id }, include: { tags: true } }),
-    prisma.customerStatus.findMany({ orderBy: { position: "asc" } }),
-    prisma.tag.findMany({ orderBy: { label: "asc" } }),
+    prisma.customer.findFirst({ where: { id, ownerId: userId }, include: { tags: true } }),
+    prisma.customerStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
+    prisma.tag.findMany({ where: { ownerId: userId }, orderBy: { label: "asc" } }),
   ]);
   if (!customer) return notFound();
 

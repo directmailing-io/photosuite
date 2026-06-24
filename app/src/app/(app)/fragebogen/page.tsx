@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Avatar } from "@/components/Avatar";
@@ -22,8 +23,10 @@ export default async function FragebogenPage({
 }) {
   const sp = await searchParams;
   const filter = (sp.filter as FilterKey) ?? "ALL";
+  const userId = await requireUserId();
 
   const all = await prisma.questionnaire.findMany({
+    where: { shooting: { ownerId: userId } },
     include: {
       shooting: { include: { customer: true } },
       _count: { select: { fields: true, answers: true } },

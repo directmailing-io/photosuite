@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { exchangeGoogleCode } from "@/lib/integrations/googleMeet";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
   const baseUrl = process.env.APP_BASE_URL ?? new URL(req.url).origin;
-  if (!session?.user) return NextResponse.redirect(new URL("/login", baseUrl));
+
+  // Auth-protected: User-ID aus Session — NICHT prisma.user.findFirst() (Multi-Tenant!).
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    return NextResponse.redirect(new URL("/login", baseUrl));
+  }
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
@@ -21,12 +26,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/einstellungen?tab=kalender&googleError=CSRF_FAIL", baseUrl));
   }
 
-  const user = await prisma.user.findFirst({ select: { id: true } });
-  if (!user) {
-    return NextResponse.redirect(new URL("/einstellungen?tab=kalender&googleError=NO_USER", baseUrl));
-  }
-
-  const result = await exchangeGoogleCode(code, user.id);
+  const result = await exchangeGoogleCode(code, userId);
   if (!result.ok) {
     return NextResponse.redirect(new URL(`/einstellungen?tab=kalender&googleError=${encodeURIComponent(result.reason)}`, baseUrl));
   }

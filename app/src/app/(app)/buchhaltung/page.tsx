@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { loadCurrentUser } from "@/lib/loadUser";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Avatar } from "@/components/Avatar";
@@ -45,10 +44,11 @@ export default async function BuchhaltungPage({
   // "bis" inklusiv: bis Tagesende
   const toDate = sp.to ? new Date(sp.to + "T23:59:59") : null;
 
-  const session = await auth();
+  const userId = await requireUserId();
   const [user, all] = await Promise.all([
-    loadCurrentUser(session),
+    prisma.user.findUnique({ where: { id: userId } }),
     prisma.invoice.findMany({
+      where: { ownerId: userId },
       include: { customer: true, shooting: true },
       orderBy: [{ issueDate: "desc" }, { createdAt: "desc" }],
     }),

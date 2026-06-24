@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -36,8 +37,9 @@ export default async function CustomerDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const tab: CustomerTab = (VALID_TABS.includes(sp.tab as CustomerTab) ? sp.tab : "shootings") as CustomerTab;
-  const customer = await prisma.customer.findUnique({
-    where: { id },
+  const userId = await requireUserId();
+  const customer = await prisma.customer.findFirst({
+    where: { id, ownerId: userId },
     include: {
       status: true,
       tags: true,

@@ -20,11 +20,12 @@ export const dynamic = "force-dynamic";
 async function verifySessionFromStripe(invoiceId: string): Promise<void> {
   const inv = await prisma.invoice.findUnique({
     where: { id: invoiceId },
-    select: { status: true, stripeSessionId: true },
+    select: { status: true, stripeSessionId: true, ownerId: true },
   });
   if (!inv?.stripeSessionId || inv.status === "PAID") return;
 
-  const studio = await prisma.user.findFirst({ where: { stripeSecretKeyEnc: { not: null } } });
+  // Multi-Tenant: Stripe-Client aus dem Owner DIESER Invoice — niemals findFirst.
+  const studio = await prisma.user.findUnique({ where: { id: inv.ownerId } });
   if (!studio?.stripeSecretKeyEnc) return;
 
   try {
@@ -89,8 +90,8 @@ export default async function PublicInvoicePage({
 
   const portalSlug = invoice.shooting?.publicSlug ?? null;
 
-  // Studio = User-Profil (aktuell single-user MVP)
-  const studio = await prisma.user.findFirst();
+  // Studio aus invoice.ownerId (Multi-Tenant) — NICHT findFirst.
+  const studio = await prisma.user.findUnique({ where: { id: invoice.ownerId } });
   const issuer = parseIssuer(invoice.issuerSnapshot);
 
   const isPaid = invoice.status === "PAID";

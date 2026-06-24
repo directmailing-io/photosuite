@@ -10,7 +10,7 @@ const safe = (s: string) =>
     .slice(0, 30);
 
 export function generateSlug(seed: string): string {
-  const token = randomBytes(3).toString("hex");
+  const token = randomBytes(8).toString("hex");
   const base = safe(seed) || "shooting";
   return `${base}-${token}`;
 }

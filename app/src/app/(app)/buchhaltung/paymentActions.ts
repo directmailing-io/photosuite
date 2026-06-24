@@ -23,8 +23,9 @@ function buildAbsoluteUrl(path: string): string {
 // Stellt sicher, dass die Rechnung einen unguessable Payment-Token besitzt
 // (für die Public-URL /k/r/[token]). Idempotent.
 export async function ensurePaymentToken(invoiceId: string): Promise<string> {
-  const inv = await prisma.invoice.findUnique({
-    where: { id: invoiceId },
+  const user = await getUserOrThrow();
+  const inv = await prisma.invoice.findFirst({
+    where: { id: invoiceId, ownerId: user.id },
     select: { paymentToken: true },
   });
   if (!inv) throw new Error("Rechnung nicht gefunden");
@@ -43,7 +44,7 @@ export async function createOrReuseCheckoutSession(invoiceId: string): Promise<{
   reused: boolean;
 }> {
   const user = await getUserOrThrow();
-  const inv = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+  const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, ownerId: user.id } });
   if (!inv) throw new Error("Rechnung nicht gefunden");
   if (inv.status === "PAID") throw new Error("Rechnung ist bereits bezahlt.");
   if (inv.status === "CANCELLED") throw new Error("Stornierte Rechnungen können nicht online bezahlt werden.");
@@ -146,7 +147,7 @@ export async function createOrReuseCheckoutSession(invoiceId: string): Promise<{
 // Konfiguration ausprobiert), Session in Stripe expiren und DB-Felder leeren.
 export async function revokeCheckoutSession(invoiceId: string): Promise<void> {
   const user = await getUserOrThrow();
-  const inv = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+  const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, ownerId: user.id } });
   if (!inv?.stripeSessionId) return;
   if (!user.stripeSecretKeyEnc) return;
   const stripe = stripeForUser({

@@ -1,13 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-
-async function requireSession() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Nicht angemeldet");
-}
 
 function s(v: FormDataEntryValue | null): string | undefined {
   if (v == null) return undefined;
@@ -44,11 +39,13 @@ function slugify(input: string): string {
     .slice(0, 60);
 }
 
-async function ensureUniqueSlug(base: string, ignoreId?: string): Promise<string> {
+async function ensureUniqueSlug(ownerId: string, base: string, ignoreId?: string): Promise<string> {
   let slug = base || "termin";
   let counter = 1;
   while (true) {
-    const existing = await prisma.bookingType.findUnique({ where: { slug } });
+    const existing = await prisma.bookingType.findUnique({
+      where: { ownerId_slug: { ownerId, slug } },
+    });
     if (!existing || existing.id === ignoreId) return slug;
     counter++;
     slug = `${base}-${counter}`;
@@ -61,14 +58,19 @@ function revalidateAll() {
 }
 
 export async function createBookingType(formData: FormData): Promise<{ id: string; slug: string }> {
-  await requireSession();
+  const userId = await requireUserId();
   const name = s(formData.get("name"));
   if (!name) throw new Error("Name ist Pflicht");
   const customSlug = s(formData.get("slug"));
-  const slug = await ensureUniqueSlug(slugify(customSlug || name));
-  const last = await prisma.bookingType.findFirst({ orderBy: { position: "desc" }, select: { position: true } });
+  const slug = await ensureUniqueSlug(userId, slugify(customSlug || name));
+  const last = await prisma.bookingType.findFirst({
+    where: { ownerId: userId },
+    orderBy: { position: "desc" },
+    select: { position: true },
+  });
   const created = await prisma.bookingType.create({
     data: {
+      ownerId: userId,
       slug,
       name,
       description: s(formData.get("description")),
@@ -102,17 +104,17 @@ export async function createBookingType(formData: FormData): Promise<{ id: strin
 }
 
 export async function updateBookingType(id: string, formData: FormData): Promise<void> {
-  await requireSession();
-  const existing = await prisma.bookingType.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.bookingType.findFirst({ where: { id, ownerId: userId } });
   if (!existing) throw new Error("Buchungstyp nicht gefunden");
   const name = s(formData.get("name")) ?? existing.name;
   const customSlug = s(formData.get("slug"));
   const desiredSlug = customSlug ? slugify(customSlug) : existing.slug;
   const slug = desiredSlug === existing.slug
     ? existing.slug
-    : await ensureUniqueSlug(desiredSlug, id);
+    : await ensureUniqueSlug(userId, desiredSlug, id);
   await prisma.bookingType.update({
-    where: { id },
+    where: { id: existing.id },
     data: {
       slug,
       name,
@@ -143,13 +145,15 @@ export async function updateBookingType(id: string, formData: FormData): Promise
 }
 
 export async function deleteBookingType(id: string): Promise<void> {
-  await requireSession();
-  const inUse = await prisma.booking.count({ where: { bookingTypeId: id, status: { not: "CANCELLED" } } });
+  const userId = await requireUserId();
+  const existing = await prisma.bookingType.findFirst({ where: { id, ownerId: userId }, select: { id: true } });
+  if (!existing) throw new Error("Buchungstyp nicht gefunden");
+  const inUse = await prisma.booking.count({ where: { bookingTypeId: existing.id, status: { not: "CANCELLED" } } });
   if (inUse > 0) {
-    await prisma.bookingType.update({ where: { id }, data: { isActive: false } });
+    await prisma.bookingType.update({ where: { id: existing.id }, data: { isActive: false } });
     revalidateAll();
     throw new Error(`${inUse} aktive ${inUse === 1 ? "Buchung" : "Buchungen"} — Typ als inaktiv markiert statt gelöscht.`);
   }
-  await prisma.bookingType.delete({ where: { id } });
+  await prisma.bookingType.delete({ where: { id: existing.id } });
   revalidateAll();
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { saveUpload } from "@/lib/upload";
 import { generateSlug } from "@/lib/slug";
 import { revalidatePath } from "next/cache";
@@ -38,6 +39,7 @@ function parseAddons(formData: FormData): Array<{ addonId: string; quantity: num
 }
 
 export async function createShooting(formData: FormData) {
+  const userId = await requireUserId();
   const customerId = s(formData.get("customerId"));
   const title = s(formData.get("title"));
   const price = num(formData.get("price"));
@@ -46,14 +48,20 @@ export async function createShooting(formData: FormData) {
     throw new Error("Kunde, Titel und Preis sind Pflicht.");
   }
 
-  const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+  // Customer-Ownership: niemand darf für fremde Kunden Shootings anlegen.
+  const customer = await prisma.customer.findFirst({ where: { id: customerId, ownerId: userId } });
+  if (!customer) throw new Error("Kunde nicht gefunden");
+
   const status = await prisma.shootingStatus.findFirst({
-    where: { isDefault: true },
+    where: { ownerId: userId, isDefault: true },
     orderBy: { position: "asc" },
   });
+
+  // Package-Ownership: nur eigene Pakete dürfen referenziert werden.
+  let safePackageId: string | null = null;
   const pkg = packageId
-    ? await prisma.package.findUnique({
-        where: { id: packageId },
+    ? await prisma.package.findFirst({
+        where: { id: packageId, ownerId: userId },
         include: {
           checklistTemplates: { include: { items: true } },
           defaultTeam: true,
@@ -61,13 +69,16 @@ export async function createShooting(formData: FormData) {
         },
       })
     : null;
+  if (pkg) safePackageId = pkg.id;
 
-  const slug = generateSlug(customer ? customer.firstName : "shooting");
+  const slug = generateSlug(customer.firstName);
 
-  // Add-Ons mit Preis-Snapshot vorbereiten
+  // Add-Ons mit Preis-Snapshot vorbereiten — Ownership-Filter auf eigene Add-Ons.
   const addonInput = parseAddons(formData);
   const addonRecords = addonInput.length
-    ? await prisma.addon.findMany({ where: { id: { in: addonInput.map((a) => a.addonId) } } })
+    ? await prisma.addon.findMany({
+        where: { id: { in: addonInput.map((a) => a.addonId) }, ownerId: userId },
+      })
     : [];
   const addonsToCreate = addonInput
     .map((bo, idx) => {
@@ -82,13 +93,30 @@ export async function createShooting(formData: FormData) {
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
-  // Override-Team aus Form, sonst Paket-Default, sonst Owner als Fallback
+  // Override-Team aus Form, sonst Paket-Default, sonst Owner als Fallback.
+  // Alle Team-IDs gegen ownerId filtern.
   const formTeamIds = formData.getAll("teamIds").map(String).filter(Boolean);
   const formPrimaryId = s(formData.get("primaryContactId"));
-  let teamIds = formTeamIds.length > 0 ? formTeamIds : pkg?.defaultTeam.map((m) => m.id) ?? [];
-  let primaryId = formPrimaryId ?? pkg?.primaryContactId ?? null;
+  const requestedTeamIds = formTeamIds.length > 0 ? formTeamIds : pkg?.defaultTeam.map((m) => m.id) ?? [];
+  const ownedTeam = requestedTeamIds.length
+    ? await prisma.teamMember.findMany({
+        where: { id: { in: requestedTeamIds }, ownerId: userId },
+        select: { id: true },
+      })
+    : [];
+  let teamIds = ownedTeam.map((m) => m.id);
+
+  let primaryId: string | null = null;
+  if (formPrimaryId) {
+    const pc = await prisma.teamMember.findFirst({ where: { id: formPrimaryId, ownerId: userId } });
+    if (pc) primaryId = pc.id;
+  } else if (pkg?.primaryContactId) {
+    const pc = await prisma.teamMember.findFirst({ where: { id: pkg.primaryContactId, ownerId: userId } });
+    if (pc) primaryId = pc.id;
+  }
+
   if (!primaryId && teamIds.length === 0) {
-    const owner = await prisma.teamMember.findFirst({ where: { isOwner: true } });
+    const owner = await prisma.teamMember.findFirst({ where: { ownerId: userId, isOwner: true } });
     if (owner) {
       primaryId = owner.id;
       teamIds = [owner.id];
@@ -97,13 +125,22 @@ export async function createShooting(formData: FormData) {
     teamIds.push(primaryId);
   }
 
+  // ShootingStatus-Ownership prüfen, falls statusId mitgegeben.
+  const requestedStatusId = s(formData.get("statusId"));
+  let safeStatusId: string | undefined = status?.id;
+  if (requestedStatusId) {
+    const st = await prisma.shootingStatus.findFirst({ where: { id: requestedStatusId, ownerId: userId } });
+    if (st) safeStatusId = st.id;
+  }
+
   const shooting = await prisma.shooting.create({
     data: {
+      ownerId: userId,
       title,
       publicSlug: slug,
       customerId,
-      packageId: packageId,
-      statusId: s(formData.get("statusId")) ?? status?.id,
+      packageId: safePackageId,
+      statusId: safeStatusId,
       description: s(formData.get("description")) ?? pkg?.description ?? null,
       scheduledAt: dt(formData.get("scheduledAt")) ?? null,
       durationMin: num(formData.get("durationMin")),
@@ -154,23 +191,26 @@ export async function createShooting(formData: FormData) {
   });
 
   await prisma.activity.create({
-    data: { kind: "shooting_created", message: `Shooting angelegt: ${title}`, shootingId: shooting.id, customerId },
+    data: {
+      ownerId: userId,
+      kind: "shooting_created",
+      message: `Shooting angelegt: ${title}`,
+      shootingId: shooting.id,
+      customerId,
+    },
   });
 
   // In verbundene externe Kalender pushen (best-effort, blockiert nicht)
   if (shooting.scheduledAt) {
     const { pushShootingToCalendar } = await import("@/lib/calendar/sync");
-    const owner = await prisma.user.findFirst({ select: { id: true } });
-    if (owner) {
-      const end = new Date(shooting.scheduledAt.getTime() + (shooting.durationMin ?? 60) * 60_000);
-      await pushShootingToCalendar(owner.id, {
-        shootingId: shooting.id,
-        title: shooting.title,
-        startAt: shooting.scheduledAt,
-        endAt: end,
-        location: shooting.location,
-      }).catch(() => { /* best-effort */ });
-    }
+    const end = new Date(shooting.scheduledAt.getTime() + (shooting.durationMin ?? 60) * 60_000);
+    await pushShootingToCalendar(userId, {
+      shootingId: shooting.id,
+      title: shooting.title,
+      startAt: shooting.scheduledAt,
+      endAt: end,
+      location: shooting.location,
+    }).catch(() => { /* best-effort */ });
   }
 
   revalidatePath("/shootings");
@@ -179,28 +219,65 @@ export async function createShooting(formData: FormData) {
 }
 
 export async function updateShooting(id: string, formData: FormData) {
-  const existing = await prisma.shooting.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.shooting.findFirst({ where: { id, ownerId: userId } });
   if (!existing) throw new Error("Shooting nicht gefunden");
 
   const newStatusId = s(formData.get("statusId"));
   const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
   const primaryId = s(formData.get("primaryContactId"));
+  const packageIdRaw = s(formData.get("packageId"));
+
+  // Package-Ownership prüfen.
+  let safePackageId: string | null = null;
+  if (packageIdRaw) {
+    const pk = await prisma.package.findFirst({ where: { id: packageIdRaw, ownerId: userId } });
+    if (pk) safePackageId = pk.id;
+  }
+
+  // ShootingStatus-Ownership prüfen.
+  let safeStatusId: string | null = existing.statusId;
+  if (newStatusId) {
+    const st = await prisma.shootingStatus.findFirst({ where: { id: newStatusId, ownerId: userId } });
+    if (st) safeStatusId = st.id;
+  }
+
+  // Team-Ownership: nur eigene Members durchlassen.
+  const ownedTeam = teamIds.length
+    ? await prisma.teamMember.findMany({
+        where: { id: { in: teamIds }, ownerId: userId },
+        select: { id: true },
+      })
+    : [];
+  const safeTeamIds = ownedTeam.map((m) => m.id);
+
+  let safePrimaryId: string | null = null;
+  if (primaryId) {
+    const pc = await prisma.teamMember.findFirst({ where: { id: primaryId, ownerId: userId } });
+    if (pc) safePrimaryId = pc.id;
+  }
 
   // Add-Ons: vorhandene Buchungen behalten Snapshot-Preis, neue holen aktuellen Addon.price.
+  // Ownership-Filter auf addonRecords.
   const addonInput = parseAddons(formData);
   const existingBookings = await prisma.shootingAddon.findMany({ where: { shootingId: id } });
   const addonRecords = addonInput.length
-    ? await prisma.addon.findMany({ where: { id: { in: addonInput.map((a) => a.addonId) } } })
+    ? await prisma.addon.findMany({
+        where: { id: { in: addonInput.map((a) => a.addonId) }, ownerId: userId },
+      })
     : [];
+  // Set der erlaubten Add-On-IDs (eigene), damit Fremde nicht via formData injiziert werden können.
+  const allowedAddonIds = new Set(addonRecords.map((r) => r.id));
+  const safeAddonInput = addonInput.filter((bo) => allowedAddonIds.has(bo.addonId));
 
   await prisma.$transaction(async (tx) => {
-    const wanted = new Set(addonInput.map((a) => a.addonId));
+    const wanted = new Set(safeAddonInput.map((a) => a.addonId));
     const removeIds = existingBookings.filter((b) => !wanted.has(b.addonId)).map((b) => b.id);
     if (removeIds.length) {
       await tx.shootingAddon.deleteMany({ where: { id: { in: removeIds } } });
     }
-    for (let i = 0; i < addonInput.length; i++) {
-      const bo = addonInput[i];
+    for (let i = 0; i < safeAddonInput.length; i++) {
+      const bo = safeAddonInput[i];
       const existingBooking = existingBookings.find((b) => b.addonId === bo.addonId);
       if (existingBooking) {
         await tx.shootingAddon.update({
@@ -227,8 +304,8 @@ export async function updateShooting(id: string, formData: FormData) {
     where: { id },
     data: {
       title: s(formData.get("title")) ?? existing.title,
-      packageId: s(formData.get("packageId")) ?? null,
-      statusId: newStatusId ?? existing.statusId,
+      packageId: safePackageId,
+      statusId: safeStatusId,
       description: s(formData.get("description")) ?? null,
       scheduledAt: dt(formData.get("scheduledAt")) ?? null,
       durationMin: num(formData.get("durationMin")) ?? null,
@@ -238,16 +315,21 @@ export async function updateShooting(id: string, formData: FormData) {
       depositPaid: formData.get("depositPaid") === "on",
       finalPaid: formData.get("finalPaid") === "on",
       paymentTerms: s(formData.get("paymentTerms")) ?? null,
-      primaryContactId: primaryId ?? null,
-      team: { set: teamIds.map((id) => ({ id })) },
+      primaryContactId: safePrimaryId,
+      team: { set: safeTeamIds.map((id) => ({ id })) },
     },
   });
 
   if (existing.statusId !== updated.statusId) {
-    const oldS = existing.statusId ? await prisma.shootingStatus.findUnique({ where: { id: existing.statusId } }) : null;
-    const newS = updated.statusId ? await prisma.shootingStatus.findUnique({ where: { id: updated.statusId } }) : null;
+    const oldS = existing.statusId
+      ? await prisma.shootingStatus.findFirst({ where: { id: existing.statusId, ownerId: userId } })
+      : null;
+    const newS = updated.statusId
+      ? await prisma.shootingStatus.findFirst({ where: { id: updated.statusId, ownerId: userId } })
+      : null;
     await prisma.activity.create({
       data: {
+        ownerId: userId,
         kind: "shooting_status_changed",
         message: `Status: ${oldS?.label ?? "—"} → ${newS?.label ?? "—"}`,
         shootingId: id,
@@ -257,12 +339,12 @@ export async function updateShooting(id: string, formData: FormData) {
   }
   if (!existing.depositPaid && updated.depositPaid) {
     await prisma.activity.create({
-      data: { kind: "payment_received", message: `Anzahlung verbucht`, shootingId: id, customerId: updated.customerId },
+      data: { ownerId: userId, kind: "payment_received", message: `Anzahlung verbucht`, shootingId: id, customerId: updated.customerId },
     });
   }
   if (!existing.finalPaid && updated.finalPaid) {
     await prisma.activity.create({
-      data: { kind: "payment_received", message: `Restbetrag verbucht`, shootingId: id, customerId: updated.customerId },
+      data: { ownerId: userId, kind: "payment_received", message: `Restbetrag verbucht`, shootingId: id, customerId: updated.customerId },
     });
   }
 
@@ -271,14 +353,22 @@ export async function updateShooting(id: string, formData: FormData) {
 }
 
 export async function deleteShooting(id: string) {
-  const sh = await prisma.shooting.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const sh = await prisma.shooting.findFirst({ where: { id, ownerId: userId } });
+  if (!sh) throw new Error("Shooting nicht gefunden");
   await prisma.shooting.delete({ where: { id } });
   revalidatePath("/shootings");
-  if (sh) revalidatePath(`/kunden/${sh.customerId}`);
+  revalidatePath(`/kunden/${sh.customerId}`);
   redirect("/shootings");
 }
 
 export async function moveShootingToStatus(shootingId: string, statusId: string, position: number) {
+  const userId = await requireUserId();
+  // Shooting + Status beide auf Ownership prüfen.
+  const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
+  if (!sh) throw new Error("Shooting nicht gefunden");
+  const st = await prisma.shootingStatus.findFirst({ where: { id: statusId, ownerId: userId } });
+  if (!st) throw new Error("Status nicht gefunden");
   await prisma.shooting.update({
     where: { id: shootingId },
     data: { statusId, kanbanPosition: position },
@@ -294,9 +384,10 @@ export async function moveShootingToStatus(shootingId: string, statusId: string,
 // (z.B. wenn die Kundin manuell ein Date am Shootingtag hinzugefügt hat).
 // Manuell platzierte Dates (Fitting, Bildauswahl an anderen Tagen) bleiben unberührt.
 export async function moveShootingToDate(shootingId: string, isoDate: string) {
+  const userId = await requireUserId();
   const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) throw new Error("Ungültiges Datum");
-  const sh = await prisma.shooting.findUnique({ where: { id: shootingId } });
+  const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
   if (!sh) throw new Error("Shooting nicht gefunden");
   const original = sh.scheduledAt;
   const next = new Date(
@@ -366,25 +457,26 @@ export async function moveShootingToDate(shootingId: string, isoDate: string) {
   if (sh.publicSlug) revalidatePath(`/k/${sh.publicSlug}`);
 
   // Push in verbundene externe Kalender (Google, CalDAV) — best-effort
-  const fresh = await prisma.shooting.findUnique({ where: { id: shootingId } });
+  const fresh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
   if (fresh?.scheduledAt) {
-    const owner = await prisma.user.findFirst({ select: { id: true } });
-    if (owner) {
-      const end = new Date(fresh.scheduledAt.getTime() + (fresh.durationMin ?? 60) * 60_000);
-      await pushShootingToCalendar(owner.id, {
-        shootingId: fresh.id,
-        title: fresh.title,
-        startAt: fresh.scheduledAt,
-        endAt: end,
-        location: fresh.location,
-      }).catch(() => { /* best-effort */ });
-    }
+    const end = new Date(fresh.scheduledAt.getTime() + (fresh.durationMin ?? 60) * 60_000);
+    await pushShootingToCalendar(userId, {
+      shootingId: fresh.id,
+      title: fresh.title,
+      startAt: fresh.scheduledAt,
+      endAt: end,
+      location: fresh.location,
+    }).catch(() => { /* best-effort */ });
   }
 }
 
 // ---------- Termine ----------
 
 export async function addShootingDate(shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  // Shooting-Ownership prüfen.
+  const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
+  if (!sh) throw new Error("Shooting nicht gefunden");
   const label = s(formData.get("label"));
   const startAt = dt(formData.get("startAt"));
   if (!label || !startAt) throw new Error("Bezeichnung und Startzeit sind Pflicht.");
@@ -405,8 +497,7 @@ export async function addShootingDate(shootingId: string, formData: FormData) {
     },
   });
   // Wenn das Shooting noch kein primäres scheduledAt hat, übernehmen
-  const sh = await prisma.shooting.findUnique({ where: { id: shootingId } });
-  if (sh && !sh.scheduledAt) {
+  if (!sh.scheduledAt) {
     await prisma.shooting.update({
       where: { id: shootingId },
       data: { scheduledAt: startAt, location: s(formData.get("location")) },
@@ -416,6 +507,12 @@ export async function addShootingDate(shootingId: string, formData: FormData) {
 }
 
 export async function updateShootingDate(id: string, shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  // ShootingDate via Shooting-Ownership absichern.
+  const sd = await prisma.shootingDate.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+  });
+  if (!sd) throw new Error("Termin nicht gefunden");
   const startAt = dt(formData.get("startAt"));
   if (!startAt) throw new Error("Startzeit ist Pflicht.");
   await prisma.shootingDate.update({
@@ -433,6 +530,11 @@ export async function updateShootingDate(id: string, shootingId: string, formDat
 }
 
 export async function deleteShootingDate(id: string, shootingId: string) {
+  const userId = await requireUserId();
+  const sd = await prisma.shootingDate.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+  });
+  if (!sd) throw new Error("Termin nicht gefunden");
   await prisma.shootingDate.delete({ where: { id } });
   revalidatePath(`/shootings/${shootingId}`);
 }
@@ -440,6 +542,9 @@ export async function deleteShootingDate(id: string, shootingId: string) {
 // ---------- Strukturierte Notizen ----------
 
 export async function addShootingNote(shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
+  if (!sh) throw new Error("Shooting nicht gefunden");
   const text = s(formData.get("text"));
   const status = s(formData.get("status")) ?? "OPEN";
   if (!text) return;
@@ -450,12 +555,22 @@ export async function addShootingNote(shootingId: string, formData: FormData) {
 }
 
 export async function setShootingNoteStatus(id: string, status: string, shootingId: string) {
+  const userId = await requireUserId();
   if (!["OPEN", "DONE", "IMPORTANT"].includes(status)) return;
+  const note = await prisma.shootingNote.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+  });
+  if (!note) throw new Error("Notiz nicht gefunden");
   await prisma.shootingNote.update({ where: { id }, data: { status } });
   revalidatePath(`/shootings/${shootingId}`);
 }
 
 export async function deleteShootingNote(id: string, shootingId: string) {
+  const userId = await requireUserId();
+  const note = await prisma.shootingNote.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+  });
+  if (!note) throw new Error("Notiz nicht gefunden");
   await prisma.shootingNote.delete({ where: { id } });
   revalidatePath(`/shootings/${shootingId}`);
 }
@@ -463,6 +578,9 @@ export async function deleteShootingNote(id: string, shootingId: string) {
 // ---------- Checklisten ----------
 
 export async function addChecklist(shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
+  if (!sh) throw new Error("Shooting nicht gefunden");
   const title = s(formData.get("title"));
   const audience = s(formData.get("audience")) === "CUSTOMER" ? "CUSTOMER" : "INTERNAL";
   if (!title) return;
@@ -477,12 +595,22 @@ export async function addChecklist(shootingId: string, formData: FormData) {
 }
 
 export async function setChecklistAudience(checklistId: string, audience: string, shootingId: string) {
+  const userId = await requireUserId();
   if (!["INTERNAL", "CUSTOMER"].includes(audience)) return;
+  const cl = await prisma.checklist.findFirst({
+    where: { id: checklistId, shooting: { ownerId: userId } },
+  });
+  if (!cl) throw new Error("Checkliste nicht gefunden");
   await prisma.checklist.update({ where: { id: checklistId }, data: { audience } });
   revalidatePath(`/shootings/${shootingId}`);
 }
 
 export async function setChecklistItemDeadline(itemId: string, dueAt: string | null, shootingId: string) {
+  const userId = await requireUserId();
+  const item = await prisma.checklistItem.findFirst({
+    where: { id: itemId, checklist: { shooting: { ownerId: userId } } },
+  });
+  if (!item) throw new Error("Eintrag nicht gefunden");
   await prisma.checklistItem.update({
     where: { id: itemId },
     data: { dueAt: dueAt ? new Date(dueAt) : null },
@@ -492,11 +620,21 @@ export async function setChecklistItemDeadline(itemId: string, dueAt: string | n
 }
 
 export async function deleteChecklist(checklistId: string, shootingId: string) {
+  const userId = await requireUserId();
+  const cl = await prisma.checklist.findFirst({
+    where: { id: checklistId, shooting: { ownerId: userId } },
+  });
+  if (!cl) throw new Error("Checkliste nicht gefunden");
   await prisma.checklist.delete({ where: { id: checklistId } });
   revalidatePath(`/shootings/${shootingId}`);
 }
 
 export async function addChecklistItem(checklistId: string, shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const cl = await prisma.checklist.findFirst({
+    where: { id: checklistId, shooting: { ownerId: userId } },
+  });
+  if (!cl) throw new Error("Checkliste nicht gefunden");
   const label = s(formData.get("label"));
   const dueAt = s(formData.get("dueAt"));
   if (!label) return;
@@ -517,12 +655,22 @@ export async function addChecklistItem(checklistId: string, shootingId: string, 
 }
 
 export async function toggleChecklistItem(itemId: string, done: boolean, shootingId: string) {
+  const userId = await requireUserId();
+  const item = await prisma.checklistItem.findFirst({
+    where: { id: itemId, checklist: { shooting: { ownerId: userId } } },
+  });
+  if (!item) throw new Error("Eintrag nicht gefunden");
   await prisma.checklistItem.update({ where: { id: itemId }, data: { done } });
   revalidatePath(`/shootings/${shootingId}`);
   revalidatePath(`/aufgaben`);
 }
 
 export async function deleteChecklistItem(itemId: string, shootingId: string) {
+  const userId = await requireUserId();
+  const item = await prisma.checklistItem.findFirst({
+    where: { id: itemId, checklist: { shooting: { ownerId: userId } } },
+  });
+  if (!item) throw new Error("Eintrag nicht gefunden");
   await prisma.checklistItem.delete({ where: { id: itemId } });
   revalidatePath(`/shootings/${shootingId}`);
 }
@@ -530,6 +678,9 @@ export async function deleteChecklistItem(itemId: string, shootingId: string) {
 // ---------- Attachments ----------
 
 export async function addAttachment(shootingId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
+  if (!sh) throw new Error("Shooting nicht gefunden");
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return;
   const r = await saveUpload(file, `shootings/${shootingId}`);
@@ -546,6 +697,11 @@ export async function addAttachment(shootingId: string, formData: FormData) {
 }
 
 export async function deleteAttachment(attachmentId: string, shootingId: string) {
+  const userId = await requireUserId();
+  const att = await prisma.attachment.findFirst({
+    where: { id: attachmentId, shooting: { ownerId: userId } },
+  });
+  if (!att) throw new Error("Anhang nicht gefunden");
   await prisma.attachment.delete({ where: { id: attachmentId } });
   revalidatePath(`/shootings/${shootingId}`);
 }

@@ -7,6 +7,7 @@ export default auth((req) => {
 
   const isPublic =
     pathname === "/login" ||
+    pathname === "/signup" ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/k/") ||
     pathname.startsWith("/k/") ||
@@ -21,7 +22,7 @@ export default auth((req) => {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-  if (isLoggedIn && pathname === "/login") {
+  if (isLoggedIn && (pathname === "/login" || pathname === "/signup")) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

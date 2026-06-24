@@ -1,16 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  if (!session?.user) throw new Error("Nicht angemeldet");
-  const user = await prisma.user.findFirst({ select: { id: true } });
-  if (!user) throw new Error("Kein User-Profil");
-  return user.id;
-}
 
 function sanitizeUrl(raw: string | null): string | null {
   if (!raw) return null;

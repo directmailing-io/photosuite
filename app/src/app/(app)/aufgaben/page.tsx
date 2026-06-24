@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CheckSquare, Calendar, ListChecks, Briefcase } from "lucide-react";
@@ -10,14 +11,17 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function AufgabenPage() {
+  const userId = await requireUserId();
   const [tasks, customers, shootings] = await Promise.all([
     prisma.task.findMany({
+      where: { ownerId: userId },
       include: { customer: true, shooting: true },
       orderBy: [{ done: "asc" }, { dueAt: "asc" }, { createdAt: "desc" }],
     }),
-    prisma.customer.findMany({ orderBy: { firstName: "asc" } }),
+    prisma.customer.findMany({ where: { ownerId: userId }, orderBy: { firstName: "asc" } }),
     prisma.shooting.findMany({
       where: {
+        ownerId: userId,
         checklists: {
           some: {
             audience: "INTERNAL",

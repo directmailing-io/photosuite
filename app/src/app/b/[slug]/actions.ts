@@ -19,8 +19,10 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
   meetingUrl: string | null;
   meetingProvider: string | null;
 }> {
-  const type = await prisma.bookingType.findUnique({ where: { slug } });
-  if (!type || !type.isActive) throw new Error("Buchungstyp nicht verfügbar.");
+  // BookingType.slug ist composite-unique mit ownerId — findFirst (Slug-Kollisionen sind
+  // System-eindeutig genug für jetzt; siehe TODO in /b/[slug]/page.tsx).
+  const type = await prisma.bookingType.findFirst({ where: { slug, isActive: true } });
+  if (!type) throw new Error("Buchungstyp nicht verfügbar.");
 
   const customerName = s(formData.get("customerName"));
   const customerEmail = s(formData.get("customerEmail"));
@@ -42,7 +44,8 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
   if (isNaN(startAt.getTime())) throw new Error("Ungültiger Termin.");
 
   // Race-Safe: Verfügbarkeit jetzt nochmals prüfen.
-  const check = await isSlotStillAvailable({
+  // userId = type.ownerId — Public-Route hat keinen Auth-Context, Tenant kommt aus BookingType.
+  const check = await isSlotStillAvailable(type.ownerId, {
     durationMin: type.durationMin,
     bufferBeforeMin: type.bufferBeforeMin,
     bufferAfterMin: type.bufferAfterMin,
@@ -62,7 +65,9 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
   let meetingProvider: string | null = null;
   if (isValidProviderKey(type.videoProvider)) {
     meetingProvider = type.videoProvider;
-    const user = await prisma.user.findFirst({
+    // User aus type.ownerId — NICHT findFirst. Sonst landet das Meeting beim falschen Tenant.
+    const user = await prisma.user.findUnique({
+      where: { id: type.ownerId },
       select: {
         id: true,
         zoomPersonalLink: true,
@@ -89,6 +94,7 @@ export async function submitBooking(slug: string, formData: FormData): Promise<{
   const status = type.autoConfirm ? "CONFIRMED" : "PENDING";
   const booking = await prisma.booking.create({
     data: {
+      ownerId: type.ownerId, // Tenant explizit setzen — nicht auf Default verlassen
       bookingTypeId: type.id,
       customerName,
       customerEmail,

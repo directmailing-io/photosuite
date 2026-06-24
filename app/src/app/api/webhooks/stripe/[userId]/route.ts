@@ -42,6 +42,27 @@ export async function POST(
     return new Response(`Signatur ungültig: ${err?.message ?? "unbekannt"}`, { status: 400 });
   }
 
+  // Defense-in-Depth: prüfe metadata.userId aus dem Stripe-Object gegen die URL-userId.
+  // Schützt vor Stripe-Secret-Reuse / Mis-Routing (z.B. wenn Lisa versehentlich denselben
+  // Webhook-Secret in zwei Accounts hinterlegt). Wenn metadata.userId fehlt: legacy
+  // event — warnen, aber durchlassen.
+  const objWithMeta = event.data.object as { metadata?: Record<string, string> | null } | null;
+  const eventUserId = objWithMeta?.metadata?.userId;
+  if (eventUserId) {
+    if (eventUserId !== userId) {
+      return new Response(
+        `Event-Owner-Mismatch: metadata.userId (${eventUserId}) != URL userId (${userId})`,
+        { status: 400 },
+      );
+    }
+  } else {
+    // legacy: ohne metadata.userId können wir nur via Signatur verifizieren — ist OK,
+    // aber loggen damit wir wissen woher es kommt.
+    console.warn(
+      `[stripe-webhook] event ${event.id} (type=${event.type}) has no metadata.userId — falling back to signature-only validation`,
+    );
+  }
+
   // Idempotenz: event.id wurde schon verarbeitet?
   const already = await prisma.stripeWebhookEvent.findUnique({
     where: { stripeEventId: event.id },
@@ -90,7 +111,7 @@ async function handleEvent(event: Stripe.Event, userId: string): Promise<void> {
       await onAsyncFailed(event.data.object as Stripe.Checkout.Session, userId, event.id);
       break;
     case "checkout.session.expired":
-      await onSessionExpired(event.data.object as Stripe.Checkout.Session, event.id);
+      await onSessionExpired(event.data.object as Stripe.Checkout.Session, userId, event.id);
       break;
     default:
       // unbekanntes Event → einfach ack'en
@@ -102,8 +123,27 @@ function findInvoiceIdFromSession(s: Stripe.Checkout.Session): string | null {
   return s.metadata?.invoiceId ?? s.client_reference_id ?? null;
 }
 
-async function onCheckoutCompleted(s: Stripe.Checkout.Session, _userId: string, eventId: string) {
+// Defense-in-Depth: löst Invoice-ID aus Session UND validiert, dass die Invoice
+// dem URL-userId gehört. Verhindert, dass ein fehlgeleitetes Event eine fremde
+// Invoice manipuliert — selbst wenn metadata.userId fehlt oder gefälscht wäre.
+async function resolveOwnedInvoiceId(s: Stripe.Checkout.Session, urlUserId: string): Promise<string | null> {
   const invoiceId = findInvoiceIdFromSession(s);
+  if (!invoiceId) return null;
+  const inv = await prisma.invoice.findFirst({
+    where: { id: invoiceId, ownerId: urlUserId },
+    select: { id: true },
+  });
+  if (!inv) {
+    console.warn(
+      `[stripe-webhook] invoice ${invoiceId} not found for user ${urlUserId} — ignoring event`,
+    );
+    return null;
+  }
+  return inv.id;
+}
+
+async function onCheckoutCompleted(s: Stripe.Checkout.Session, userId: string, eventId: string) {
+  const invoiceId = await resolveOwnedInvoiceId(s, userId);
   if (!invoiceId) return;
   if (s.payment_status === "paid") {
     await markInvoicePaidFromSession(invoiceId, s, "webhook", eventId);
@@ -112,33 +152,35 @@ async function onCheckoutCompleted(s: Stripe.Checkout.Session, _userId: string, 
   }
 }
 
-async function onAsyncSucceeded(s: Stripe.Checkout.Session, _userId: string, eventId: string) {
-  const invoiceId = findInvoiceIdFromSession(s);
+async function onAsyncSucceeded(s: Stripe.Checkout.Session, userId: string, eventId: string) {
+  const invoiceId = await resolveOwnedInvoiceId(s, userId);
   if (!invoiceId) return;
   await markInvoicePaidFromSession(invoiceId, s, "webhook", eventId);
 }
 
-async function onAsyncFailed(s: Stripe.Checkout.Session, _userId: string, _eventId: string) {
-  const invoiceId = findInvoiceIdFromSession(s);
+async function onAsyncFailed(s: Stripe.Checkout.Session, userId: string, _eventId: string) {
+  const invoiceId = await resolveOwnedInvoiceId(s, userId);
   if (!invoiceId) return;
-  await prisma.invoice.update({
-    where: { id: invoiceId },
+  // updateMany mit ownerId-Filter ist hier defensiv redundant (resolveOwnedInvoiceId
+  // hat bereits validiert), kostet aber nichts und schützt vor Race-Conditions.
+  await prisma.invoice.updateMany({
+    where: { id: invoiceId, ownerId: userId },
     data: { stripePaymentStatus: "failed" },
   });
   revalidatePath(`/buchhaltung/${invoiceId}`);
   revalidatePath("/buchhaltung");
 }
 
-async function onSessionExpired(s: Stripe.Checkout.Session, _eventId: string) {
-  const invoiceId = findInvoiceIdFromSession(s);
+async function onSessionExpired(s: Stripe.Checkout.Session, userId: string, _eventId: string) {
+  const invoiceId = await resolveOwnedInvoiceId(s, userId);
   if (!invoiceId) return;
-  const inv = await prisma.invoice.findUnique({
-    where: { id: invoiceId },
+  const inv = await prisma.invoice.findFirst({
+    where: { id: invoiceId, ownerId: userId },
     select: { stripePaymentStatus: true, stripeSessionId: true },
   });
   if (inv?.stripeSessionId === s.id && inv.stripePaymentStatus === "open") {
-    await prisma.invoice.update({
-      where: { id: invoiceId },
+    await prisma.invoice.updateMany({
+      where: { id: invoiceId, ownerId: userId },
       data: {
         stripeSessionId: null,
         stripeSessionUrl: null,

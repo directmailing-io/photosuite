@@ -26,7 +26,10 @@ function fmtTime(d: Date) {
 
 export default async function CustomerView({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const shooting = await prisma.shooting.findUnique({
+  // Public-Route: kein Auth. Tenant kommt aus dem Shooting. publicSlug ist nun
+  // composite-unique (@@unique([ownerId, publicSlug])), aber als 256-bit Random-Token
+  // krypto-eindeutig — findFirst auf publicSlug ist Race-Safe genug.
+  const shooting = await prisma.shooting.findFirst({
     where: { publicSlug: slug },
     include: {
       customer: true,
@@ -71,8 +74,8 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
     }),
   );
 
-  // Studio-Profil = User-Profil
-  const studio = await prisma.user.findFirst();
+  // Studio aus Tenant des Shootings (NICHT findFirst — sonst falscher User in Multi-Tenant).
+  const studio = await prisma.user.findUnique({ where: { id: shooting.ownerId } });
 
   const description = shooting.description ?? shooting.package?.description ?? null;
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Package as PackageIcon, Plus, Clock } from "lucide-react";
@@ -8,7 +9,9 @@ import { formatEUR } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function PaketePage() {
+  const userId = await requireUserId();
   const packages = await prisma.package.findMany({
+    where: { ownerId: userId },
     orderBy: [{ isActive: "desc" }, { position: "asc" }, { createdAt: "asc" }],
     include: { _count: { select: { shootings: true } } },
   });

@@ -58,6 +58,7 @@ async function backfillShootingsToCalendar(conn: import("@prisma/client").Calend
   const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   const shootings = await prisma.shooting.findMany({
     where: {
+      ownerId: conn.userId,
       scheduledAt: { gte: cutoff },
       // Stornorechnungen / Abgesagte ausnehmen — wir pushen nur „echte" Termine
     },

@@ -38,3 +38,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
+
+/**
+ * Zentraler Helper für alle Server-Actions und Server-Components in Multi-Tenant-Kontext.
+ *
+ * Garantiert: Rückgabewert ist eine valide User-ID, sonst throw.
+ *
+ * Nutzung als ERSTE Zeile in JEDER tenant-bezogenen Server-Action:
+ *   const userId = await requireUserId();
+ *
+ * Bei abgelaufener Session oder bewusstem Logout während Action läuft:
+ * sauberer Error statt stillschweigend null/undefined zu propagieren.
+ */
+export async function requireUserId(): Promise<string> {
+  const session = await auth();
+  const uid = (session?.user as { id?: string } | undefined)?.id;
+  if (!uid) throw new Error("Nicht angemeldet");
+  return uid;
+}

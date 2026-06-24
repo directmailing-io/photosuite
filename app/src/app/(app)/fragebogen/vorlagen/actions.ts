@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -16,13 +17,18 @@ const VALID_TYPES = new Set([
 ]);
 
 export async function createTemplate(formData: FormData) {
+  const userId = await requireUserId();
   const title = s(formData.get("title")) ?? "Neue Vorlage";
-  const max = await prisma.questionnaireTemplate.findFirst({ orderBy: { position: "desc" } });
+  const max = await prisma.questionnaireTemplate.findFirst({
+    where: { ownerId: userId },
+    orderBy: { position: "desc" },
+  });
   const tpl = await prisma.questionnaireTemplate.create({
     data: {
       title,
       description: s(formData.get("description")),
       position: (max?.position ?? -1) + 1,
+      ownerId: userId,
     },
   });
   revalidatePath("/fragebogen/vorlagen");
@@ -30,6 +36,9 @@ export async function createTemplate(formData: FormData) {
 }
 
 export async function updateTemplateMeta(id: string, formData: FormData) {
+  const userId = await requireUserId();
+  const tpl = await prisma.questionnaireTemplate.findFirst({ where: { id, ownerId: userId } });
+  if (!tpl) throw new Error("Vorlage nicht gefunden");
   await prisma.questionnaireTemplate.update({
     where: { id },
     data: {
@@ -42,6 +51,9 @@ export async function updateTemplateMeta(id: string, formData: FormData) {
 }
 
 export async function deleteTemplate(id: string) {
+  const userId = await requireUserId();
+  const tpl = await prisma.questionnaireTemplate.findFirst({ where: { id, ownerId: userId } });
+  if (!tpl) throw new Error("Vorlage nicht gefunden");
   await prisma.questionnaireTemplate.delete({ where: { id } });
   revalidatePath("/fragebogen/vorlagen");
   redirect("/fragebogen/vorlagen");
@@ -50,6 +62,9 @@ export async function deleteTemplate(id: string) {
 // ---------- Felder ----------
 
 export async function addTemplateField(templateId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const tpl = await prisma.questionnaireTemplate.findFirst({ where: { id: templateId, ownerId: userId } });
+  if (!tpl) throw new Error("Vorlage nicht gefunden");
   const type = s(formData.get("type"));
   const label = s(formData.get("label"));
   if (!type || !VALID_TYPES.has(type)) throw new Error("Ungültiger Feld-Typ");
@@ -79,7 +94,11 @@ export async function addTemplateField(templateId: string, formData: FormData) {
 }
 
 export async function updateTemplateField(id: string, formData: FormData) {
-  const f = await prisma.questionnaireTemplateField.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  // Field hat selbst kein ownerId — über template joinen
+  const f = await prisma.questionnaireTemplateField.findFirst({
+    where: { id, template: { ownerId: userId } },
+  });
   if (!f) return;
   const type = s(formData.get("type")) ?? f.type;
   const optionsRaw = s(formData.get("options"));
@@ -106,14 +125,20 @@ export async function updateTemplateField(id: string, formData: FormData) {
 }
 
 export async function deleteTemplateField(id: string) {
-  const f = await prisma.questionnaireTemplateField.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const f = await prisma.questionnaireTemplateField.findFirst({
+    where: { id, template: { ownerId: userId } },
+  });
   if (!f) return;
   await prisma.questionnaireTemplateField.delete({ where: { id } });
   revalidatePath(`/fragebogen/vorlagen/${f.templateId}`);
 }
 
 export async function moveTemplateField(id: string, direction: "up" | "down") {
-  const f = await prisma.questionnaireTemplateField.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const f = await prisma.questionnaireTemplateField.findFirst({
+    where: { id, template: { ownerId: userId } },
+  });
   if (!f) return;
   const siblings = await prisma.questionnaireTemplateField.findMany({
     where: { templateId: f.templateId },

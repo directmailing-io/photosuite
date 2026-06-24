@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { TemplateEditor } from "./TemplateEditor";
 import { ChevronLeft, Package as PackageIcon } from "lucide-react";
@@ -13,8 +14,9 @@ export default async function TemplateEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const tpl = await prisma.questionnaireTemplate.findUnique({
-    where: { id },
+  const userId = await requireUserId();
+  const tpl = await prisma.questionnaireTemplate.findFirst({
+    where: { id, ownerId: userId },
     include: {
       fields: { orderBy: { position: "asc" } },
       packages: { orderBy: { position: "asc" } },

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { saveUpload } from "@/lib/upload";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -18,6 +19,7 @@ function dateOrNull(v: FormDataEntryValue | null): Date | null | undefined {
 }
 
 export async function createCustomer(formData: FormData) {
+  const userId = await requireUserId();
   const firstName = s(formData.get("firstName"));
   const lastName = s(formData.get("lastName"));
   if (!firstName || !lastName) {
@@ -30,8 +32,23 @@ export async function createCustomer(formData: FormData) {
     avatarUrl = r.url;
   }
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
+  // Tag-Ownership prüfen: nur eigene Tags dürfen verknüpft werden.
+  const ownedTags = tagIds.length
+    ? await prisma.tag.findMany({ where: { id: { in: tagIds }, ownerId: userId }, select: { id: true } })
+    : [];
+  const safeTagIds = ownedTags.map((t) => t.id);
+
+  // CustomerStatus-Ownership prüfen, falls statusId mitgegeben.
+  const statusId = s(formData.get("statusId"));
+  let safeStatusId: string | undefined = undefined;
+  if (statusId) {
+    const status = await prisma.customerStatus.findFirst({ where: { id: statusId, ownerId: userId } });
+    if (status) safeStatusId = status.id;
+  }
+
   const customer = await prisma.customer.create({
     data: {
+      ownerId: userId,
       firstName,
       lastName,
       email: s(formData.get("email")),
@@ -46,14 +63,15 @@ export async function createCustomer(formData: FormData) {
       facebook: s(formData.get("facebook")),
       tiktok: s(formData.get("tiktok")),
       website: s(formData.get("website")),
-      statusId: s(formData.get("statusId")),
+      statusId: safeStatusId,
       source: s(formData.get("source")),
       internalNotes: s(formData.get("internalNotes")),
-      tags: tagIds.length ? { connect: tagIds.map((id) => ({ id })) } : undefined,
+      tags: safeTagIds.length ? { connect: safeTagIds.map((id) => ({ id })) } : undefined,
     },
   });
   await prisma.activity.create({
     data: {
+      ownerId: userId,
       kind: "customer_created",
       message: `Kunde angelegt: ${firstName} ${lastName}`,
       customerId: customer.id,
@@ -64,7 +82,8 @@ export async function createCustomer(formData: FormData) {
 }
 
 export async function updateCustomer(id: string, formData: FormData) {
-  const existing = await prisma.customer.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const existing = await prisma.customer.findFirst({ where: { id, ownerId: userId } });
   if (!existing) throw new Error("Kunde nicht gefunden");
 
   const file = formData.get("avatar") as File | null;
@@ -75,6 +94,19 @@ export async function updateCustomer(id: string, formData: FormData) {
   }
   const newStatusId = s(formData.get("statusId"));
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
+
+  // Tag-Ownership prüfen.
+  const ownedTags = tagIds.length
+    ? await prisma.tag.findMany({ where: { id: { in: tagIds }, ownerId: userId }, select: { id: true } })
+    : [];
+  const safeTagIds = ownedTags.map((t) => t.id);
+
+  // CustomerStatus-Ownership prüfen.
+  let safeNewStatusId: string | null = null;
+  if (newStatusId) {
+    const status = await prisma.customerStatus.findFirst({ where: { id: newStatusId, ownerId: userId } });
+    if (status) safeNewStatusId = status.id;
+  }
 
   await prisma.customer.update({
     where: { id },
@@ -93,22 +125,23 @@ export async function updateCustomer(id: string, formData: FormData) {
       facebook: s(formData.get("facebook")) ?? null,
       tiktok: s(formData.get("tiktok")) ?? null,
       website: s(formData.get("website")) ?? null,
-      statusId: newStatusId ?? null,
+      statusId: safeNewStatusId,
       source: s(formData.get("source")) ?? null,
       internalNotes: s(formData.get("internalNotes")) ?? null,
-      tags: { set: tagIds.map((id) => ({ id })) },
+      tags: { set: safeTagIds.map((id) => ({ id })) },
     },
   });
 
-  if (existing.statusId !== newStatusId) {
+  if (existing.statusId !== safeNewStatusId) {
     const oldS = existing.statusId
-      ? await prisma.customerStatus.findUnique({ where: { id: existing.statusId } })
+      ? await prisma.customerStatus.findFirst({ where: { id: existing.statusId, ownerId: userId } })
       : null;
-    const newS = newStatusId
-      ? await prisma.customerStatus.findUnique({ where: { id: newStatusId } })
+    const newS = safeNewStatusId
+      ? await prisma.customerStatus.findFirst({ where: { id: safeNewStatusId, ownerId: userId } })
       : null;
     await prisma.activity.create({
       data: {
+        ownerId: userId,
         kind: "customer_status_changed",
         message: `Status: ${oldS?.label ?? "—"} → ${newS?.label ?? "—"}`,
         customerId: id,
@@ -121,16 +154,24 @@ export async function updateCustomer(id: string, formData: FormData) {
 }
 
 export async function deleteCustomer(id: string) {
+  const userId = await requireUserId();
+  const existing = await prisma.customer.findFirst({ where: { id, ownerId: userId } });
+  if (!existing) throw new Error("Kunde nicht gefunden");
   await prisma.customer.delete({ where: { id } });
   revalidatePath("/kunden");
   redirect("/kunden");
 }
 
 export async function addCustomerNote(customerId: string, formData: FormData) {
+  const userId = await requireUserId();
   const text = s(formData.get("text"));
   if (!text) return;
+  // Customer-Ownership prüfen, damit keine Notiz an fremde Kundin geschrieben werden kann.
+  const customer = await prisma.customer.findFirst({ where: { id: customerId, ownerId: userId } });
+  if (!customer) throw new Error("Kunde nicht gefunden");
   await prisma.activity.create({
     data: {
+      ownerId: userId,
       kind: "note_added",
       message: text,
       customerId,
@@ -142,8 +183,12 @@ export async function addCustomerNote(customerId: string, formData: FormData) {
 // ---------- Begleitpersonen ----------
 
 export async function createCompanion(customerId: string, formData: FormData) {
+  const userId = await requireUserId();
   const firstName = s(formData.get("firstName"));
   if (!firstName) throw new Error("Vorname ist Pflicht.");
+  // Customer-Ownership prüfen.
+  const customer = await prisma.customer.findFirst({ where: { id: customerId, ownerId: userId } });
+  if (!customer) throw new Error("Kunde nicht gefunden");
   const lastPosition = await prisma.customerCompanion.findFirst({
     where: { customerId },
     orderBy: { position: "desc" },
@@ -166,7 +211,11 @@ export async function createCompanion(customerId: string, formData: FormData) {
 }
 
 export async function updateCompanion(id: string, formData: FormData) {
-  const c = await prisma.customerCompanion.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  // Companion via Customer-Ownership absichern.
+  const c = await prisma.customerCompanion.findFirst({
+    where: { id, customer: { ownerId: userId } },
+  });
   if (!c) throw new Error("Person nicht gefunden");
   await prisma.customerCompanion.update({
     where: { id },
@@ -184,7 +233,10 @@ export async function updateCompanion(id: string, formData: FormData) {
 }
 
 export async function deleteCompanion(id: string) {
-  const c = await prisma.customerCompanion.findUnique({ where: { id } });
+  const userId = await requireUserId();
+  const c = await prisma.customerCompanion.findFirst({
+    where: { id, customer: { ownerId: userId } },
+  });
   if (!c) return;
   await prisma.customerCompanion.delete({ where: { id } });
   revalidatePath(`/kunden/${c.customerId}`);

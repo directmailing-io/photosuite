@@ -9,7 +9,9 @@ export async function GET(
   const url = new URL(req.url);
   const dateId = url.searchParams.get("date");
 
-  const shooting = await prisma.shooting.findUnique({
+  // Public-Route: publicSlug ist composite-unique mit ownerId. Random-Token ist
+  // krypto-eindeutig → findFirst ist sicher.
+  const shooting = await prisma.shooting.findFirst({
     where: { publicSlug: slug },
     include: {
       customer: true,

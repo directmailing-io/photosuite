@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { parseIssuer } from "@/lib/invoiceSnapshot";
 import { renderReminderPdf } from "@/lib/invoice/reminderPdf";
 
@@ -9,12 +9,16 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  let userId: string;
+  try {
+    userId = await requireUserId();
+  } catch {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const { id } = await params;
-  const reminder = await prisma.invoiceReminder.findUnique({
-    where: { id },
+  const reminder = await prisma.invoiceReminder.findFirst({
+    where: { id, invoice: { ownerId: userId } },
     include: { invoice: true },
   });
   if (!reminder) return new Response("Not found", { status: 404 });

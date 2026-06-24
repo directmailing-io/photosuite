@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CalendarCheck, Inbox, Settings, ExternalLink } from "lucide-react";
@@ -17,14 +18,16 @@ export default async function BuchungenPage({
 }) {
   const sp = await searchParams;
   const filter: Filter = (VALID_FILTERS.includes(sp.filter as Filter) ? sp.filter : "pending") as Filter;
+  const userId = await requireUserId();
 
+  const baseWhere = { ownerId: userId };
   const statusWhere = filter === "all"
-    ? undefined
+    ? baseWhere
     : filter === "pending"
-      ? { status: "PENDING" }
+      ? { ...baseWhere, status: "PENDING" }
       : filter === "confirmed"
-        ? { status: "CONFIRMED" }
-        : { status: "CANCELLED" };
+        ? { ...baseWhere, status: "CONFIRMED" }
+        : { ...baseWhere, status: "CANCELLED" };
 
   const [bookings, counts, types] = await Promise.all([
     prisma.booking.findMany({
@@ -34,10 +37,11 @@ export default async function BuchungenPage({
     }),
     prisma.booking.groupBy({
       by: ["status"],
+      where: { ownerId: userId },
       _count: { _all: true },
     }),
     prisma.bookingType.findMany({
-      where: { isActive: true },
+      where: { ownerId: userId, isActive: true },
       orderBy: { position: "asc" },
     }),
   ]);

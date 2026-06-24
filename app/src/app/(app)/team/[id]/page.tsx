@@ -1,14 +1,16 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { TeamForm } from "../TeamForm";
 import { updateTeamMember, deleteTeamMember } from "../actions";
 
 export default async function EditMember({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = await requireUserId();
   const [member, expertise] = await Promise.all([
-    prisma.teamMember.findUnique({ where: { id }, include: { expertise: true } }),
-    prisma.teamExpertise.findMany({ orderBy: { label: "asc" } }),
+    prisma.teamMember.findFirst({ where: { id, ownerId: userId }, include: { expertise: true } }),
+    prisma.teamExpertise.findMany({ where: { ownerId: userId }, orderBy: { label: "asc" } }),
   ]);
   if (!member) return notFound();
   return (

@@ -1,16 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { generateSlug } from "@/lib/slug";
 import { isOAuthProvider, isValidProviderKey } from "@/lib/videoProviders";
 import { createMeetingForBooking } from "@/lib/videoMeetingServer";
-
-async function requireSession() {
-  const session = await auth();
-  if (!session?.user) throw new Error("Nicht angemeldet");
-}
 
 function revalidateAll() {
   revalidatePath("/buchungen");
@@ -21,9 +16,9 @@ function revalidateAll() {
 // Buchung annehmen: legt Customer + Shooting an und verknüpft.
 // Wenn die E-Mail bereits einer Kundin gehört, wird sie wiederverwendet.
 export async function acceptBooking(id: string): Promise<{ shootingId: string }> {
-  await requireSession();
-  const booking = await prisma.booking.findUnique({
-    where: { id },
+  const userId = await requireUserId();
+  const booking = await prisma.booking.findFirst({
+    where: { id, ownerId: userId },
     include: { bookingType: true },
   });
   if (!booking) throw new Error("Buchung nicht gefunden");
@@ -33,29 +28,27 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
   // nicht verbunden war): jetzt nachholen.
   let resolvedMeetingUrl = booking.meetingUrl;
   if (!resolvedMeetingUrl && isValidProviderKey(booking.bookingType.videoProvider) && isOAuthProvider(booking.bookingType.videoProvider as any)) {
-    const user = await prisma.user.findFirst({ select: { id: true } });
-    if (user) {
-      const url = await createMeetingForBooking(booking.bookingType.videoProvider as any, user.id, {
-        topic: `${booking.bookingType.name} — ${booking.customerName}`,
-        startAt: booking.startAt,
-        durationMin: booking.bookingType.durationMin,
-        customerEmail: booking.customerEmail,
-        customerName: booking.customerName,
+    const url = await createMeetingForBooking(booking.bookingType.videoProvider as any, userId, {
+      topic: `${booking.bookingType.name} — ${booking.customerName}`,
+      startAt: booking.startAt,
+      durationMin: booking.bookingType.durationMin,
+      customerEmail: booking.customerEmail,
+      customerName: booking.customerName,
+    });
+    if (url) {
+      resolvedMeetingUrl = url;
+      await prisma.booking.update({
+        where: { id },
+        data: { meetingUrl: url, meetingProvider: booking.bookingType.videoProvider },
       });
-      if (url) {
-        resolvedMeetingUrl = url;
-        await prisma.booking.update({
-          where: { id },
-          data: { meetingUrl: url, meetingProvider: booking.bookingType.videoProvider },
-        });
-      }
     }
   }
 
-  // Customer-Match per Email (case-insensitive auf application level)
+  // Customer-Match per Email — Email darf zwischen Tenants kollidieren,
+  // daher MUSS ownerId Teil des Matches sein.
   const emailLower = booking.customerEmail.trim().toLowerCase();
   let customer = await prisma.customer.findFirst({
-    where: { email: { equals: emailLower } },
+    where: { email: { equals: emailLower }, ownerId: userId },
   });
 
   if (!customer) {
@@ -64,9 +57,9 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
     const firstName = parts[0] ?? booking.customerName;
     const lastName = parts.slice(1).join(" ") || "—";
 
-    // Default-Status für neue Kundinnen
+    // Default-Status für neue Kundinnen (kann fehlen, wenn User keine Defaults hat)
     const defaultStatus = await prisma.customerStatus.findFirst({
-      where: { isDefault: true },
+      where: { isDefault: true, ownerId: userId },
       orderBy: { position: "asc" },
     });
 
@@ -77,13 +70,14 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
         email: emailLower,
         phone: booking.customerPhone ?? null,
         statusId: defaultStatus?.id ?? null,
+        ownerId: userId,
       },
     });
   }
 
   // Shooting erstellen
   const shootingStatus = await prisma.shootingStatus.findFirst({
-    where: { isDefault: true },
+    where: { isDefault: true, ownerId: userId },
     orderBy: { position: "asc" },
   });
 
@@ -102,6 +96,7 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
         booking.message ?? booking.bookingType.description ?? null,
         resolvedMeetingUrl ? `Meeting-Link: ${resolvedMeetingUrl}` : null,
       ].filter(Boolean).join("\n\n") || null,
+      ownerId: userId,
       // Auto-Termin für die Detail-Ansicht
       dates: {
         create: [{
@@ -132,6 +127,7 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
       message: `Online-Buchung angenommen: ${booking.bookingType.name}`,
       shootingId: shooting.id,
       customerId: customer.id,
+      ownerId: userId,
     },
   });
 
@@ -140,7 +136,9 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
 }
 
 export async function cancelBooking(id: string, reason?: string): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
+  const booking = await prisma.booking.findFirst({ where: { id, ownerId: userId } });
+  if (!booking) throw new Error("Buchung nicht gefunden");
   await prisma.booking.update({
     where: { id },
     data: {
@@ -153,7 +151,9 @@ export async function cancelBooking(id: string, reason?: string): Promise<void> 
 }
 
 export async function deleteBooking(id: string): Promise<void> {
-  await requireSession();
+  const userId = await requireUserId();
+  const booking = await prisma.booking.findFirst({ where: { id, ownerId: userId } });
+  if (!booking) throw new Error("Buchung nicht gefunden");
   await prisma.booking.delete({ where: { id } });
   revalidateAll();
 }

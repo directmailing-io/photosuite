@@ -1,16 +1,19 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { PackageForm } from "../PackageForm";
 import { createPackage } from "../actions";
 
 export default async function NeuPaketPage() {
+  const userId = await requireUserId();
   const [team, questionnaires, addons] = await Promise.all([
-    prisma.teamMember.findMany({ orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
+    prisma.teamMember.findMany({ where: { ownerId: userId }, orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
     prisma.questionnaireTemplate.findMany({
+      where: { ownerId: userId },
       orderBy: [{ position: "asc" }],
       include: { _count: { select: { fields: true } } },
     }),
-    prisma.addon.findMany({ where: { isActive: true }, orderBy: { position: "asc" } }),
+    prisma.addon.findMany({ where: { ownerId: userId, isActive: true }, orderBy: { position: "asc" } }),
   ]);
   return (
     <>

@@ -15,6 +15,7 @@ import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { ThemePicker } from "./ThemePicker";
 import { PackageModePicker } from "./PackageModePicker";
 import { NoteTemplatesManager } from "./NoteTemplatesManager";
+import { EmailSettings } from "./EmailSettings";
 import { EmptyState } from "@/components/EmptyState";
 import { requireUserId } from "@/lib/auth";
 import {
@@ -30,7 +31,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "addons", "status", "tags", "vorlagen", "design"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "email", "addons", "status", "tags", "vorlagen", "design"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -156,6 +157,23 @@ export default async function EinstellungenPage({
       )}
 
       {tab === "buchung" && <BuchungSection userId={userId} />}
+
+      {tab === "email" && (
+        user ? (
+          <EmailSettings initial={{
+            smtpHost: user.smtpHost,
+            smtpPort: user.smtpPort,
+            smtpSecure: user.smtpSecure,
+            smtpUser: user.smtpUser,
+            hasSmtpPassword: !!user.smtpPasswordEnc,
+            smtpFromEmail: user.smtpFromEmail,
+            smtpFromName: user.smtpFromName,
+            emailNotifyDefault: user.emailNotifyDefault,
+          }} />
+        ) : (
+          <EmptyState title="Profil nicht ladbar" description="Bitte melde dich neu an." />
+        )
+      )}
 
       {tab === "addons" && <AddonSection userId={userId} />}
 

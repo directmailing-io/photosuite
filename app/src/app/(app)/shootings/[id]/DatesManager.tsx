@@ -53,11 +53,17 @@ export function DatesManager({
   dates,
   attachments,
   hasCalendarConnection,
+  emailEnabled,
+  emailNotifyDefault,
+  customerEmail,
 }: {
   shootingId: string;
   dates: DateItem[];
   attachments: AvailableAttachment[];
   hasCalendarConnection: boolean;
+  emailEnabled: boolean;
+  emailNotifyDefault: boolean;
+  customerEmail: string | null;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
@@ -98,6 +104,9 @@ export function DatesManager({
                 initial={d}
                 attachments={attachments}
                 hasCalendarConnection={hasCalendarConnection}
+                emailEnabled={emailEnabled}
+                emailNotifyDefault={emailNotifyDefault}
+                customerEmail={customerEmail}
                 onCancel={() => setEditing(null)}
                 onSubmit={async (fd) => {
                   await updateShootingDate(d.id, shootingId, fd);
@@ -161,6 +170,9 @@ export function DatesManager({
             <DateForm
               attachments={attachments}
               hasCalendarConnection={hasCalendarConnection}
+              emailEnabled={emailEnabled}
+              emailNotifyDefault={emailNotifyDefault}
+              customerEmail={customerEmail}
               onCancel={() => setAdding(false)}
               onSubmit={async (fd) => {
                 await addShootingDate(shootingId, fd);
@@ -180,17 +192,24 @@ function DateForm({
   initial,
   attachments,
   hasCalendarConnection,
+  emailEnabled,
+  emailNotifyDefault,
+  customerEmail,
   onSubmit,
   onCancel,
 }: {
   initial?: DateItem;
   attachments: AvailableAttachment[];
   hasCalendarConnection: boolean;
+  emailEnabled: boolean;
+  emailNotifyDefault: boolean;
+  customerEmail: string | null;
   onSubmit: (fd: FormData) => Promise<void>;
   onCancel: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [syncToCalendar, setSyncToCalendar] = useState<boolean>(initial?.syncToCalendar ?? false);
+  const [notifyCustomer, setNotifyCustomer] = useState<boolean>(emailNotifyDefault && !!customerEmail);
   const [selectedAttachmentIds, setSelectedAttachmentIds] = useState<Set<string>>(
     () => new Set(initial?.attachmentIds ?? []),
   );
@@ -261,6 +280,9 @@ function DateForm({
       // Sync-Toggle (checkbox als "on"/missing — wir setzen explizit).
       fd.delete("syncToCalendar");
       if (syncToCalendar) fd.set("syncToCalendar", "on");
+      // Notify-Toggle für Email-Versand an Kundin.
+      fd.delete("notifyCustomer");
+      if (notifyCustomer) fd.set("notifyCustomer", "on");
       // Attachment-IDs — alle ausgewählten als multiple Werte appenden.
       fd.delete("attachmentIds");
       selectedAttachmentIds.forEach((id) => fd.append("attachmentIds", id));
@@ -380,6 +402,27 @@ function DateForm({
           </div>
         </div>
       </label>
+
+      {/* Email-Notify-Toggle: Kundin per E-Mail informieren. Nur sichtbar wenn
+          SMTP konfiguriert UND Kundin eine E-Mail hat. */}
+      {emailEnabled && customerEmail && (
+        <label className="flex items-start gap-2 text-xs p-2 rounded-md cursor-pointer" style={{ background: "rgb(var(--linen))" }}>
+          <input
+            type="checkbox"
+            checked={notifyCustomer}
+            onChange={(e) => setNotifyCustomer(e.target.checked)}
+            className="mt-0.5"
+          />
+          <div className="flex-1">
+            <div className="font-medium" style={{ color: "rgb(var(--ink))" }}>
+              Kundin per E-Mail benachrichtigen
+            </div>
+            <div style={{ color: "rgb(var(--taupe))" }}>
+              Sendet eine Update-Mail an {customerEmail}.
+            </div>
+          </div>
+        </label>
+      )}
 
       {/* Datei-Zuordnung: bestehende Anhänge des Shootings können diesem Termin
           zugeordnet werden (z.B. Fitting-Checkliste). */}

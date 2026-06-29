@@ -41,6 +41,19 @@ model User {
   showStudioInstagram    Boolean                 @default(true)
   showStudioWhatsapp     Boolean                 @default(true)
   showStudioTelegram     Boolean                 @default(true)
+  // SMTP-Konfiguration für Email-Notifications an Kundinnen.
+  // EU-Stack: Lisa pflegt ihre eigenen SMTP-Zugangsdaten (z.B. Mailbox.org, IONOS) —
+  // damit bleibt die App provider-agnostisch und CLOUD-Act-frei.
+  smtpHost               String?
+  smtpPort               Int?
+  smtpSecure             Boolean                 @default(true)
+  smtpUser               String?
+  smtpPasswordEnc        String? // AES-256-GCM (lib/crypto.ts) — gleiches Verfahren wie Stripe-Keys
+  smtpFromEmail          String?
+  smtpFromName           String?
+  // Default-Vorbelegung der „Kundin benachrichtigen?"-Checkbox bei Action-Forms.
+  // Lisa kann pro Action immer noch manuell entscheiden.
+  emailNotifyDefault     Boolean                 @default(false)
   studioTagline          String? // kleiner Satz unter dem Namen
   // Studio-Logo (für Customer-Portal + Rechnungs-PDF)
   // logoUrl: das verwendete Logo (gecropped bei Raster, original bei SVG)
@@ -493,6 +506,9 @@ model Customer {
   deliveryCity    String?
   deliveryCountry String?
   deliveryNote    String? // „Packstation 174, Kundennummer …"
+  // DSGVO-Opt-in für Email-Benachrichtigungen. Default true (für Boudoir-Kontext OK,
+  // Kundin hat aktiv gebucht). Lisa kann pro Kundin opt-out setzen.
+  emailOptIn      Boolean             @default(true)
   // Social
   instagram      String?
   facebook       String?

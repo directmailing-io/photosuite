@@ -52,7 +52,15 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         invoices: { orderBy: { createdAt: "desc" } },
       },
     }),
-    prisma.user.findUnique({ where: { id: userId }, select: { packageMode: true } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        packageMode: true,
+        smtpHost: true,
+        smtpPasswordEnc: true,
+        emailNotifyDefault: true,
+      },
+    }),
     prisma.customer.findMany({ where: { ownerId: userId }, orderBy: [{ firstName: "asc" }] }),
     prisma.package.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" }, include: { addons: true } }),
     prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
@@ -170,6 +178,9 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
           <DatesManager
             shootingId={shooting.id}
             hasCalendarConnection={calendarConnCount > 0}
+            emailEnabled={!!(user?.smtpHost && user?.smtpPasswordEnc)}
+            emailNotifyDefault={user?.emailNotifyDefault ?? false}
+            customerEmail={shooting.customer.email}
             attachments={shooting.attachments.map((a) => ({ id: a.id, filename: a.filename }))}
             dates={shooting.dates.map((d) => ({
               id: d.id,

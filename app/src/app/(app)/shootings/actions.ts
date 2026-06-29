@@ -650,6 +650,13 @@ export async function addShootingDate(shootingId: string, formData: FormData) {
     }
   }
 
+  // Email-Notify an Kundin (best-effort, opt-in via Checkbox).
+  if (formData.get("notifyCustomer") === "on") {
+    const { notifyCustomerOfUpdate } = await import("@/lib/email/notify");
+    const detail = `${label} am ${startAt.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}${location ? ` · ${location}` : ""}`;
+    await notifyCustomerOfUpdate({ shootingId, kind: "new_date", detail });
+  }
+
   // Wenn das Shooting noch kein primäres scheduledAt hat, übernehmen
   if (!sh.scheduledAt) {
     await prisma.shooting.update({
@@ -721,6 +728,13 @@ export async function updateShootingDate(id: string, shootingId: string, formDat
     }
   } catch {
     // ignorieren — Sync ist Best-Effort
+  }
+
+  // Email-Notify bei Update.
+  if (formData.get("notifyCustomer") === "on") {
+    const { notifyCustomerOfUpdate } = await import("@/lib/email/notify");
+    const detail = `${label} am ${startAt.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}${location ? ` · ${location}` : ""}`;
+    await notifyCustomerOfUpdate({ shootingId, kind: "updated_date", detail });
   }
 
   revalidatePath(`/shootings/${shootingId}`);

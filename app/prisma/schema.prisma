@@ -819,6 +819,18 @@ model Shooting {
   team             TeamMember[]     @relation("ShootingTeam")
   // Public-Visibility: zeigt der „Team"-Block in der Kundenansicht? Default an.
   showTeamOnPublic Boolean          @default(true)
+  // Kontakt-Sichtbarkeit auf der Kundenansicht pro Shooting überschreiben.
+  // Wenn contactOverride = false (Default): User-Settings (Studio-Profil) gelten.
+  // Wenn true: die einzelnen show*-Felder unten gelten — Lisa kann pro Shooting
+  // entscheiden, ob für diese Kundin z.B. nur die WhatsApp-Nummer sichtbar sein soll.
+  contactOverride       Boolean       @default(false)
+  showPhoneOverride     Boolean       @default(true)
+  showEmailOverride     Boolean       @default(true)
+  showWebsiteOverride   Boolean       @default(true)
+  showAddressOverride   Boolean       @default(true)
+  showInstagramOverride Boolean       @default(true)
+  showWhatsappOverride  Boolean       @default(true)
+  showTelegramOverride  Boolean       @default(true)
   // Gebuchte Zusatzprodukte (Bilderbuch M, Leinwand etc.) — Quantity + Preis-Snapshot in ShootingAddon
   addons           ShootingAddon[]
   // Inhalt

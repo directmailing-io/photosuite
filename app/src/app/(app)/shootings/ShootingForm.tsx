@@ -2,6 +2,7 @@
 
 import { Field, FormRow } from "@/components/form/Field";
 import { TeamPicker, type TeamPickerMember } from "@/components/TeamPicker";
+import { ContactVisibilitySection } from "./ContactVisibilitySection";
 import { Trash2, UsersRound, Plus, Minus, Image as ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
@@ -45,6 +46,14 @@ export type ShootingInitial = {
   teamIds?: string[];
   bookedAddons?: BookedAddon[];
   showTeamOnPublic?: boolean;
+  contactOverride?: boolean;
+  showPhoneOverride?: boolean;
+  showEmailOverride?: boolean;
+  showWebsiteOverride?: boolean;
+  showAddressOverride?: boolean;
+  showInstagramOverride?: boolean;
+  showWhatsappOverride?: boolean;
+  showTelegramOverride?: boolean;
 };
 
 type Props = {
@@ -362,6 +371,19 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
           </div>
         </label>
       </section>
+
+      <ContactVisibilitySection
+        initial={{
+          contactOverride: initial?.contactOverride ?? false,
+          showPhoneOverride: initial?.showPhoneOverride ?? true,
+          showEmailOverride: initial?.showEmailOverride ?? true,
+          showWebsiteOverride: initial?.showWebsiteOverride ?? true,
+          showAddressOverride: initial?.showAddressOverride ?? true,
+          showInstagramOverride: initial?.showInstagramOverride ?? true,
+          showWhatsappOverride: initial?.showWhatsappOverride ?? true,
+          showTelegramOverride: initial?.showTelegramOverride ?? true,
+        }}
+      />
 
       <section className="card p-6">
         <div className="eyebrow eyebrow-muted mb-4">Beschreibung für die Kundin</div>

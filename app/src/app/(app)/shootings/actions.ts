@@ -429,6 +429,18 @@ export async function updateShooting(id: string, formData: FormData) {
       showTeamOnPublic: formData.has("showTeamOnPublic")
         ? formData.get("showTeamOnPublic") === "on"
         : existing.showTeamOnPublic,
+      // Kontakt-Sichtbarkeit-Override (alle Felder sind Checkboxen → wenn das
+      // contactOverride-Feld nicht im Body steht, behalten wir den Bestand).
+      contactOverride: formData.has("contactOverride")
+        ? formData.get("contactOverride") === "on"
+        : existing.contactOverride,
+      showPhoneOverride:     formData.has("contactOverride") ? formData.get("showPhoneOverride")     === "on" : existing.showPhoneOverride,
+      showEmailOverride:     formData.has("contactOverride") ? formData.get("showEmailOverride")     === "on" : existing.showEmailOverride,
+      showWebsiteOverride:   formData.has("contactOverride") ? formData.get("showWebsiteOverride")   === "on" : existing.showWebsiteOverride,
+      showAddressOverride:   formData.has("contactOverride") ? formData.get("showAddressOverride")   === "on" : existing.showAddressOverride,
+      showInstagramOverride: formData.has("contactOverride") ? formData.get("showInstagramOverride") === "on" : existing.showInstagramOverride,
+      showWhatsappOverride:  formData.has("contactOverride") ? formData.get("showWhatsappOverride")  === "on" : existing.showWhatsappOverride,
+      showTelegramOverride:  formData.has("contactOverride") ? formData.get("showTelegramOverride")  === "on" : existing.showTelegramOverride,
       team: { set: safeTeamIds.map((id) => ({ id })) },
     },
   });

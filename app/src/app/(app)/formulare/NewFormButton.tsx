@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { createLeadForm } from "./actions";
 
 export function NewFormButton() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -14,9 +16,11 @@ export function NewFormButton() {
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
       try {
-        await createLeadForm(fd);
+        const { id } = await createLeadForm(fd);
+        toast.success("Formular angelegt");
+        setOpen(false);
+        router.push(`/formulare/${id}`);
       } catch (err: any) {
-        if (err?.digest?.startsWith?.("NEXT_REDIRECT")) return;
         toast.error(err?.message ?? "Konnte nicht anlegen");
       }
     });

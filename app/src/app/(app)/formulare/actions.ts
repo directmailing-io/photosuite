@@ -35,7 +35,7 @@ function validateHex(color: string): string {
  * Erstellt ein neues Formular mit Standard-Feldern (Name, Email, Telefon, Nachricht).
  * Lisa kann diese später anpassen.
  */
-export async function createLeadForm(formData: FormData): Promise<void> {
+export async function createLeadForm(formData: FormData): Promise<{ id: string }> {
   const userId = await requireUserId();
   const name = s(formData.get("name"));
   if (!name) throw new Error("Name darf nicht leer sein.");
@@ -78,7 +78,7 @@ export async function createLeadForm(formData: FormData): Promise<void> {
   });
 
   revalidatePath("/formulare");
-  redirect(`/formulare/${form.id}`);
+  return { id: form.id };
 }
 
 export async function updateLeadFormMeta(id: string, formData: FormData): Promise<void> {

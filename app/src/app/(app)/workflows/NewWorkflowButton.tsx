@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { createWorkflow } from "./actions";
 
 export function NewWorkflowButton() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -14,9 +16,11 @@ export function NewWorkflowButton() {
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
       try {
-        await createWorkflow(fd);
+        const { id } = await createWorkflow(fd);
+        toast.success("Workflow angelegt");
+        setOpen(false);
+        router.push(`/workflows/${id}`);
       } catch (err: any) {
-        if (err?.digest?.startsWith?.("NEXT_REDIRECT")) return;
         toast.error(err?.message ?? "Konnte nicht anlegen");
       }
     });

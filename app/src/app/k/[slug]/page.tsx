@@ -661,19 +661,19 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
           );
         })()}
 
-        {/* CHECKLISTEN — markiert als print-only, damit beim Browser-Druck
-            nur dieser Bereich erscheint (Layout/Nav/Hero werden weggeblendet). */}
+        {/* CHECKLISTEN — Druck/PDF erfolgt über die dedizierte Print-Route
+            /k/[slug]/checkliste/print, nicht mehr über CSS-Hide-Hack. */}
         {shooting.checklists.length > 0 && (
-          <section id="checkliste" className="scroll-mt-20 print-only">
+          <section id="checkliste" className="scroll-mt-20">
             <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
               <div>
                 <div className="eyebrow">Damit alles glatt läuft</div>
                 <h2 className="font-serif text-3xl mt-1">Kleine Checkliste für dich</h2>
-                <div className="text-xs text-smoke mt-1 print-hide">
+                <div className="text-xs text-smoke mt-1">
                   Tipp: oben rechts kannst du die Checkliste als PDF speichern oder drucken.
                 </div>
               </div>
-              <PrintChecklistButton />
+              {shooting.publicSlug && <PrintChecklistButton slug={shooting.publicSlug} />}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {shooting.checklists.map((cl) => (
@@ -704,11 +704,19 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
 
         {/* KONTAKT-BLOCK */}
         {studio && (() => {
+          // Effektive Sichtbarkeit: Shooting-Override hat Vorrang vor User-Global.
+          const showPhone     = shooting.contactOverride ? shooting.showPhoneOverride     : studio.showStudioPhone;
+          const showEmail     = shooting.contactOverride ? shooting.showEmailOverride     : studio.showStudioEmail;
+          const showWebsite   = shooting.contactOverride ? shooting.showWebsiteOverride   : studio.showStudioWebsite;
+          const showInstagram = shooting.contactOverride ? shooting.showInstagramOverride : studio.showStudioInstagram;
+          const showAddress   = shooting.contactOverride ? shooting.showAddressOverride   : studio.showStudioAddress;
+          const showWhatsapp  = shooting.contactOverride ? shooting.showWhatsappOverride  : studio.showStudioWhatsapp;
+          const showTelegram  = shooting.contactOverride ? shooting.showTelegramOverride  : studio.showStudioTelegram;
           // URL-Sanitization: nur valide Buttons zeigen.
-          const waHref = studio.showStudioWhatsapp ? whatsappUrl(studio.studioWhatsapp) : null;
-          const tgHref = studio.showStudioTelegram ? telegramUrl(studio.studioTelegram) : null;
-          const phoneHref = studio.showStudioPhone ? telUrl(studio.studioPhone) : null;
-          const emailHref = studio.showStudioEmail ? mailtoUrl(studio.studioEmail) : null;
+          const waHref    = showWhatsapp ? whatsappUrl(studio.studioWhatsapp) : null;
+          const tgHref    = showTelegram ? telegramUrl(studio.studioTelegram) : null;
+          const phoneHref = showPhone    ? telUrl(studio.studioPhone)         : null;
+          const emailHref = showEmail    ? mailtoUrl(studio.studioEmail)      : null;
           const hasQuickContacts = waHref || tgHref || phoneHref || emailHref;
 
           return (
@@ -766,27 +774,27 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
-                {studio.studioPhone && studio.showStudioPhone && (
+                {studio.studioPhone && showPhone && (
                   <a href={`tel:${studio.studioPhone}`} className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Phone size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioPhone}
                   </a>
                 )}
-                {studio.studioEmail && studio.showStudioEmail && (
+                {studio.studioEmail && showEmail && (
                   <a href={`mailto:${studio.studioEmail}`} className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Mail size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioEmail}
                   </a>
                 )}
-                {studio.studioWebsite && studio.showStudioWebsite && (
+                {studio.studioWebsite && showWebsite && (
                   <a href={studio.studioWebsite} target="_blank" className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Globe size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioWebsite.replace(/^https?:\/\//, "")}
                   </a>
                 )}
-                {studio.studioInstagram && studio.showStudioInstagram && (
+                {studio.studioInstagram && showInstagram && (
                   <a href={`https://instagram.com/${studio.studioInstagram.replace(/^@/, "")}`} target="_blank" className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Instagram size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioInstagram}
                   </a>
                 )}
-                {studio.studioAddress && studio.showStudioAddress && (
+                {studio.studioAddress && showAddress && (
                   <div className="flex items-start gap-3 col-span-full">
                     <MapPin size={15} style={{ color: "rgb(var(--accent))" }} className="mt-0.5" />
                     <span className="whitespace-pre-line">{studio.studioAddress}</span>

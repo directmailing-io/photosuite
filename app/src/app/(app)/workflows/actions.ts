@@ -28,9 +28,12 @@ function n(v: FormDataEntryValue | null): number {
 }
 
 /**
- * Erstellt einen leeren Workflow und leitet auf den Editor weiter.
+ * Erstellt einen leeren Workflow. Liefert die ID zurück — der Client navigiert
+ * selbst auf den Editor (kein server-side redirect, gleicher Grund wie bei
+ * deleteWorkflow: NEXT_REDIRECT-Throw aus dem Modal heraus führte vereinzelt
+ * zu Client-Side-Crashes).
  */
-export async function createWorkflow(formData: FormData): Promise<void> {
+export async function createWorkflow(formData: FormData): Promise<{ id: string }> {
   const userId = await requireUserId();
   const name = s(formData.get("name"));
   if (!name) throw new Error("Name darf nicht leer sein.");
@@ -42,12 +45,13 @@ export async function createWorkflow(formData: FormData): Promise<void> {
       name: name.slice(0, 200),
       description: s(formData.get("description")),
       trigger,
+      triggerOffsetDays: 0,
       isActive: true,
       ownerId: userId,
     },
   });
   revalidatePath("/workflows");
-  redirect(`/workflows/${wf.id}`);
+  return { id: wf.id };
 }
 
 export async function updateWorkflow(id: string, formData: FormData): Promise<void> {

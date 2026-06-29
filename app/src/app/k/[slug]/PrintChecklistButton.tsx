@@ -3,25 +3,22 @@
 import { Printer } from "lucide-react";
 
 /**
- * Druckt die Checkliste über den Browser-eigenen Print-Dialog.
- * Im Print-Dialog kann die Kundin „Als PDF speichern" wählen.
+ * Öffnet eine dedizierte, gebrandete Print-Page für die Checkliste in einem
+ * neuen Tab. Dort wird der Druckdialog automatisch ausgelöst.
  *
- * Funktioniert über global definierte print-only CSS-Regeln (siehe globals.css):
- * - die Section mit `.print-only` bleibt sichtbar
- * - alles andere wird via `@media print` ausgeblendet
- *
- * Vorteil gegenüber server-side PDF-Generation: kein zusätzlicher Endpoint,
- * kein Hosting-Cost, perfekte Schrift- + Farb-Wiedergabe via Browser-Engine.
+ * Vorteil gegenüber dem alten `window.print()`-Hack: kein CSS-Hide-Tricksen,
+ * sondern eine echte schlanke A4-Vorlage mit Studio-Logo und sauberem Layout.
  */
-export function PrintChecklistButton() {
+export function PrintChecklistButton({ slug }: { slug: string }) {
   return (
-    <button
-      type="button"
-      onClick={() => window.print()}
-      className="btn-secondary text-xs h-9 print-hide"
+    <a
+      href={`/k/${slug}/checkliste/print`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="btn-secondary text-xs h-9"
       title="Als PDF speichern oder drucken"
     >
       <Printer size={13} /> Drucken / PDF
-    </button>
+    </a>
   );
 }

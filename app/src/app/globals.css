@@ -417,34 +417,14 @@
 }
 
 /* ============================================================
-   Print-Stile für die Checkliste in der Kundenansicht.
-   Beim `window.print()`-Aufruf wird alles bis auf die mit `.print-only`
-   markierte Sektion versteckt. Die Checkliste rendert dann auf einer
-   sauberen weißen DIN-A4-Seite mit dunklem Text — ready to print.
+   Print-Stile.
+   Bisher hatten wir einen CSS-Hide-Hack, der versehentlich auch Parent-
+   Container der „print-only"-Section ausblendete (`:not(.print-only)`
+   matched zwangsläufig auch alle Vorfahren). Die Druckseite war dadurch
+   leer. Inzwischen druckt Lisa über eine dedizierte Route
+   /k/[slug]/checkliste/print mit eigenem schlanken Layout — daher
+   bleibt hier nur ein minimales Page-Margin-Setting.
    ============================================================ */
 @media print {
-  /* Theme-overrides für Print: immer hell + lesbar, unabhängig vom aktiven Theme */
-  :root, :root[data-theme="lisa"], :root[data-theme="studio"], :root[data-theme="midnight"] {
-    --bg: 255 255 255;
-    --paper: 255 255 255;
-    --linen: 245 245 245;
-    --stone: 220 220 220;
-    --taupe: 100 100 100;
-    --ink: 20 20 20;
-  }
-  body { background: white !important; color: black !important; }
-  /* Alles verstecken außer der print-only Sektion */
-  body :not(.print-only):not(.print-only *) { display: none !important; }
-  .print-only {
-    display: block !important;
-    padding: 24px !important;
-    background: white !important;
-    color: black !important;
-    box-shadow: none !important;
-    border: none !important;
-    max-width: 100% !important;
-  }
-  .print-hide { display: none !important; }
-  /* Page-Margins für Print */
   @page { margin: 14mm; }
 }

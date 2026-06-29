@@ -388,9 +388,11 @@ export async function markInvoicePaid(id: string) {
   const userId = await requireUserId();
   const inv = await prisma.invoice.findFirst({ where: { id, ownerId: userId } });
   if (!inv) return;
+  // Idempotenz: wenn schon PAID, keine Bestätigung erneut versenden.
+  const wasAlreadyPaid = inv.status === "PAID";
   await prisma.invoice.update({
     where: { id },
-    data: { status: "PAID", paidAt: new Date() },
+    data: { status: "PAID", paidAt: inv.paidAt ?? new Date() },
   });
   if (inv.shootingId) {
     // Verknüpften Installment auch markieren
@@ -400,6 +402,13 @@ export async function markInvoicePaid(id: string) {
   }
   revalidatePath(`/buchhaltung/${id}`);
   revalidatePath("/buchhaltung");
+  // Bestätigungs-Mails fire-and-forget: nicht den Caller blocken.
+  if (!wasAlreadyPaid) {
+    const { sendPaymentConfirmation } = await import("@/lib/email/paymentConfirm");
+    sendPaymentConfirmation(id, "manual").catch((err) =>
+      console.error(`[markInvoicePaid] sendPaymentConfirmation failed: ${err?.message ?? err}`),
+    );
+  }
 }
 
 export async function markInvoiceSent(id: string) {

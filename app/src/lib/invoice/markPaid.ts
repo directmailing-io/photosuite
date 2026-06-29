@@ -76,6 +76,14 @@ export async function markInvoicePaidFromSession(
   if (inv.shootingId) revalidatePath(`/shootings/${inv.shootingId}`);
   if (inv.customerId) revalidatePath(`/kunden/${inv.customerId}`);
 
+  // Fire-and-forget Mail-Versand. Stripe-Webhook muss schnell antworten,
+  // SMTP-Versand darf nicht blocken. Fehler werden geloggt aber nicht
+  // an Stripe propagiert (sonst würde Stripe Retries auslösen).
+  const { sendPaymentConfirmation } = await import("@/lib/email/paymentConfirm");
+  sendPaymentConfirmation(invoiceId, "stripe").catch((err) =>
+    console.error(`[markPaidFromSession] sendPaymentConfirmation failed: ${err?.message ?? err}`),
+  );
+
   return { alreadyPaid: false };
 }
 

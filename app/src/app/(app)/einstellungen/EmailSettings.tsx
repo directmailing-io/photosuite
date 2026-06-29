@@ -16,6 +16,8 @@ export type EmailSettingsInitial = {
   smtpFromEmail: string | null;
   smtpFromName: string | null;
   emailNotifyDefault: boolean;
+  payConfirmCustomer: boolean;
+  payConfirmOwner: boolean;
 };
 
 /**
@@ -201,6 +203,40 @@ export function EmailSettings({ initial }: { initial: EmailSettingsInitial }) {
               </div>
             </div>
           </label>
+
+          <div className="pt-2 mt-2 border-t border-stone/60 space-y-2">
+            <div className="eyebrow eyebrow-muted">Zahlungsbestätigungen</div>
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                name="payConfirmCustomer"
+                defaultChecked={initial.payConfirmCustomer}
+                className="w-4 h-4 mt-0.5"
+              />
+              <div>
+                <div className="font-medium">Kundin bei Zahlungseingang automatisch benachrichtigen</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  Sobald eine Rechnung auf „bezahlt" gesetzt wird (manuell oder via Stripe),
+                  geht eine Bestätigungs-Mail mit Rechnungsnummer + Betrag an die Kundin.
+                </div>
+              </div>
+            </label>
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                name="payConfirmOwner"
+                defaultChecked={initial.payConfirmOwner}
+                className="w-4 h-4 mt-0.5"
+              />
+              <div>
+                <div className="font-medium">Mich selbst bei Zahlungseingang benachrichtigen</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  Du bekommst eine Mail an deine Absender-Adresse — praktisch für
+                  Stripe-Zahlungen, die du sonst erst beim nächsten Login siehst.
+                </div>
+              </div>
+            </label>
+          </div>
         </div>
 
         {testResult && !testResult.ok && (

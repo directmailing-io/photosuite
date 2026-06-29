@@ -58,6 +58,10 @@ model User {
   // Default-Vorbelegung der „Kundin benachrichtigen?"-Checkbox bei Action-Forms.
   // Lisa kann pro Action immer noch manuell entscheiden.
   emailNotifyDefault     Boolean                 @default(false)
+  // Automatische Zahlungsbestätigung: bei „Rechnung als bezahlt markiert"
+  // (manuell oder via Stripe-Webhook) werden Bestätigungs-Mails versendet.
+  payConfirmCustomer     Boolean                 @default(true)  // an die Kundin
+  payConfirmOwner        Boolean                 @default(true)  // an Lisa selbst
   studioTagline          String? // kleiner Satz unter dem Namen
   // Studio-Logo (für Customer-Portal + Rechnungs-PDF)
   // logoUrl: das verwendete Logo (gecropped bei Raster, original bei SVG)

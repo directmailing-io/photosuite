@@ -170,6 +170,8 @@ export default async function EinstellungenPage({
             smtpFromEmail: user.smtpFromEmail,
             smtpFromName: user.smtpFromName,
             emailNotifyDefault: user.emailNotifyDefault,
+            payConfirmCustomer: user.payConfirmCustomer,
+            payConfirmOwner: user.payConfirmOwner,
           }} />
         ) : (
           <EmptyState title="Profil nicht ladbar" description="Bitte melde dich neu an." />

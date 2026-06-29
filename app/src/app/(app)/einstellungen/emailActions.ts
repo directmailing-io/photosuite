@@ -34,6 +34,8 @@ export async function saveSmtpConfig(formData: FormData): Promise<void> {
   const fromEmail = s(formData.get("smtpFromEmail"));
   const fromName = s(formData.get("smtpFromName"));
   const emailNotifyDefault = formData.get("emailNotifyDefault") === "on";
+  const payConfirmCustomer = formData.get("payConfirmCustomer") === "on";
+  const payConfirmOwner = formData.get("payConfirmOwner") === "on";
 
   // Wenn Felder leer sind UND kein bestehendes Setup vorhanden, einfach leeren.
   // Wenn Felder gefüllt → speichern.
@@ -45,6 +47,8 @@ export async function saveSmtpConfig(formData: FormData): Promise<void> {
     smtpFromEmail: fromEmail,
     smtpFromName: fromName,
     emailNotifyDefault,
+    payConfirmCustomer,
+    payConfirmOwner,
   };
   if (newPw) {
     data.smtpPasswordEnc = encryptSecret(newPw, userId);

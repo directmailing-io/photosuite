@@ -16,15 +16,27 @@ export default async function OfferPage({
 }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const offer = await prisma.offer.findFirst({
-    where: { id, ownerId: userId },
-    include: {
-      items: { orderBy: { position: "asc" } },
-      customer: true,
-      shooting: { select: { id: true, title: true } },
-      convertedInvoice: { select: { id: true, number: true } },
-    },
-  });
+  const [offer, packages, catalog] = await Promise.all([
+    prisma.offer.findFirst({
+      where: { id, ownerId: userId },
+      include: {
+        items: { orderBy: { position: "asc" } },
+        customer: true,
+        shooting: { select: { id: true, title: true } },
+        convertedInvoice: { select: { id: true, number: true } },
+      },
+    }),
+    prisma.package.findMany({
+      where: { ownerId: userId, isActive: true },
+      orderBy: { position: "asc" },
+      select: { id: true, name: true, description: true, price: true },
+    }),
+    prisma.articleCatalog.findMany({
+      where: { ownerId: userId, isActive: true },
+      orderBy: [{ kind: "asc" }, { position: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, description: true, kind: true, unit: true, defaultPriceCents: true },
+    }),
+  ]);
   if (!offer) return notFound();
 
   return (
@@ -76,6 +88,13 @@ export default async function OfferPage({
             totalCents: i.totalCents,
           })),
         }}
+        packages={packages.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          priceCents: Math.round((p.price ?? 0) * 100),
+        }))}
+        catalog={catalog}
       />
     </>
   );

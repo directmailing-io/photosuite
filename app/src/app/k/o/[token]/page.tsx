@@ -158,6 +158,17 @@ export default async function PublicOfferPage({
           <OfferActions token={token} customerName={offer.customer.firstName} />
         )}
 
+        <div className="text-center mb-6">
+          <a
+            href={`/api/k/offer/${token}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-smoke hover:text-ink underline transition"
+          >
+            Als PDF herunterladen
+          </a>
+        </div>
+
         <footer className="text-center text-xs text-smoke mt-8 space-y-0.5">
           <div>{issuer.companyName}</div>
           {issuer.email && <div>{issuer.email}</div>}

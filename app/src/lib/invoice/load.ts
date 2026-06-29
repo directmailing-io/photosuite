@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 // Lädt das Logo vom Disk in einen Buffer für @react-pdf.
 // Unterstützt PNG, JPG nativ. SVG wird via @resvg/resvg-js zu PNG gerendert (hochauflösend für scharfe PDFs).
-async function loadLogoBuffer(url: string | null, mime: string | null): Promise<{ buffer: Buffer; format: "png" | "jpg" } | null> {
+export async function loadLogoBuffer(url: string | null, mime: string | null): Promise<{ buffer: Buffer; format: "png" | "jpg" } | null> {
   if (!url || !mime) return null;
   if (!url.startsWith("/uploads/")) return null;
   try {

@@ -138,7 +138,10 @@ export async function deleteWorkflow(id: string): Promise<void> {
   if (!wf) throw new Error("Workflow nicht gefunden");
   await prisma.workflow.delete({ where: { id } });
   revalidatePath("/workflows");
-  redirect("/workflows");
+  // KEIN server-side redirect mehr — der NEXT_REDIRECT-Throw verursachte einen
+  // Client-Side-Crash, weil die Page noch versuchte, sich mit den alten
+  // (jetzt verschwundenen) Workflow-Daten zu re-rendern. Der Client navigiert
+  // jetzt nach erfolgreichem Delete selbst per router.push.
 }
 
 /**

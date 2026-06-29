@@ -96,13 +96,17 @@ export function TeamPicker({
                 <button
                   type="button"
                   onClick={() => setPrim(m.id)}
-                  className="text-xs flex items-center gap-1 px-2 py-1 rounded transition"
+                  className="text-xs flex items-center gap-1.5 px-2.5 py-1 rounded transition hover:opacity-90"
                   style={{
-                    background: isPrimary ? "rgb(var(--accent))" : "transparent",
-                    color: isPrimary ? "#fff" : "rgb(var(--smoke))",
+                    // Aktiv-Primary: roter „Solid"-Button. Inaktiv-Primary:
+                    // hellgrauer Pill mit dunklem Text, damit er auf der
+                    // hellen Card klar lesbar bleibt (nicht weiß auf weiß).
+                    background: isPrimary ? "rgb(var(--accent))" : "rgb(var(--linen))",
+                    color: isPrimary ? "#fff" : "rgb(var(--ink))",
                     border: isPrimary ? "none" : "1px solid rgb(var(--stone))",
+                    fontWeight: 500,
                   }}
-                  title="Als Ansprechpartner setzen"
+                  title={isPrimary ? "Ist Ansprechpartner:in" : "Als Ansprechpartner:in setzen"}
                 >
                   <Star size={11} className={isPrimary ? "fill-current" : ""} />
                   Ansprechpartner

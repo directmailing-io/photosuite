@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Trash2, Save, Send, CheckCircle2, XCircle, Hourglass, CircleSlash,
-  Copy, ExternalLink, ArrowLeftRight, AlertCircle,
+  Copy, ExternalLink, ArrowLeftRight, AlertCircle, Package as PackageIcon, Briefcase, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { eurFromCents, eurInputFromCents } from "@/lib/money";
@@ -57,6 +57,24 @@ type Props = {
     convertedInvoice: { id: string; number: string | null } | null;
     items: Item[];
   };
+  packages: PickerPackage[];
+  catalog: PickerArticle[];
+};
+
+export type PickerPackage = {
+  id: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+};
+
+export type PickerArticle = {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: string;
+  unit: string | null;
+  defaultPriceCents: number;
 };
 
 function toDateInput(iso: string | null) {
@@ -73,7 +91,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   WITHDRAWN: { label: "Zurückgezogen", color: "#7D7878", bg: "#F2F1EE" },
 };
 
-export function OfferDetail({ offer }: Props) {
+export function OfferDetail({ offer, packages, catalog }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<Item[]>(offer.items);
@@ -96,6 +114,22 @@ export function OfferDetail({ offer }: Props) {
       unit: "Pauschal",
       unitPriceCents: 0,
       totalCents: 0,
+    }]);
+  }
+  /**
+   * Fügt eine vorgefertigte Position aus einem Paket oder Katalog-Artikel hinzu.
+   * Werte werden snapshot-mäßig in das Angebot kopiert; spätere Änderungen am
+   * Paket/Artikel-Katalog beeinflussen bestehende Angebote nicht.
+   */
+  function addFromTemplate(t: { title: string; description: string | null; unit: string; unitPriceCents: number }) {
+    setItems((prev) => [...prev, {
+      id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: t.title,
+      description: t.description,
+      quantity: 1,
+      unit: t.unit,
+      unitPriceCents: t.unitPriceCents,
+      totalCents: t.unitPriceCents,
     }]);
   }
   function updateItem(idx: number, patch: Partial<Item>) {
@@ -305,12 +339,32 @@ export function OfferDetail({ offer }: Props) {
         </section>
 
         <section className="card p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <div className="eyebrow eyebrow-muted">Positionen</div>
             {isDraft && (
-              <button type="button" onClick={addItem} className="btn-secondary text-xs h-8">
-                <Plus size={13} /> Position
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <PackagePicker
+                  packages={packages}
+                  onPick={(p) => addFromTemplate({
+                    title: p.name,
+                    description: p.description,
+                    unit: "Pauschal",
+                    unitPriceCents: p.priceCents,
+                  })}
+                />
+                <ArticlePicker
+                  catalog={catalog}
+                  onPick={(a) => addFromTemplate({
+                    title: a.name,
+                    description: a.description,
+                    unit: a.unit ?? "Pauschal",
+                    unitPriceCents: a.defaultPriceCents,
+                  })}
+                />
+                <button type="button" onClick={addItem} className="btn-secondary text-xs h-8">
+                  <Plus size={13} /> Leere Position
+                </button>
+              </div>
             )}
           </div>
           {items.length === 0 && (
@@ -444,6 +498,25 @@ export function OfferDetail({ offer }: Props) {
       {/* Sidebar */}
       <aside className="space-y-6">
         <div className="card p-5">
+          <div className="eyebrow eyebrow-muted mb-3 flex items-center justify-between">
+            <span>PDF</span>
+            <a
+              href={`/api/offers/${offer.id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-xs h-8"
+            >
+              <Download size={12} /> Herunterladen
+            </a>
+          </div>
+          <div className="text-xs text-smoke">
+            {isDraft
+              ? "Vorschau des aktuellen Stands — Designs änderst du unter Einstellungen → Rechnung → Rechnungs-Design (gilt auch für Angebote)."
+              : "Endgültige Version mit Nummer. Design siehe Einstellungen → Rechnung."}
+          </div>
+        </div>
+
+        <div className="card p-5">
           <div className="eyebrow eyebrow-muted mb-3">Beträge</div>
           <div className="space-y-1.5 text-sm tabular-nums">
             <div className="flex justify-between"><span className="text-smoke">Netto</span><span>{eurFromCents(subtotal)}</span></div>
@@ -509,6 +582,183 @@ export function OfferDetail({ offer }: Props) {
           )}
         </div>
       </aside>
+    </div>
+  );
+}
+
+function fmtEUR(cents: number): string {
+  return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+/**
+ * Picker für Pakete. Im Angebots-Editor kann Lisa damit ein bestehendes
+ * Paket schnell als Position einfügen — Snapshot von Name, Beschreibung
+ * und Preis. Spätere Paket-Preisänderungen ändern bestehende Angebote nicht.
+ */
+function PackagePicker({
+  packages,
+  onPick,
+}: {
+  packages: PickerPackage[];
+  onPick: (p: PickerPackage) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  if (packages.length === 0) return null;
+  const query = q.trim().toLowerCase();
+  const filtered = query
+    ? packages.filter((p) => p.name.toLowerCase().includes(query) || (p.description ?? "").toLowerCase().includes(query))
+    : packages;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="btn-accent text-xs h-8"
+      >
+        <PackageIcon size={13} /> Aus Paket
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 mt-1 z-50 w-80 max-h-96 overflow-y-auto rounded-lg border shadow-md"
+            style={{ background: "rgb(var(--paper))", borderColor: "rgb(var(--stone))" }}
+          >
+            <div className="p-2 border-b border-stone/60">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Paket suchen…"
+                className="input h-8 text-sm"
+                autoFocus
+              />
+            </div>
+            {filtered.length === 0 ? (
+              <div className="text-xs text-smoke text-center py-6">Keine Treffer.</div>
+            ) : (
+              filtered.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => { onPick(p); setOpen(false); }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-linen transition border-t border-stone/40 first:border-0 flex items-start gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{p.name}</div>
+                    {p.description && (
+                      <div className="text-xs text-smoke line-clamp-2 mt-0.5">{p.description}</div>
+                    )}
+                  </div>
+                  <div className="text-xs tabular-nums text-smoke shrink-0">{fmtEUR(p.priceCents)}</div>
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Picker für den Artikel-Katalog. Zwei Sections (Dienstleistung / Produkt)
+ * mit Suchfilter. Snapshot-Kopie analog zum Rechnungs-Picker.
+ */
+function ArticlePicker({
+  catalog,
+  onPick,
+}: {
+  catalog: PickerArticle[];
+  onPick: (a: PickerArticle) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  if (catalog.length === 0) return null;
+  const query = q.trim().toLowerCase();
+  const filter = (a: PickerArticle) =>
+    !query || a.name.toLowerCase().includes(query) || (a.description ?? "").toLowerCase().includes(query);
+  const services = catalog.filter((a) => a.kind === "SERVICE" && filter(a));
+  const products = catalog.filter((a) => a.kind === "PRODUCT" && filter(a));
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="btn-secondary text-xs h-8"
+      >
+        <Briefcase size={13} /> Aus Katalog
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 mt-1 z-50 w-80 max-h-96 overflow-y-auto rounded-lg border shadow-md"
+            style={{ background: "rgb(var(--paper))", borderColor: "rgb(var(--stone))" }}
+          >
+            <div className="p-2 border-b border-stone/60">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Suchen…"
+                className="input h-8 text-sm"
+                autoFocus
+              />
+            </div>
+            {services.length === 0 && products.length === 0 && (
+              <div className="text-xs text-smoke text-center py-6">Keine Treffer.</div>
+            )}
+            {services.length > 0 && (
+              <>
+                <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-smoke font-semibold">
+                  Dienstleistungen
+                </div>
+                {services.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => { onPick(a); setOpen(false); }}
+                    className="w-full text-left px-3 py-2 hover:bg-linen transition flex items-center gap-3 border-t border-stone/40"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{a.name}</div>
+                      {a.description && (
+                        <div className="text-xs text-smoke truncate">{a.description}</div>
+                      )}
+                    </div>
+                    <div className="text-xs tabular-nums text-smoke shrink-0">{fmtEUR(a.defaultPriceCents)}</div>
+                  </button>
+                ))}
+              </>
+            )}
+            {products.length > 0 && (
+              <>
+                <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-smoke font-semibold">
+                  Produkte
+                </div>
+                {products.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => { onPick(a); setOpen(false); }}
+                    className="w-full text-left px-3 py-2 hover:bg-linen transition flex items-center gap-3 border-t border-stone/40"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{a.name}</div>
+                      {a.description && (
+                        <div className="text-xs text-smoke truncate">{a.description}</div>
+                      )}
+                    </div>
+                    <div className="text-xs tabular-nums text-smoke shrink-0">{fmtEUR(a.defaultPriceCents)}</div>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

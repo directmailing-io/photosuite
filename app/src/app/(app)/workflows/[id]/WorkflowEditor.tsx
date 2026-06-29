@@ -102,8 +102,9 @@ export function WorkflowEditor({ workflow }: Props) {
     setBusy(true);
     try {
       await deleteWorkflow(workflow.id);
+      toast.success("Workflow gelöscht");
+      router.push("/workflows");
     } catch (err: any) {
-      if (err?.digest?.startsWith?.("NEXT_REDIRECT")) return;
       toast.error(err?.message ?? "Fehler");
       setBusy(false);
     }

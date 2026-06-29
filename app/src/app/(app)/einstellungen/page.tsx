@@ -77,11 +77,15 @@ export default async function EinstellungenPage({
               studioWebsite: user.studioWebsite,
               studioAddress: user.studioAddress,
               studioInstagram: user.studioInstagram,
+              studioWhatsapp: user.studioWhatsapp,
+              studioTelegram: user.studioTelegram,
               showStudioPhone: user.showStudioPhone,
               showStudioEmail: user.showStudioEmail,
               showStudioWebsite: user.showStudioWebsite,
               showStudioAddress: user.showStudioAddress,
               showStudioInstagram: user.showStudioInstagram,
+              showStudioWhatsapp: user.showStudioWhatsapp,
+              showStudioTelegram: user.showStudioTelegram,
             }} />
             <PackageModePicker initial={(user.packageMode as "all_in_one" | "modular") ?? "all_in_one"} />
           </div>

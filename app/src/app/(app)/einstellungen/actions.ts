@@ -153,12 +153,16 @@ export async function updateStudioProfile(formData: FormData) {
       studioWebsite: s(formData.get("studioWebsite")) ?? null,
       studioAddress: s(formData.get("studioAddress")) ?? null,
       studioInstagram: s(formData.get("studioInstagram")) ?? null,
+      studioWhatsapp: s(formData.get("studioWhatsapp")) ?? null,
+      studioTelegram: s(formData.get("studioTelegram")) ?? null,
       // Visibility-Toggles: nur „on" = sichtbar, alles andere (fehlend/leer) = versteckt.
       showStudioPhone: formData.get("showStudioPhone") === "on",
       showStudioEmail: formData.get("showStudioEmail") === "on",
       showStudioWebsite: formData.get("showStudioWebsite") === "on",
       showStudioAddress: formData.get("showStudioAddress") === "on",
       showStudioInstagram: formData.get("showStudioInstagram") === "on",
+      showStudioWhatsapp: formData.get("showStudioWhatsapp") === "on",
+      showStudioTelegram: formData.get("showStudioTelegram") === "on",
     },
   });
   revalidatePath("/einstellungen");

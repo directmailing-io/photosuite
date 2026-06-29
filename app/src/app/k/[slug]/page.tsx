@@ -6,11 +6,12 @@ import {
   Calendar, MapPin, Clock, Phone, Mail, Globe, Instagram,
   ListChecks, CreditCard, Check, Heart, Star, UsersRound,
   FileQuestion, ChevronRight, CheckCircle2, Receipt, Download,
-  AlertCircle, Hourglass,
+  AlertCircle, Hourglass, MessageCircle, Send as SendIcon,
 } from "lucide-react";
 import { CalendarDownloadButton } from "./CalendarDownloadButton";
 import { PrintChecklistButton } from "./PrintChecklistButton";
 import { LandingNav } from "./LandingNav";
+import { whatsappUrl, telegramUrl, telUrl, mailtoUrl } from "@/lib/contactUrls";
 import { Avatar } from "@/components/Avatar";
 import { STATUS_LABELS, type StatusKey } from "@/lib/questionnaire";
 import { eurFromCents } from "@/lib/money";
@@ -651,13 +652,67 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
         )}
 
         {/* KONTAKT-BLOCK */}
-        {studio && (
+        {studio && (() => {
+          // URL-Sanitization: nur valide Buttons zeigen.
+          const waHref = studio.showStudioWhatsapp ? whatsappUrl(studio.studioWhatsapp) : null;
+          const tgHref = studio.showStudioTelegram ? telegramUrl(studio.studioTelegram) : null;
+          const phoneHref = studio.showStudioPhone ? telUrl(studio.studioPhone) : null;
+          const emailHref = studio.showStudioEmail ? mailtoUrl(studio.studioEmail) : null;
+          const hasQuickContacts = waHref || tgHref || phoneHref || emailHref;
+
+          return (
           <section id="kontakt" className="card p-8 bg-ink text-bg overflow-hidden relative scroll-mt-20">
             <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-10" style={{ background: "rgb(var(--accent))" }} />
             <div className="relative">
               <div className="eyebrow" style={{ color: "rgba(255,255,255,0.7)" }}>Bei Fragen</div>
               <h2 className="font-serif text-3xl mt-1 mb-1">{studio.studioName ?? studio.name}</h2>
               {studio.studioTagline && <p className="text-sm opacity-75 max-w-xl">{studio.studioTagline}</p>}
+
+              {/* Schnellkontakt-Buttons: prominent, große Touch-Targets, ein Tap = direkter Channel */}
+              {hasQuickContacts && (
+                <div className="flex flex-wrap gap-2.5 mt-6">
+                  {waHref && (
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener"
+                      className="flex items-center gap-2 px-4 h-11 rounded-full font-medium text-sm transition hover:scale-105"
+                      style={{ background: "#25D366", color: "white" }}
+                    >
+                      <MessageCircle size={16} /> WhatsApp
+                    </a>
+                  )}
+                  {tgHref && (
+                    <a
+                      href={tgHref}
+                      target="_blank"
+                      rel="noopener"
+                      className="flex items-center gap-2 px-4 h-11 rounded-full font-medium text-sm transition hover:scale-105"
+                      style={{ background: "#229ED9", color: "white" }}
+                    >
+                      <SendIcon size={16} /> Telegram
+                    </a>
+                  )}
+                  {phoneHref && (
+                    <a
+                      href={phoneHref}
+                      className="flex items-center gap-2 px-4 h-11 rounded-full font-medium text-sm transition hover:scale-105"
+                      style={{ background: "rgb(var(--accent))", color: "white" }}
+                    >
+                      <Phone size={16} /> Anrufen
+                    </a>
+                  )}
+                  {emailHref && (
+                    <a
+                      href={emailHref}
+                      className="flex items-center gap-2 px-4 h-11 rounded-full font-medium text-sm transition hover:scale-105"
+                      style={{ background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+                    >
+                      <Mail size={16} /> E-Mail
+                    </a>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
                 {studio.studioPhone && studio.showStudioPhone && (
@@ -689,7 +744,8 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               </div>
             </div>
           </section>
-        )}
+          );
+        })()}
 
         <div className="text-center text-xs text-smoke flex items-center justify-center gap-1.5 pt-4">
           <Heart size={11} className="text-accent" /> Wir freuen uns auf dich, {firstName}.

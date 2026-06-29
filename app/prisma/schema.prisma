@@ -29,6 +29,9 @@ model User {
   studioWebsite          String?
   studioAddress          String? // mehrzeilig
   studioInstagram        String?
+  // Schnellkontakt-Kanäle (Kundenseite). Beide optional + visibility-toggles.
+  studioWhatsapp         String?  // Nummer in beliebigem Format, wird beim Rendern sanitized.
+  studioTelegram         String?  // @username oder t.me-URL, wird normalisiert.
   // Visibility-Toggles für die Kundenansicht. Default: alle sichtbar (rückwärts-kompatibel).
   // Lisa kann pro Feld entscheiden, ob es im Public-Footer erscheinen soll.
   showStudioPhone        Boolean                 @default(true)
@@ -36,6 +39,8 @@ model User {
   showStudioWebsite      Boolean                 @default(true)
   showStudioAddress      Boolean                 @default(true)
   showStudioInstagram    Boolean                 @default(true)
+  showStudioWhatsapp     Boolean                 @default(true)
+  showStudioTelegram     Boolean                 @default(true)
   studioTagline          String? // kleiner Satz unter dem Namen
   // Studio-Logo (für Customer-Portal + Rechnungs-PDF)
   // logoUrl: das verwendete Logo (gecropped bei Raster, original bei SVG)

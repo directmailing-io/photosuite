@@ -15,11 +15,15 @@ type Profile = {
   studioWebsite: string | null;
   studioAddress: string | null;
   studioInstagram: string | null;
+  studioWhatsapp: string | null;
+  studioTelegram: string | null;
   showStudioPhone: boolean;
   showStudioEmail: boolean;
   showStudioWebsite: boolean;
   showStudioAddress: boolean;
   showStudioInstagram: boolean;
+  showStudioWhatsapp: boolean;
+  showStudioTelegram: boolean;
 };
 
 export function StudioProfile({ initial }: { initial: Profile }) {
@@ -115,6 +119,47 @@ export function StudioProfile({ initial }: { initial: Profile }) {
       >
         <textarea name="studioAddress" defaultValue={initial.studioAddress ?? ""} rows={3} className="textarea" placeholder="Studio-Name\nStraße\nPLZ Stadt" />
       </Field>
+
+      <div className="hairline pt-4">
+        <div className="text-sm font-medium mb-2">Schnellkontakt-Buttons auf der Kundenseite</div>
+        <div className="text-xs text-smoke mb-4">
+          Diese Buttons erscheinen prominent auf der Kundenansicht — für schnelle Kontaktaufnahme bei Fragen.
+        </div>
+        <FormRow>
+          <Field
+            label="WhatsApp"
+            hint={
+              <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="showStudioWhatsapp" defaultChecked={initial.showStudioWhatsapp} className="w-3 h-3" />
+                <span>Auf Kundenseite anzeigen</span>
+              </label>
+            }
+          >
+            <input
+              name="studioWhatsapp"
+              defaultValue={initial.studioWhatsapp ?? ""}
+              placeholder="z.B. +49 151 1234567"
+              className="input"
+            />
+          </Field>
+          <Field
+            label="Telegram"
+            hint={
+              <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="showStudioTelegram" defaultChecked={initial.showStudioTelegram} className="w-3 h-3" />
+                <span>Auf Kundenseite anzeigen</span>
+              </label>
+            }
+          >
+            <input
+              name="studioTelegram"
+              defaultValue={initial.studioTelegram ?? ""}
+              placeholder="@username oder t.me/username"
+              className="input"
+            />
+          </Field>
+        </FormRow>
+      </div>
 
       <div className="flex justify-end">
         <button disabled={busy} className="btn-primary"><Save size={14} /> {busy ? "Speichern…" : "Profil speichern"}</button>

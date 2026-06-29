@@ -1,20 +1,33 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X, Calendar } from "lucide-react";
 
 export function SearchBar() {
   const router = useRouter();
   const params = useSearchParams();
+  // Pathname dynamisch — die Komponente wird auf /finanzen UND (über Redirect-
+  // Fallback) ggf. auch von woanders verwendet. Hardcoded "/buchhaltung"
+  // verursachte einen Reload-Loop, weil /buchhaltung auf /finanzen redirected
+  // und der useEffect dadurch ständig neu lief.
+  const pathname = usePathname();
 
   const [q, setQ] = useState(params.get("q") ?? "");
   const [from, setFrom] = useState(params.get("from") ?? "");
   const [to, setTo] = useState(params.get("to") ?? "");
   const [, startTransition] = useTransition();
 
-  // Debounced URL-Sync für das Textfeld (300ms). Datumsfelder updaten sofort.
+  // Skip-Flag: der erste useEffect-Run beim Mount soll NICHT pushen, sondern
+  // nur bei tatsächlichen Tipp-Änderungen feuern (sonst gibt es bei jedem
+  // Page-Load einen unnötigen replace, der wiederum die Page neu rendert).
+  const mounted = useRef(false);
+
   useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     const t = setTimeout(() => pushParams({ q }), 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -28,7 +41,7 @@ export function SearchBar() {
     }
     const qs = next.toString();
     startTransition(() => {
-      router.replace(qs ? `/buchhaltung?${qs}` : "/buchhaltung", { scroll: false });
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     });
   }
 

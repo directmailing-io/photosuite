@@ -12,6 +12,7 @@ import { eurFromCents } from "@/lib/money";
 import { formatDate, relativeDate, cn } from "@/lib/utils";
 import { InvoiceQuickActions } from "../buchhaltung/InvoiceQuickActions";
 import { SearchBar } from "../buchhaltung/SearchBar";
+import { RevenueChart, StatusDonut } from "./Charts";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,10 @@ export default async function BuchhaltungPage({
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.invoice.findMany({
       where: { ownerId: userId },
-      include: { customer: true, shooting: true },
+      include: {
+        customer: true,
+        shooting: { include: { package: { select: { name: true } } } },
+      },
       orderBy: [{ issueDate: "desc" }, { createdAt: "desc" }],
     }),
   ]);
@@ -129,16 +133,46 @@ export default async function BuchhaltungPage({
     !user?.invoiceZip ||
     (!user?.invoiceTaxId && !user?.invoiceVatId);
 
+  // --- Auswertungen: aggregierte Daten für die Charts unten auf der Page ---
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const monthData: { month: string; paid: number; taxes: number }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(twelveMonthsAgo.getFullYear(), twelveMonthsAgo.getMonth() + i, 1);
+    const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const label = d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" });
+    const inMonth = all.filter((inv) => inv.status === "PAID" && inv.paidAt && inv.paidAt >= d && inv.paidAt < next);
+    monthData.push({
+      month: label,
+      paid: inMonth.reduce((s, inv) => s + inv.totalCents, 0) / 100,
+      taxes: inMonth.reduce((s, inv) => s + inv.vatAmountCents, 0) / 100,
+    });
+  }
+
+  const statusChartData = [
+    { name: "Bezahlt",     value: all.filter((inv) => inv.status === "PAID").reduce((s, inv) => s + inv.totalCents, 0) / 100,        color: "#2F6B3B" },
+    { name: "Offen",       value: all.filter((inv) => inv.status === "ISSUED" && !isOverdue(inv)).reduce((s, inv) => s + inv.amountDueCents, 0) / 100, color: "#7A746B" },
+    { name: "Überfällig",  value: overdueSum / 100, color: "#C8102E" },
+    { name: "Entwurf",     value: all.filter((inv) => inv.status === "DRAFT").reduce((s, inv) => s + inv.totalCents, 0) / 100,       color: "#B0A096" },
+  ].filter((d) => d.value > 0);
+
+  const packageMap = new Map<string, number>();
+  for (const inv of all) {
+    if (inv.status !== "PAID" || !inv.paidAt || inv.paidAt < yearStart) continue;
+    const name = inv.shooting?.package?.name ?? "Ohne Paket";
+    packageMap.set(name, (packageMap.get(name) ?? 0) + inv.totalCents);
+  }
+  const topPackages = Array.from(packageMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
   return (
     <>
       <PageHeader
         eyebrow="Finanzen"
-        title="Rechnungen & Übersicht"
-        subtitle="Alle Rechnungen mit Filter + Live-KPIs. Charts findest du in den Auswertungen."
+        title="Rechnungen & Auswertungen"
+        subtitle="Alle Rechnungen mit Filter, KPIs und Charts auf einen Blick."
       >
-        <Link href="/finanzen/auswertungen" className="btn-secondary">
-          <TrendingUp size={15} /> Auswertungen
-        </Link>
         <Link href="/buchhaltung/neu" className="btn-accent">
           <Plus size={15} /> Neue Rechnung
         </Link>
@@ -271,6 +305,56 @@ export default async function BuchhaltungPage({
           </ul>
         </div>
       )}
+
+      {/* ===== Auswertungen ===== */}
+      <div className="mt-12 mb-3 flex items-center gap-2">
+        <TrendingUp size={16} className="text-accent" />
+        <h2 className="font-serif text-2xl">Auswertungen</h2>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 card p-6">
+          <div className="eyebrow eyebrow-muted mb-1">Umsatz pro Monat</div>
+          <div className="text-xs text-smoke mb-4">Bezahlte Rechnungen, letzte 12 Monate.</div>
+          <RevenueChart data={monthData} />
+        </div>
+        <div className="card p-6">
+          <div className="eyebrow eyebrow-muted mb-1">Status-Verteilung</div>
+          <div className="text-xs text-smoke mb-4">Aktuell aktive Beträge.</div>
+          {statusChartData.length === 0 ? (
+            <div className="text-sm text-smoke text-center py-12">Noch keine Daten.</div>
+          ) : (
+            <StatusDonut data={statusChartData} />
+          )}
+        </div>
+      </div>
+      <div className="card p-6 mb-6">
+        <div className="eyebrow eyebrow-muted mb-1">Top-Pakete YTD</div>
+        <div className="text-xs text-smoke mb-4">Welche Pakete bringen am meisten ein?</div>
+        {topPackages.length === 0 ? (
+          <div className="text-sm text-smoke text-center py-6">Noch keine Daten in diesem Jahr.</div>
+        ) : (
+          <ul className="space-y-2">
+            {topPackages.map(([name, cents], idx) => {
+              const maxCents = topPackages[0][1];
+              const pct = maxCents > 0 ? (cents / maxCents) * 100 : 0;
+              return (
+                <li key={name} className="flex items-center gap-3">
+                  <div className="text-xs text-smoke w-5 text-right">{idx + 1}.</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate">{name}</span>
+                      <span className="tabular-nums font-medium">{eurFromCents(cents)}</span>
+                    </div>
+                    <div className="h-1.5 mt-1 rounded-full overflow-hidden" style={{ background: "rgb(var(--linen))" }}>
+                      <div className="h-full" style={{ width: `${pct}%`, background: "rgb(var(--accent))" }} />
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </>
   );
 }

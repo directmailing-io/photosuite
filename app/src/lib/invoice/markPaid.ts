@@ -72,7 +72,7 @@ export async function markInvoicePaidFromSession(
   });
 
   revalidatePath(`/buchhaltung/${invoiceId}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   if (inv.shootingId) revalidatePath(`/shootings/${inv.shootingId}`);
   if (inv.customerId) revalidatePath(`/kunden/${inv.customerId}`);
 

@@ -360,7 +360,7 @@ export async function convertOfferToInvoice(id: string): Promise<void> {
   });
 
   revalidatePath(`/angebote/${id}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   redirect(`/buchhaltung/${invoice.id}`);
 }
 

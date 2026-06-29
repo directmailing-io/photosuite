@@ -139,7 +139,7 @@ export async function createOrReuseCheckoutSession(invoiceId: string): Promise<{
   });
 
   revalidatePath(`/buchhaltung/${inv.id}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   return { url: session.url ?? "", sessionId: session.id, reused: false };
 }
 
@@ -170,5 +170,5 @@ export async function revokeCheckoutSession(invoiceId: string): Promise<void> {
     },
   });
   revalidatePath(`/buchhaltung/${invoiceId}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
 }

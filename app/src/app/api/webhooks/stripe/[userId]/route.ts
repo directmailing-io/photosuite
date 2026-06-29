@@ -168,7 +168,7 @@ async function onAsyncFailed(s: Stripe.Checkout.Session, userId: string, _eventI
     data: { stripePaymentStatus: "failed" },
   });
   revalidatePath(`/buchhaltung/${invoiceId}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
 }
 
 async function onSessionExpired(s: Stripe.Checkout.Session, userId: string, _eventId: string) {
@@ -189,6 +189,6 @@ async function onSessionExpired(s: Stripe.Checkout.Session, userId: string, _eve
       },
     });
     revalidatePath(`/buchhaltung/${invoiceId}`);
-    revalidatePath("/buchhaltung");
+    revalidatePath("/finanzen");
   }
 }

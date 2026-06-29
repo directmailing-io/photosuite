@@ -252,7 +252,7 @@ export async function createDraftInvoice(opts: CreateOptions) {
     });
   }
 
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   if (resolvedShootingId) revalidatePath(`/shootings/${resolvedShootingId}`);
   revalidatePath(`/kunden/${customer.id}`);
   redirect(`/buchhaltung/${invoice.id}`);
@@ -341,7 +341,7 @@ export async function updateDraftInvoice(id: string, formData: FormData) {
   ]);
 
   revalidatePath(`/buchhaltung/${id}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
 }
 
 // ---------- ISSUE (Nummer vergeben, immutable machen) ----------
@@ -378,7 +378,7 @@ export async function issueInvoice(id: string) {
   });
 
   revalidatePath(`/buchhaltung/${id}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   if (inv.shootingId) revalidatePath(`/shootings/${inv.shootingId}`);
 }
 
@@ -401,7 +401,7 @@ export async function markInvoicePaid(id: string) {
     revalidatePath(`/shootings/${inv.shootingId}`);
   }
   revalidatePath(`/buchhaltung/${id}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   // Bestätigungs-Mails fire-and-forget: nicht den Caller blocken.
   if (!wasAlreadyPaid) {
     const { sendPaymentConfirmation } = await import("@/lib/email/paymentConfirm");
@@ -445,7 +445,7 @@ export async function cancelInvoice(id: string) {
   if (inv.status === "DRAFT") {
     // Entwurf darf direkt gelöscht werden — noch nichts ausgestellt
     await prisma.invoice.delete({ where: { id } });
-    revalidatePath("/buchhaltung");
+    revalidatePath("/finanzen");
     redirect("/buchhaltung");
   }
   if (inv.status === "CANCELLED") throw new Error("Rechnung ist bereits storniert");
@@ -497,7 +497,7 @@ export async function cancelInvoice(id: string) {
     data: { status: "CANCELLED" },
   });
 
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
   redirect(`/buchhaltung/${cancel.id}`);
 }
 
@@ -586,7 +586,7 @@ export async function createReminder(invoiceId: string, level: number) {
   ]);
 
   revalidatePath(`/buchhaltung/${invoiceId}`);
-  revalidatePath(`/buchhaltung`);
+  revalidatePath(`/finanzen`);
   if (inv.shootingId) revalidatePath(`/shootings/${inv.shootingId}`);
   revalidatePath(`/kunden/${inv.customerId}`);
 }

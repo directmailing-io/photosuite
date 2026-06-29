@@ -94,7 +94,7 @@ export async function sendInvoiceByEmail(invoiceId: string, customMessage?: stri
   });
 
   revalidatePath(`/buchhaltung/${invoiceId}`);
-  revalidatePath("/buchhaltung");
+  revalidatePath("/finanzen");
 }
 
 function defaultMessage(firstName: string, invoiceNumber: string | null): string {

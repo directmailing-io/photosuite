@@ -12,6 +12,7 @@ export default auth((req) => {
     pathname.startsWith("/api/k/") ||
     pathname.startsWith("/k/") ||
     pathname.startsWith("/b/") ||
+    pathname.startsWith("/anfrage/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/uploads") ||
     pathname.startsWith("/assets") ||
@@ -31,5 +32,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads|assets|k/|b/).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads|assets|k/|b/|anfrage/).*)"],
 };

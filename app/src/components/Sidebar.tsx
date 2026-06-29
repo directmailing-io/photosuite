@@ -15,6 +15,7 @@ import {
   Receipt,
   CalendarDays,
   Inbox,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "./authActions";
@@ -28,6 +29,7 @@ type NavItem = {
 
 const dailyItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/leads", label: "Leads", icon: Sparkles },
   { href: "/kunden", label: "Kunden", icon: Users },
   { href: "/shootings", label: "Shootings", icon: Camera },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },

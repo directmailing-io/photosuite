@@ -41,6 +41,10 @@ model User {
   showStudioInstagram    Boolean                 @default(true)
   showStudioWhatsapp     Boolean                 @default(true)
   showStudioTelegram     Boolean                 @default(true)
+  // Public-Lead-Form-Slug. Wenn null → Feature für diesen User aus.
+  // Format: kurzer URL-safe Slug, z.B. „lisa-boudoir".
+  leadSlug               String?                 @unique
+  leads                  Lead[]
   // SMTP-Konfiguration für Email-Notifications an Kundinnen.
   // EU-Stack: Lisa pflegt ihre eigenen SMTP-Zugangsdaten (z.B. Mailbox.org, IONOS) —
   // damit bleibt die App provider-agnostisch und CLOUD-Act-frei.
@@ -509,6 +513,8 @@ model Customer {
   // DSGVO-Opt-in für Email-Benachrichtigungen. Default true (für Boudoir-Kontext OK,
   // Kundin hat aktiv gebucht). Lisa kann pro Kundin opt-out setzen.
   emailOptIn      Boolean             @default(true)
+  // Reverse-Relation: dieser Customer wurde aus einem Lead konvertiert (optional).
+  convertedFromLeads Lead[] @relation("LeadConvertedCustomer")
   // Social
   instagram      String?
   facebook       String?
@@ -1005,6 +1011,38 @@ model AvailabilityOverride {
 
   @@unique([ownerId, date])
   @@index([ownerId])
+}
+
+// Lead = Interessentin, die sich über ein öffentliches Formular gemeldet hat.
+// Workflow: NEW → CONTACTED → CONSULTATION_BOOKED → CONSULTATION_DONE → CONVERTED (oder LOST).
+// Beim CONVERTED wird ein Customer angelegt und via `convertedCustomerId` verknüpft.
+model Lead {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String?
+  email             String
+  phone             String?
+  message           String?
+  packageInterest   String?  // Freitext, kein FK — Lisa pflegt Pakete später
+  preferredDate     String?  // YYYY-MM-DD als String, weil Wunsch-„circa-Datum"
+  source            String?  // „Instagram", „Empfehlung von Anna" etc.
+  status            String   @default("NEW") // NEW | CONTACTED | CONSULTATION_BOOKED | CONSULTATION_DONE | CONVERTED | LOST
+  consultationAt    DateTime?
+  consultationNotes String?
+  internalNotes     String?
+  // Spam-Mitigation: IP-Hash zur lokalen Rate-Limit-Heuristik
+  ipHash            String?
+  // Convert-FK
+  convertedCustomer Customer? @relation("LeadConvertedCustomer", fields: [convertedCustomerId], references: [id], onDelete: SetNull)
+  convertedCustomerId String?
+  // Tenant
+  owner   User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, status])
+  @@index([ownerId, createdAt])
 }
 
 // Shooting-Slot-Planung: Lisa markiert Tage vorab als „Slot-Tag" — damit sie

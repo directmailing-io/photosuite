@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function ShootingDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const [shooting, user, customers, packages, statuses, team, qTemplates, allAddons, calendarConnCount] = await Promise.all([
+  const [shooting, user, customers, packages, statuses, team, qTemplates, allAddons, calendarConnCount, noteTemplates] = await Promise.all([
     prisma.shooting.findFirst({
       where: { id, ownerId: userId },
       include: {
@@ -65,6 +65,10 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
     prisma.addon.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
     prisma.calendarConnection.count({
       where: { userId, status: "active", syncEnabled: true, externalCalendarId: { not: null } },
+    }),
+    prisma.noteTemplate.findMany({
+      where: { ownerId: userId },
+      orderBy: [{ category: "asc" }, { position: "asc" }],
     }),
   ]);
   if (!shooting) return notFound();
@@ -182,10 +186,17 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
 
           <NotesManager
             shootingId={shooting.id}
+            templates={noteTemplates.map((t) => ({
+              id: t.id,
+              name: t.name,
+              category: t.category,
+              body: t.body,
+            }))}
             notes={shooting.notes.map((n) => ({
               id: n.id,
               text: n.text,
               status: n.status,
+              category: n.category,
               createdAt: n.createdAt.toISOString(),
             }))}
           />

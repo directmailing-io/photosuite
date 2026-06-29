@@ -14,6 +14,7 @@ import { BookingTypeManager } from "./BookingTypeManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { ThemePicker } from "./ThemePicker";
 import { PackageModePicker } from "./PackageModePicker";
+import { NoteTemplatesManager } from "./NoteTemplatesManager";
 import { EmptyState } from "@/components/EmptyState";
 import { requireUserId } from "@/lib/auth";
 import {
@@ -29,7 +30,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "addons", "status", "tags", "design"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "addons", "status", "tags", "vorlagen", "design"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -156,6 +157,7 @@ export default async function EinstellungenPage({
 
       {tab === "status" && <StatusSection userId={userId} />}
       {tab === "tags" && <TagsSection userId={userId} />}
+      {tab === "vorlagen" && <VorlagenSection userId={userId} />}
 
       {tab === "design" && (
         <div className="space-y-6">
@@ -359,6 +361,23 @@ async function TagsSection({ userId }: { userId: string }) {
       tags={tags.map((t) => ({ id: t.id, label: t.label, color: t.color }))}
       createAction={createTag}
       deleteAction={deleteTag}
+    />
+  );
+}
+
+async function VorlagenSection({ userId }: { userId: string }) {
+  const templates = await prisma.noteTemplate.findMany({
+    where: { ownerId: userId },
+    orderBy: [{ category: "asc" }, { position: "asc" }],
+  });
+  return (
+    <NoteTemplatesManager
+      templates={templates.map((t) => ({
+        id: t.id,
+        name: t.name,
+        category: t.category,
+        body: t.body,
+      }))}
     />
   );
 }

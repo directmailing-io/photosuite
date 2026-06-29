@@ -748,15 +748,21 @@ export async function deleteShootingDate(id: string, shootingId: string) {
 
 // ---------- Strukturierte Notizen ----------
 
+// Whitelist erlaubter Kategorie-Werte. Lisa kann später eigene zulassen,
+// für jetzt fix definiert — schützt vor Junk-Input.
+const NOTE_CATEGORIES = new Set(["ALLGEMEIN", "ERSTGESPRAECH", "BILDAUSWAHL", "RETUSCHE"]);
+
 export async function addShootingNote(shootingId: string, formData: FormData) {
   const userId = await requireUserId();
   const sh = await prisma.shooting.findFirst({ where: { id: shootingId, ownerId: userId } });
   if (!sh) throw new Error("Shooting nicht gefunden");
   const text = s(formData.get("text"));
   const status = s(formData.get("status")) ?? "OPEN";
+  const categoryRaw = s(formData.get("category")) ?? "ALLGEMEIN";
+  const category = NOTE_CATEGORIES.has(categoryRaw) ? categoryRaw : "ALLGEMEIN";
   if (!text) return;
   await prisma.shootingNote.create({
-    data: { shootingId, text, status },
+    data: { shootingId, text, status, category },
   });
   revalidatePath(`/shootings/${shootingId}`);
 }
@@ -769,6 +775,18 @@ export async function setShootingNoteStatus(id: string, status: string, shooting
   });
   if (!note) throw new Error("Notiz nicht gefunden");
   await prisma.shootingNote.update({ where: { id }, data: { status } });
+  revalidatePath(`/shootings/${shootingId}`);
+}
+
+// Nachträglich Kategorie wechseln (z.B. Notiz von „Allgemein" zu „Bildauswahl").
+export async function setShootingNoteCategory(id: string, category: string, shootingId: string) {
+  const userId = await requireUserId();
+  if (!NOTE_CATEGORIES.has(category)) return;
+  const note = await prisma.shootingNote.findFirst({
+    where: { id, shooting: { ownerId: userId } },
+  });
+  if (!note) throw new Error("Notiz nicht gefunden");
+  await prisma.shootingNote.update({ where: { id }, data: { category } });
   revalidatePath(`/shootings/${shootingId}`);
 }
 

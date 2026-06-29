@@ -30,10 +30,10 @@ export default async function InvoicePage({
       },
     }),
     prisma.user.findUnique({ where: { id: userId } }),
-    prisma.articleCatalog.findMany({
+    prisma.addon.findMany({
       where: { ownerId: userId, isActive: true },
       orderBy: [{ kind: "asc" }, { position: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, description: true, kind: true, unit: true, defaultPriceCents: true },
+      select: { id: true, name: true, description: true, kind: true, unit: true, price: true },
     }),
   ]);
   if (!inv) return notFound();
@@ -137,7 +137,14 @@ export default async function InvoicePage({
           fee3Cents: user?.reminderFee3Cents ?? 1000,
         }}
         stripeReady={!!user?.stripeSecretKeyEnc && !!user?.stripeChargesEnabled}
-        catalog={catalog}
+        catalog={catalog.map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          kind: c.kind,
+          unit: c.unit,
+          defaultPriceCents: Math.round((c.price ?? 0) * 100),
+        }))}
       />
     </>
   );

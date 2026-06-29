@@ -31,10 +31,10 @@ export default async function OfferPage({
       orderBy: { position: "asc" },
       select: { id: true, name: true, description: true, price: true },
     }),
-    prisma.articleCatalog.findMany({
+    prisma.addon.findMany({
       where: { ownerId: userId, isActive: true },
       orderBy: [{ kind: "asc" }, { position: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, description: true, kind: true, unit: true, defaultPriceCents: true },
+      select: { id: true, name: true, description: true, kind: true, unit: true, price: true },
     }),
   ]);
   if (!offer) return notFound();
@@ -94,7 +94,14 @@ export default async function OfferPage({
           description: p.description,
           priceCents: Math.round((p.price ?? 0) * 100),
         }))}
-        catalog={catalog}
+        catalog={catalog.map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          kind: c.kind,
+          unit: c.unit,
+          defaultPriceCents: Math.round((c.price ?? 0) * 100),
+        }))}
       />
     </>
   );

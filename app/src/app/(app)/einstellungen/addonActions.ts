@@ -52,6 +52,9 @@ export async function createAddon(formData: FormData) {
     select: { position: true },
   });
 
+  const kindRaw = s(formData.get("kind"));
+  const kind = kindRaw === "SERVICE" ? "SERVICE" : "PRODUCT";
+  const unit = s(formData.get("unit")) ?? (kind === "SERVICE" ? "Pauschal" : "Stück");
   try {
     await prisma.addon.create({
       data: {
@@ -64,6 +67,8 @@ export async function createAddon(formData: FormData) {
         imageUrl,
         imageOriginalUrl: imageUrl,
         imageMimeType,
+        kind,
+        unit: unit.slice(0, 30),
       },
     });
   } catch (err: any) {
@@ -98,6 +103,9 @@ export async function updateAddon(id: string, formData: FormData) {
     imageMimeType = null;
   }
 
+  const kindRaw = s(formData.get("kind"));
+  const kind = kindRaw === "SERVICE" || kindRaw === "PRODUCT" ? kindRaw : existing.kind;
+  const unitInput = s(formData.get("unit"));
   await prisma.addon.update({
     where: { id: existing.id },
     data: {
@@ -108,6 +116,8 @@ export async function updateAddon(id: string, formData: FormData) {
       imageUrl,
       imageOriginalUrl,
       imageMimeType,
+      kind,
+      unit: unitInput ? unitInput.slice(0, 30) : existing.unit,
     },
   });
   revalidatePath("/einstellungen");

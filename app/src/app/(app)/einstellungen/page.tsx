@@ -16,7 +16,6 @@ import { ThemePicker } from "./ThemePicker";
 import { PackageModePicker } from "./PackageModePicker";
 import { NoteTemplatesManager } from "./NoteTemplatesManager";
 import { EmailSettings } from "./EmailSettings";
-import { ArticleCatalogManager } from "./ArticleCatalogManager";
 import { EmptyState } from "@/components/EmptyState";
 import { requireUserId } from "@/lib/auth";
 import {
@@ -32,7 +31,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "email", "addons", "artikel", "status", "tags", "vorlagen", "design"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "email", "addons", "status", "tags", "vorlagen", "design"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -180,7 +179,6 @@ export default async function EinstellungenPage({
       )}
 
       {tab === "addons" && <AddonSection userId={userId} />}
-      {tab === "artikel" && <ArtikelSection userId={userId} />}
 
       {tab === "status" && <StatusSection userId={userId} />}
       {tab === "tags" && <TagsSection userId={userId} />}
@@ -252,7 +250,10 @@ async function BuchungSection({ userId }: { userId: string }) {
 }
 
 async function AddonSection({ userId }: { userId: string }) {
-  const addons = await prisma.addon.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } });
+  const addons = await prisma.addon.findMany({
+    where: { ownerId: userId },
+    orderBy: [{ kind: "asc" }, { position: "asc" }],
+  });
   return (
     <AddonManager
       addons={addons.map((a) => ({
@@ -263,6 +264,8 @@ async function AddonSection({ userId }: { userId: string }) {
         isActive: a.isActive,
         position: a.position,
         imageUrl: a.imageUrl,
+        kind: a.kind,
+        unit: a.unit,
       }))}
     />
   );
@@ -392,25 +395,6 @@ async function TagsSection({ userId }: { userId: string }) {
   );
 }
 
-async function ArtikelSection({ userId }: { userId: string }) {
-  const articles = await prisma.articleCatalog.findMany({
-    where: { ownerId: userId },
-    orderBy: [{ kind: "asc" }, { position: "asc" }],
-  });
-  return (
-    <ArticleCatalogManager
-      articles={articles.map((a) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        kind: a.kind,
-        unit: a.unit,
-        defaultPriceCents: a.defaultPriceCents,
-        isActive: a.isActive,
-      }))}
-    />
-  );
-}
 
 async function VorlagenSection({ userId }: { userId: string }) {
   const templates = await prisma.noteTemplate.findMany({

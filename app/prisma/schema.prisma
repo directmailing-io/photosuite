@@ -165,7 +165,6 @@ model User {
   // Shooting-Slot-Planungstage: Lisa markiert Tage vorab, an denen sie Shootings anbieten will.
   shootingPlanDays       ShootingPlanDay[]
   noteTemplates          NoteTemplate[]
-  articleCatalog         ArticleCatalog[]
   // Persönliche Meeting-Räume pro Provider (Tier-1-Fallback). Wenn OAuth-Verbindung
   // existiert, wird stattdessen pro Buchung ein eigenes Meeting erstellt.
   zoomPersonalLink       String?
@@ -718,6 +717,13 @@ model Addon {
   imageUrl         String?
   imageOriginalUrl String?
   imageMimeType    String?
+  // "PRODUCT" (physische Ware, Bilderbuch, Leinwand) oder "SERVICE" (Add-On-
+  // Dienstleistung wie Make-up). Beide tauchen sowohl im Sales-Picker beim
+  // Shooting-Anlegen als auch im Rechnungs-/Angebots-Picker auf.
+  kind             String          @default("PRODUCT")
+  // Einheit für Rechnungs-Position ("Stück", "Pauschal", "Std.", …). Wird beim
+  // Picker als unit in das InvoiceItem übernommen.
+  unit             String?         @default("Stück")
   price            Float // EUR — wird beim Buchen als unitPrice in ShootingAddon kopiert
   isActive         Boolean         @default(true)
   position         Int             @default(0)
@@ -727,9 +733,10 @@ model Addon {
   updatedAt        DateTime        @updatedAt
   // Tenant
   owner            User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId          String         
+  ownerId          String
 
   @@index([ownerId])
+  @@index([ownerId, kind])
 }
 
 // Buchung eines Add-Ons in einem Shooting.
@@ -900,25 +907,6 @@ model ShootingNote {
 //   "PRODUCT" = Produkt (z.B. „Bilderbuch M", „Leinwand 60x90")
 // Item-Daten werden in InvoiceItem kopiert (Snapshot), Katalog-Änderungen
 // betreffen alte Rechnungen NICHT.
-model ArticleCatalog {
-  id           String   @id @default(cuid())
-  name         String
-  description  String?
-  kind         String   @default("SERVICE") // "SERVICE" | "PRODUCT"
-  unit         String?  @default("Pauschal")
-  defaultPriceCents Int @default(0)
-  position     Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  // Tenant
-  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId      String
-
-  @@index([ownerId])
-  @@index([ownerId, kind])
-}
-
 // User-konfigurierbare Notiz-Vorlagen mit Leitfragen (z.B. „Wie hast du mich
 // gefunden? Was für Bilder wünschst du dir? …" für Erstgespräche).
 // Lisa kann pro Kategorie mehrere Templates anlegen und sie beim Anlegen einer

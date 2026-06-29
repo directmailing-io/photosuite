@@ -17,6 +17,8 @@ export type AddonRow = {
   isActive: boolean;
   position: number;
   imageUrl: string | null;
+  kind: string;        // "PRODUCT" | "SERVICE"
+  unit: string | null;
 };
 
 function formatEUR(n: number) {
@@ -31,9 +33,10 @@ export function AddonManager({ addons }: { addons: AddonRow[] }) {
     <div className="card">
       <div className="px-6 py-4 flex items-center justify-between border-b border-stone/60">
         <div>
-          <div className="eyebrow eyebrow-muted">Produkte</div>
+          <div className="eyebrow eyebrow-muted">Produkte & Dienstleistungen</div>
           <div className="text-sm text-smoke mt-1 max-w-md">
-            Bilderbuch M, Bilderbuch L, Leinwände, Make-up — alles, was du zu deinen Paketen dazu verkaufen willst.
+            Bilderbuch, Leinwand, Make-up, Anfahrt — alles, was du zu deinen Paketen anbietest UND
+            auf Rechnungen/Angeboten schnell als Position einfügen willst.
           </div>
         </div>
         {!adding && (
@@ -123,6 +126,15 @@ function AddonRowView({ addon, onEdit }: { addon: AddonRow; onEdit: () => void }
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="font-medium truncate">{addon.name}</div>
+          <span
+            className="badge"
+            style={{
+              background: addon.kind === "SERVICE" ? "rgb(var(--accent-soft))" : "rgb(var(--linen))",
+              color:      addon.kind === "SERVICE" ? "rgb(var(--accent-deep))" : "rgb(var(--taupe))",
+            }}
+          >
+            {addon.kind === "SERVICE" ? "Dienstleistung" : "Produkt"}
+          </span>
           {!addon.isActive && (
             <span className="badge" style={{ background: "rgb(var(--linen))", color: "rgb(var(--smoke))" }}>
               <EyeOff size={10} /> Inaktiv
@@ -133,7 +145,10 @@ function AddonRowView({ addon, onEdit }: { addon: AddonRow; onEdit: () => void }
           <div className="text-xs text-smoke mt-0.5 line-clamp-1">{addon.description}</div>
         )}
       </div>
-      <div className="text-right tabular-nums font-medium shrink-0">{formatEUR(addon.price)}</div>
+      <div className="text-right tabular-nums font-medium shrink-0">
+        {formatEUR(addon.price)}
+        {addon.unit && <div className="text-[10px] text-smoke font-normal">{addon.unit}</div>}
+      </div>
       <div className="flex gap-1 shrink-0">
         <button
           onClick={onToggleActive}
@@ -208,6 +223,14 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
         <Field label="Name *">
           <input name="name" defaultValue={addon?.name ?? ""} required className="input h-9 text-sm" placeholder="z.B. Bilderbuch M" />
         </Field>
+        <Field label="Art *">
+          <select name="kind" defaultValue={addon?.kind ?? "PRODUCT"} className="select h-9 text-sm">
+            <option value="PRODUCT">Produkt (Bild, Album, Druck …)</option>
+            <option value="SERVICE">Dienstleistung (Make-up, Anfahrt …)</option>
+          </select>
+        </Field>
+      </FormRow>
+      <FormRow>
         <Field label="Preis (€) *">
           <input
             name="price"
@@ -217,6 +240,15 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
             defaultValue={addon?.price ?? ""}
             required
             className="input h-9 text-sm"
+          />
+        </Field>
+        <Field label="Einheit" hint="Wird auf Rechnungen als Position-Einheit übernommen.">
+          <input
+            name="unit"
+            defaultValue={addon?.unit ?? "Stück"}
+            maxLength={30}
+            className="input h-9 text-sm"
+            placeholder="Stück, Std., Pauschal …"
           />
         </Field>
       </FormRow>

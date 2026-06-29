@@ -17,6 +17,7 @@ export type IssuerSnapshot = {
   vatId: string | null;
   isSmallBusiness: boolean;
   bankName: string | null;
+  accountName: string | null;  // Kontoinhaber:in (optional, falls abweichend)
   iban: string | null;
   bic: string | null;
   email: string | null;
@@ -39,6 +40,7 @@ export function emptyIssuer(): IssuerSnapshot {
     vatId: null,
     isSmallBusiness: true,
     bankName: null,
+    accountName: null,
     iban: null,
     bic: null,
     email: null,

@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Trash2, Crop, Save, X, ImageIcon } from "lucide-react";
+import { Upload, Trash2, Crop, Save, X, ImageIcon, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { saveStudioLogo, removeStudioLogo } from "./actions";
 
@@ -22,14 +22,21 @@ export function LogoUploader({ initial }: { initial: Initial }) {
   // Während der User die Original-Datei wählt + croppt, zwischengespeichert:
   const [pendingOriginal, setPendingOriginal] = useState<{ url: string; mimeType: string } | null>(null);
   const [cropping, setCropping] = useState<{ url: string; mimeType: string } | null>(null);
+  // Inline-Fehler, damit der Grund auch nach dem Toast-Fadeout sichtbar bleibt.
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   async function uploadFile(file: File): Promise<{ url: string; mimeType: string }> {
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload/logo", { method: "POST", body: fd });
+    let res: Response;
+    try {
+      res = await fetch("/api/upload/logo", { method: "POST", body: fd });
+    } catch {
+      throw new Error("Keine Verbindung zum Server. Prüfe dein Internet und versuch es nochmal.");
+    }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Upload fehlgeschlagen" }));
-      throw new Error(err.error ?? "Upload fehlgeschlagen");
+      const err = await res.json().catch(() => ({ error: null }));
+      throw new Error(err.error ?? `Upload fehlgeschlagen (Statuscode ${res.status}).`);
     }
     return res.json();
   }
@@ -37,6 +44,7 @@ export function LogoUploader({ initial }: { initial: Initial }) {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadError(null);
     try {
       const uploaded = await uploadFile(file);
       setPendingOriginal(uploaded);
@@ -47,7 +55,9 @@ export function LogoUploader({ initial }: { initial: Initial }) {
         setCropping(uploaded);
       }
     } catch (err: any) {
-      toast.error(err?.message ?? "Upload fehlgeschlagen");
+      const msg = err?.message ?? "Beim Upload ist ein Fehler aufgetreten.";
+      setUploadError(msg);
+      toast.error("Upload fehlgeschlagen", { description: msg, duration: 8000 });
     } finally {
       // Input zurücksetzen, damit erneutes Hochladen derselben Datei feuert
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -166,6 +176,34 @@ export function LogoUploader({ initial }: { initial: Initial }) {
             <li>• Quadratisches Format empfohlen</li>
             <li>• Transparenter Hintergrund für PNG/SVG ist möglich</li>
           </ul>
+
+          {uploadError && (
+            <div
+              className="flex items-start gap-2.5 p-3 rounded-lg text-xs leading-relaxed mt-2"
+              style={{
+                background: "rgb(var(--accent-soft))",
+                color: "rgb(var(--accent-deep))",
+                border: "1px solid rgb(var(--accent) / 0.4)",
+              }}
+              role="alert"
+            >
+              <AlertCircle size={14} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
+              <div className="flex-1">
+                <div className="font-semibold mb-0.5" style={{ color: "rgb(var(--accent))" }}>
+                  Upload fehlgeschlagen
+                </div>
+                <div>{uploadError}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadError(null)}
+                className="shrink-0 opacity-60 hover:opacity-100"
+                title="Hinweis schließen"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
 
           {hasLogo && (
             <div className="text-[11px] text-smoke pt-2 border-t border-stone/60 mt-3">

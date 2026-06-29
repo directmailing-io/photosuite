@@ -20,6 +20,7 @@ type Profile = {
   isSmallBusiness: boolean;
   defaultVatRate: number;
   invoiceBankName: string | null;
+  invoiceBankAccountName: string | null;
   invoiceIban: string | null;
   invoiceBic: string | null;
   invoiceFooterNote: string | null;
@@ -84,7 +85,7 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
         <Field label="Firmenname *" hint='z.B. "Lisa Steiner Photography"'>
           <input name="invoiceCompanyName" defaultValue={initial.invoiceCompanyName ?? ""} required className="input" />
         </Field>
-        <Field label="Inhaber:in (optional)" hint="Wenn Einzelunternehmen mit anderem Namen">
+        <Field label="Inhaber:in (optional)" hint="z. B. bei Einzelunternehmen mit anderem Firmennamen">
           <input name="invoiceCompanyOwner" defaultValue={initial.invoiceCompanyOwner ?? ""} className="input" />
         </Field>
       </FormRow>
@@ -98,7 +99,7 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
       </FormRow>
       <FormRow>
         <Field label="Land"><input name="invoiceCountry" defaultValue={initial.invoiceCountry ?? "Deutschland"} className="input" /></Field>
-        <Field label="Rechnungs-E-Mail" hint="Erscheint im PDF-Footer"><input type="email" name="invoiceEmail" defaultValue={initial.invoiceEmail ?? ""} className="input" /></Field>
+        <Field label="Unternehmens-E-Mail" hint="Erscheint der Kundin auf Rechnungen & Belegen."><input type="email" name="invoiceEmail" defaultValue={initial.invoiceEmail ?? ""} className="input" /></Field>
       </FormRow>
 
       <div className="hairline pt-5 space-y-4">
@@ -145,6 +146,17 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
           <Field label="Bank"><input name="invoiceBankName" defaultValue={initial.invoiceBankName ?? ""} className="input" /></Field>
           <Field label="BIC"><input name="invoiceBic" defaultValue={initial.invoiceBic ?? ""} className="input" /></Field>
         </FormRow>
+        <Field
+          label="Name des Bankkontos"
+          hint='Kontoinhaber:in — falls abweichend vom Firmennamen. Erscheint auf Rechnungen als „Kto.-Inh.".'
+        >
+          <input
+            name="invoiceBankAccountName"
+            defaultValue={initial.invoiceBankAccountName ?? ""}
+            placeholder={initial.invoiceCompanyOwner || initial.invoiceCompanyName || ""}
+            className="input"
+          />
+        </Field>
         <Field label="IBAN"><input name="invoiceIban" defaultValue={initial.invoiceIban ?? ""} placeholder="DE89 3704 0044 0532 0130 00" className="input font-mono" /></Field>
       </div>
 

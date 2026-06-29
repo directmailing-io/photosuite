@@ -314,7 +314,8 @@ function InvoicePage({ invoice }: { invoice: InvoiceForPdf }) {
   const isFinalWithDeposit = invoice.kind === "FINAL" && hasPrepaid;
   const intro = introText(invoice.kind, isFinalWithDeposit);
   const closing = closingText(invoice.kind, invoice.dueDate, invoice.issueDate, !!invoice.issuer.iban);
-  const ownerName = invoice.issuer.owner || invoice.issuer.companyName;
+  // Bankkonto-Inhaber:in: bevorzugt explizit angegeben, sonst Owner/Firmenname.
+  const ownerName = invoice.issuer.accountName || invoice.issuer.owner || invoice.issuer.companyName;
 
   return (
     <Page size="A4" style={s.page}>

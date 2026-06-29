@@ -97,6 +97,7 @@ export default async function EinstellungenPage({
             isSmallBusiness: user.isSmallBusiness,
             defaultVatRate: user.defaultVatRate,
             invoiceBankName: user.invoiceBankName,
+            invoiceBankAccountName: user.invoiceBankAccountName,
             invoiceIban: user.invoiceIban,
             invoiceBic: user.invoiceBic,
             invoiceFooterNote: user.invoiceFooterNote,

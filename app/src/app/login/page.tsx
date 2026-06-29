@@ -1,112 +1,64 @@
-"use client";
+import { LoginForm } from "./LoginForm";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+// Bilder-Pool für die Login-Page. Pro Request wird zufällig eins ausgewählt.
+// `mirror: true` spiegelt das Bild horizontal — sinnvoll, wenn das Motiv
+// vom Form wegschaut und durchs Spiegeln zur Anmeldung „blickt".
+const LOGIN_IMAGES: ReadonlyArray<{ src: string; mirror: boolean }> = [
+  { src: "/assets/login/portrait-1.jpg", mirror: true },
+  { src: "/assets/login/portrait-2.jpg", mirror: false },
+  { src: "/assets/login/portrait-3.jpg", mirror: true },
+];
 
-function LoginForm() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const res = await signIn("credentials", { email, password, redirect: false });
-    setLoading(false);
-    if (res?.error) {
-      setError("E-Mail oder Passwort stimmen nicht.");
-      return;
-    }
-    router.push(params.get("callbackUrl") || "/");
-    router.refresh();
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="w-full max-w-sm">
-      <div className="mb-10">
-        <div className="font-serif text-3xl text-ink">Anmelden</div>
-        <div className="text-sm text-smoke mt-2">
-          Willkommen zurück. Melde dich an, um weiterzumachen.
-        </div>
-      </div>
-
-      <label className="label">E-Mail</label>
-      <input
-        type="email"
-        name="email"
-        className="input mb-4"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        autoComplete="email"
-        required
-      />
-
-      <label className="label">Passwort</label>
-      <input
-        type="password"
-        name="password"
-        className="input mb-2"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="current-password"
-        required
-      />
-
-      {error && (
-        <div className="text-sm mt-3 px-3 py-2 rounded-lg" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}>
-          {error}
-        </div>
-      )}
-
-      <button type="submit" disabled={loading} className="btn-primary w-full mt-6">
-        {loading ? "Anmelden…" : "Anmelden"}
-      </button>
-
-      <div className="text-xs text-smoke mt-8 text-center">
-        <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: "italic", fontWeight: 500 }}>photosuite</span>
-        <span> · MVP lokal · Standard: </span>
-        <code>lisa@local.crm</code> / <code>lisa</code>
-      </div>
-    </form>
-  );
-}
+// force-dynamic stellt sicher, dass Math.random pro Request neu evaluiert wird.
+// Sonst würde Next.js die Page cachen und immer dasselbe Bild zeigen.
+export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
+  const pick = LOGIN_IMAGES[Math.floor(Math.random() * LOGIN_IMAGES.length)];
+
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:block flex-1 relative" style={{
-        backgroundImage: "url('/assets/lisa_portrait.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}>
-        <div className="absolute inset-0" style={{
-          background: "linear-gradient(180deg, rgba(25,25,26,0.55) 0%, rgba(25,25,26,0.15) 50%, rgba(25,25,26,0.85) 100%)"
-        }} />
-        <div className="absolute inset-0 flex flex-col justify-end p-12 text-bg">
-          <div
-            className="leading-none"
-            style={{
-              fontFamily: '"Cormorant Garamond", Georgia, serif',
-              fontSize: "52px",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.95)" }}>photo</span>
-            <span style={{ fontStyle: "italic", fontWeight: 500, color: "rgb(var(--accent))" }}>suite</span>
+      {/* Linke Seite: großes Portrait mit Logo top-left + Tagline bottom */}
+      <div className="hidden md:block flex-1 relative overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url('${pick.src}')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            transform: pick.mirror ? "scaleX(-1)" : undefined,
+          }}
+        />
+        {/* Dunkles Gradient-Overlay für Lesbarkeit von Logo & Tagline.
+            Wichtig: NICHT mit gespiegelt, deshalb eigene Schicht. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(15,15,16,0.55) 0%, rgba(15,15,16,0.15) 35%, rgba(15,15,16,0.85) 100%)",
+          }}
+        />
+
+        {/* Logo top-left */}
+        <div
+          className="absolute top-8 left-10 leading-none select-none"
+          style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: "32px", letterSpacing: "-0.01em" }}
+        >
+          <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.95)" }}>photo</span>
+          <span style={{ fontStyle: "italic", fontWeight: 500, color: "rgb(var(--accent))" }}>suite</span>
+        </div>
+
+        {/* Tagline bottom-left */}
+        <div className="absolute bottom-12 left-10 right-10 text-bg">
+          <div className="font-serif text-5xl leading-tight" style={{ color: "rgba(255,255,255,0.95)" }}>
+            Schön, dich<br />wiederzusehen.
           </div>
-          <div className="font-serif text-5xl mt-3 leading-tight">Schön, dich<br/>wiederzusehen.</div>
         </div>
       </div>
 
+      {/* Rechte Seite: Formular */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <Suspense fallback={<div className="w-full max-w-sm text-sm text-smoke">Lädt…</div>}>
-          <LoginForm />
-        </Suspense>
+        <LoginForm />
       </div>
     </div>
   );

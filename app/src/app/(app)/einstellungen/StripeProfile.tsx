@@ -107,7 +107,7 @@ export function StripeProfile({ initial }: { initial: Initial }) {
                 dashboard.stripe.com/register
               </a>{" "}
               (kostenlos, EU-Anbieter via Stripe Payments Europe in Dublin). Aktiviere in deinem Stripe-Dashboard
-              die Zahlungsmethoden Karte, SEPA-Lastschrift und PayPal — die App nutzt automatisch, was du dort frei&shy;gibst.
+              die Zahlungsmethoden Karte, SEPA-Lastschrift und PayPal — photosuite nutzt automatisch, was du dort frei&shy;gibst.
               Beide Keys findest du im Dashboard unter <em>Entwickler → API-Keys</em>.
             </p>
           </div>

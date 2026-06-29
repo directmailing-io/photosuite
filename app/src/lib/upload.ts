@@ -2,10 +2,13 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
 
-const STORAGE_BACKEND = process.env.STORAGE_BACKEND ?? "local-fs";
-const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-const SUPABASE_STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET ?? "uploads";
+// ENV-Vars trimmen: Vercel/CLI fügt manchmal trailing \n an, das macht
+// String-Vergleiche wie `STORAGE_BACKEND === "supabase-storage"` heimlich falsy.
+const STORAGE_BACKEND = (process.env.STORAGE_BACKEND ?? "local-fs").trim();
+const SUPABASE_URL = (process.env.SUPABASE_URL ?? "").trim();
+const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
+const SUPABASE_STORAGE_BUCKET = (process.env.SUPABASE_STORAGE_BUCKET ?? "uploads").trim();
+const IS_VERCEL = !!process.env.VERCEL;
 
 const UPLOAD_DIR = join(process.cwd(), "public", "uploads");
 
@@ -17,6 +20,14 @@ export async function saveUpload(file: File, subdir = "misc"): Promise<{ url: st
 
   if (STORAGE_BACKEND === "supabase-storage") {
     return saveToSupabase(file, subdir, safeName);
+  }
+
+  // Auf Vercel ist das Filesystem read-only — local-fs würde EROFS werfen.
+  // Klar verständlicher Fehler statt kryptischer Crash.
+  if (IS_VERCEL) {
+    throw new Error(
+      "Datei-Upload nicht konfiguriert. Bitte STORAGE_BACKEND=supabase-storage in Vercel setzen.",
+    );
   }
 
   // Default: local-fs

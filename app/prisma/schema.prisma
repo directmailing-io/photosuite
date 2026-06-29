@@ -49,6 +49,7 @@ model User {
   isSmallBusiness        Boolean                 @default(true) // §19 UStG Kleinunternehmer
   defaultVatRate         Float                   @default(19) // 19, 7, 0
   invoiceBankName        String?
+  invoiceBankAccountName String?  // Kontoinhaber:in (z.B. bei abweichendem Namen)
   invoiceIban            String?
   invoiceBic             String?
   invoiceFooterNote      String?

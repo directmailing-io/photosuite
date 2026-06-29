@@ -168,7 +168,7 @@ export function ReminderDocument({ reminder }: { reminder: ReminderForPdf }) {
   const inv = reminder.invoice;
   const issuer = inv.issuer;
   const totalWithFee = inv.amountDueCents + reminder.feeCents;
-  const ownerName = issuer.owner || issuer.companyName;
+  const ownerName = issuer.accountName || issuer.owner || issuer.companyName;
 
   return (
     <Document title={`${m.title} zu Rechnung ${inv.number}`}>

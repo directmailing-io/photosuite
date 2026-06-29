@@ -6,13 +6,14 @@ import { EmptyState } from "@/components/EmptyState";
 import { Avatar } from "@/components/Avatar";
 import {
   Receipt, ChevronRight, AlertCircle, FileCheck2, CircleDashed, Send,
-  ClipboardX, Inbox, CircleSlash, Plus, Percent, TrendingUp,
+  ClipboardX, Inbox, CircleSlash, Percent, TrendingUp,
 } from "lucide-react";
 import { eurFromCents } from "@/lib/money";
 import { formatDate, relativeDate, cn } from "@/lib/utils";
 import { InvoiceQuickActions } from "../buchhaltung/InvoiceQuickActions";
 import { SearchBar } from "../buchhaltung/SearchBar";
 import { RevenueChart, StatusDonut } from "./Charts";
+import { NewInvoiceButton } from "./NewInvoiceButton";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export default async function BuchhaltungPage({
   const period: PeriodKey = sp.period === "quarter" || sp.period === "year" ? sp.period : "month";
 
   const userId = await requireUserId();
-  const [user, all] = await Promise.all([
+  const [user, all, customers] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.invoice.findMany({
       where: { ownerId: userId },
@@ -58,6 +59,11 @@ export default async function BuchhaltungPage({
         shooting: { include: { package: { select: { name: true } } } },
       },
       orderBy: [{ issueDate: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.customer.findMany({
+      where: { ownerId: userId },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true, email: true },
     }),
   ]);
 
@@ -173,9 +179,11 @@ export default async function BuchhaltungPage({
         title="Rechnungen & Auswertungen"
         subtitle="Alle Rechnungen mit Filter, KPIs und Charts auf einen Blick."
       >
-        <Link href="/buchhaltung/neu" className="btn-accent">
-          <Plus size={15} /> Neue Rechnung
-        </Link>
+        <NewInvoiceButton customers={customers.map((c) => ({
+          id: c.id,
+          name: `${c.firstName} ${c.lastName ?? ""}`.trim(),
+          email: c.email,
+        }))} />
       </PageHeader>
 
       {profileMissing && (

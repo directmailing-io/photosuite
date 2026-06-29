@@ -154,6 +154,37 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady, catalog }:
   }
 
   async function onIssue() {
+    // Client-Side Vorab-Validierung — gibt Lisa sofortiges Feedback statt
+    // einer maskierten Server-Component-Fehlermeldung.
+    if (items.length === 0) {
+      toast.error("Mindestens eine Position erforderlich. Füge eine Position hinzu und speichere den Entwurf zuerst.");
+      return;
+    }
+    if (items.some((it) => !it.title.trim())) {
+      toast.error("Eine Position hat keinen Titel — bitte alle Positionen vollständig befüllen.");
+      return;
+    }
+    if (!invoice.recipientName.trim()) {
+      toast.error("Empfänger-Name fehlt.");
+      return;
+    }
+    if (!invoice.issuer.companyName) {
+      toast.error("Firmenname fehlt im Rechnungs-Profil. Bitte unter Einstellungen → Rechnung ausfüllen.");
+      return;
+    }
+    if (!invoice.issuer.taxId && !invoice.issuer.vatId) {
+      toast.error("Steuernummer oder USt-IdNr fehlt im Rechnungs-Profil.");
+      return;
+    }
+    // Wenn Items im UI sind aber noch nicht gespeichert: erst speichern
+    const itemsChanged = items.length !== invoice.items.length
+      || items.some((it, i) => it.title !== invoice.items[i]?.title
+        || it.unitPriceCents !== invoice.items[i]?.unitPriceCents);
+    if (itemsChanged) {
+      toast.error('Du hast ungesicherte Änderungen. Bitte erst „Entwurf speichern" klicken, dann ausstellen.');
+      return;
+    }
+
     if (!confirm("Rechnung jetzt ausstellen?\nNach dem Ausstellen kann die Rechnung nicht mehr verändert werden — Korrekturen nur via Stornorechnung möglich.")) return;
     setBusy(true);
     try {

@@ -347,39 +347,53 @@ export async function updateDraftInvoice(id: string, formData: FormData) {
 // ---------- ISSUE (Nummer vergeben, immutable machen) ----------
 
 export async function issueInvoice(id: string) {
-  const user = await getUserOrThrow();
-  const userId = user.id;
-  const inv = await prisma.invoice.findFirst({
-    where: { id, ownerId: userId },
-    include: { items: true },
-  });
-  if (!inv) throw new Error("Rechnung nicht gefunden");
-  if (inv.status !== "DRAFT") throw new Error("Rechnung wurde bereits ausgestellt");
-  if (inv.items.length === 0) throw new Error("Mindestens eine Position erforderlich");
-  if (!inv.recipientName.trim()) throw new Error("Empfänger-Name fehlt");
+  try {
+    const user = await getUserOrThrow();
+    const userId = user.id;
+    const inv = await prisma.invoice.findFirst({
+      where: { id, ownerId: userId },
+      include: { items: true },
+    });
+    if (!inv) throw new Error("Rechnung nicht gefunden");
+    if (inv.status !== "DRAFT") throw new Error("Rechnung wurde bereits ausgestellt");
+    if (inv.items.length === 0) throw new Error("Mindestens eine Position erforderlich");
+    if (!inv.recipientName.trim()) throw new Error("Empfänger-Name fehlt");
 
-  // Issuer-Validation
-  const issuer = JSON.parse(inv.issuerSnapshot);
-  if (!issuer.companyName) throw new Error("Firmenname fehlt im Rechnungs-Profil — bitte unter Einstellungen ergänzen.");
-  if (!issuer.taxId && !issuer.vatId) {
-    throw new Error("Steuernummer oder USt-IdNr fehlt im Rechnungs-Profil.");
+    // Issuer-Validation — JSON.parse darf nicht crashen, daher try/catch
+    let issuer: any;
+    try {
+      issuer = JSON.parse(inv.issuerSnapshot);
+    } catch {
+      throw new Error("Rechnungs-Profil konnte nicht gelesen werden — bitte den Entwurf erneut speichern.");
+    }
+    if (!issuer?.companyName) throw new Error("Firmenname fehlt im Rechnungs-Profil — bitte unter Einstellungen ergänzen.");
+    if (!issuer?.taxId && !issuer?.vatId) {
+      throw new Error("Steuernummer oder USt-IdNr fehlt im Rechnungs-Profil.");
+    }
+
+    const number = await nextInvoiceNumber(user.id);
+    // Token nur, wenn Bezahllink für diese Rechnung gewünscht und kein Storno.
+    const wantsLink = inv.paymentLinkEnabled && inv.kind !== "CANCEL";
+    const paymentToken = wantsLink
+      ? (inv.paymentToken ?? generateUrlToken())
+      : inv.paymentToken;
+    await prisma.invoice.update({
+      where: { id },
+      data: { number, status: "ISSUED", paymentToken },
+    });
+
+    revalidatePath(`/buchhaltung/${id}`);
+    revalidatePath("/finanzen");
+    if (inv.shootingId) revalidatePath(`/shootings/${inv.shootingId}`);
+  } catch (err: any) {
+    // Server-Action-Fehler werden auf der Client-Seite generisch maskiert
+    // („An error occurred in the Server Components render…"). Indem wir hier
+    // explizit re-throwen mit einer sauberen Error-Message, garantieren wir,
+    // dass `err.message` beim Client lesbar ankommt. Stack-Trace landet im Log.
+    console.error("[issueInvoice]", err);
+    if (err instanceof Error && err.message) throw new Error(err.message);
+    throw new Error("Unbekannter Fehler beim Ausstellen der Rechnung.");
   }
-
-  const number = await nextInvoiceNumber(user.id);
-  // Token nur, wenn Bezahllink für diese Rechnung gewünscht und kein Storno.
-  // Storno-Rechnungen werden nicht öffentlich bezahlt.
-  const wantsLink = inv.paymentLinkEnabled && inv.kind !== "CANCEL";
-  const paymentToken = wantsLink
-    ? (inv.paymentToken ?? generateUrlToken())
-    : inv.paymentToken;
-  await prisma.invoice.update({
-    where: { id },
-    data: { number, status: "ISSUED", paymentToken },
-  });
-
-  revalidatePath(`/buchhaltung/${id}`);
-  revalidatePath("/finanzen");
-  if (inv.shootingId) revalidatePath(`/shootings/${inv.shootingId}`);
 }
 
 // ---------- Status-Übergänge ----------

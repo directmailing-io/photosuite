@@ -319,6 +319,12 @@ export async function updateDraftInvoice(id: string, formData: FormData) {
         amountDueCents: totalCents - inv.prepaidCents,
         issuerSnapshot: JSON.stringify(issuer),
         internalNote: s(formData.get("internalNote")) ?? null,
+        // Toggle wird nur bei kind !== "CANCEL" gerendert. Wenn das Feld in der
+        // Form fehlt (z.B. weil das Element nicht im DOM ist), behalten wir
+        // den bisherigen Wert — `null` heißt: nicht im Form-Body.
+        paymentLinkEnabled: formData.has("paymentLinkEnabled")
+          ? formData.get("paymentLinkEnabled") === "on"
+          : inv.paymentLinkEnabled,
         items: {
           create: items.map((it, i) => ({
             title: it.title,
@@ -360,11 +366,12 @@ export async function issueInvoice(id: string) {
   }
 
   const number = await nextInvoiceNumber(user.id);
-  // Bei Stornorechnungen ist online-Bezahlung sinnlos; sonst Token erzeugen,
-  // damit der öffentliche /k/r/[token]-Link sofort verfügbar ist.
-  const paymentToken = inv.kind === "CANCEL"
-    ? inv.paymentToken
-    : (inv.paymentToken ?? generateUrlToken());
+  // Token nur, wenn Bezahllink für diese Rechnung gewünscht und kein Storno.
+  // Storno-Rechnungen werden nicht öffentlich bezahlt.
+  const wantsLink = inv.paymentLinkEnabled && inv.kind !== "CANCEL";
+  const paymentToken = wantsLink
+    ? (inv.paymentToken ?? generateUrlToken())
+    : inv.paymentToken;
   await prisma.invoice.update({
     where: { id },
     data: { number, status: "ISSUED", paymentToken },
@@ -448,6 +455,8 @@ export async function cancelInvoice(id: string) {
       prepaidCents: 0,
       amountDueCents: -inv.totalCents,
       isSmallBusiness: inv.isSmallBusiness,
+      // Storno-Rechnungen werden nicht öffentlich bezahlt.
+      paymentLinkEnabled: false,
       cancelsInvoiceId: inv.id,
       ownerId: userId,
       items: {

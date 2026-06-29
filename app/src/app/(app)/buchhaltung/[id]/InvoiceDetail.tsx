@@ -64,6 +64,7 @@ type Props = {
     items: Item[];
     cancelsInvoice: { id: string; number: string | null } | null;
     cancelledByInvoice: { id: string; number: string | null } | null;
+    paymentLinkEnabled: boolean;
     paymentToken: string | null;
     stripeSessionUrl: string | null;
     stripeSessionExpiresAt: string | null;
@@ -375,6 +376,29 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady, catalog }:
             <textarea name="internalNote" defaultValue={invoice.internalNote ?? ""} disabled={!isDraft} rows={2} className="textarea" />
           </Field>
         </section>
+
+        {invoice.kind !== "CANCEL" && (
+          <section className="card p-5">
+            <div className="eyebrow eyebrow-muted mb-3">Online-Bezahlung</div>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="paymentLinkEnabled"
+                defaultChecked={invoice.paymentLinkEnabled}
+                disabled={!isDraft}
+                className="w-4 h-4 mt-0.5"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium">Bezahllink generieren</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  Wenn deaktiviert: Kein Stripe-Bezahllink, kein Hinweis auf der
+                  Rechnung — Zahlung läuft manuell über Überweisung. Nützlich für
+                  Bar- oder Vorab-Zahlungen.
+                </div>
+              </div>
+            </label>
+          </section>
+        )}
 
         {isDraft && (
           <div className="flex justify-end gap-2">
@@ -779,7 +803,13 @@ function PaymentCard({
         <CreditCard size={13} /> Bezahllink
       </div>
 
-      {!stripeReady ? (
+      {!invoice.paymentLinkEnabled ? (
+        <div className="text-sm text-smoke">
+          <CircleSlash size={13} className="inline mr-1 -mt-0.5" />
+          Bezahllink für diese Rechnung deaktiviert. Die Zahlung erfolgt manuell
+          (Überweisung). {invoice.status === "DRAFT" && "Im Editor wieder aktivierbar."}
+        </div>
+      ) : !stripeReady ? (
         <div className="text-sm text-smoke">
           Stripe noch nicht verbunden — {" "}
           <Link href="/einstellungen?tab=zahlungen" className="text-ink underline hover:text-accent">

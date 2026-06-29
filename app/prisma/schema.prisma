@@ -302,6 +302,7 @@ model Invoice {
   // PDF
   pdfUrl                 String?
   // Online-Zahlung (Stripe)
+  paymentLinkEnabled     Boolean             @default(true) // Bezahllink generieren/anzeigen? Pro Rechnung wählbar.
   paymentToken           String?             @unique // unguessable Token für Public-URL /k/r/[token]
   stripeSessionId        String?             @unique // cs_… (Checkout Session)
   stripeSessionUrl       String? // session.url (gleichbleibend bis Expiry)

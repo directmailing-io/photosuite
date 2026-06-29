@@ -39,8 +39,14 @@ export default async function InvoicePage({
   if (!inv) return notFound();
 
   // Lazy-Backfill: ältere ausgestellte Rechnungen ohne Token bekommen einen,
-  // damit der Bezahllink immer verfügbar ist.
-  if (inv.status === "ISSUED" && inv.kind !== "CANCEL" && !inv.paymentToken) {
+  // damit der Bezahllink immer verfügbar ist — aber nur, wenn der Link auch
+  // gewünscht ist (paymentLinkEnabled).
+  if (
+    inv.status === "ISSUED" &&
+    inv.kind !== "CANCEL" &&
+    inv.paymentLinkEnabled &&
+    !inv.paymentToken
+  ) {
     const token = generateUrlToken();
     await prisma.invoice.update({ where: { id: inv.id }, data: { paymentToken: token } });
     inv.paymentToken = token;
@@ -115,6 +121,7 @@ export default async function InvoicePage({
             id: inv.cancelledByInvoice.id,
             number: inv.cancelledByInvoice.number,
           } : null,
+          paymentLinkEnabled: inv.paymentLinkEnabled,
           paymentToken: inv.paymentToken,
           stripeSessionUrl: inv.stripeSessionUrl,
           stripeSessionExpiresAt: inv.stripeSessionExpiresAt?.toISOString() ?? null,

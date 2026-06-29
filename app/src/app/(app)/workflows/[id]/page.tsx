@@ -44,6 +44,7 @@ export default async function WorkflowDetailPage({
           name: wf.name,
           description: wf.description,
           trigger: wf.trigger,
+          triggerOffsetDays: wf.triggerOffsetDays,
           isActive: wf.isActive,
           steps: wf.steps.map((s) => ({
             id: s.id,

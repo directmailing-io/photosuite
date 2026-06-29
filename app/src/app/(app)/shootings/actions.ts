@@ -246,6 +246,15 @@ export async function createShooting(formData: FormData) {
     }).catch(() => { /* best-effort */ });
   }
 
+  // Zeitbasierte Workflows (shooting_before/after) für das neue Shooting planen.
+  // Fire-and-forget, blockiert das Anlegen nicht.
+  if (shooting.scheduledAt) {
+    const { scheduleShootingWorkflows } = await import("@/lib/workflow/engine");
+    scheduleShootingWorkflows(shooting.id).catch((err) =>
+      console.error(`[createShooting] scheduleShootingWorkflows: ${err?.message ?? err}`),
+    );
+  }
+
   revalidatePath("/shootings");
   revalidatePath(`/kunden/${customerId}`);
   redirect(`/shootings/${shooting.id}`);
@@ -452,6 +461,24 @@ export async function updateShooting(id: string, formData: FormData) {
     });
   }
 
+  // Bei Änderung des Shooting-Datums: zeitbasierte Workflows neu planen.
+  // scheduleShootingWorkflows ist idempotent — cancelt offene Jobs zuerst.
+  const oldTime = existing.scheduledAt?.getTime() ?? null;
+  const newTime = updated.scheduledAt?.getTime() ?? null;
+  if (oldTime !== newTime) {
+    const { scheduleShootingWorkflows, cancelShootingWorkflows } = await import("@/lib/workflow/engine");
+    if (updated.scheduledAt) {
+      scheduleShootingWorkflows(id).catch((err) =>
+        console.error(`[updateShooting] scheduleShootingWorkflows: ${err?.message ?? err}`),
+      );
+    } else {
+      // Datum entfernt → alle offenen Jobs cancellen
+      cancelShootingWorkflows(id, true).catch((err) =>
+        console.error(`[updateShooting] cancelShootingWorkflows: ${err?.message ?? err}`),
+      );
+    }
+  }
+
   revalidatePath(`/shootings/${id}`);
   revalidatePath("/shootings");
 }
@@ -460,6 +487,12 @@ export async function deleteShooting(id: string) {
   const userId = await requireUserId();
   const sh = await prisma.shooting.findFirst({ where: { id, ownerId: userId } });
   if (!sh) throw new Error("Shooting nicht gefunden");
+  // Zeitbasierte Workflow-Jobs vorher cancellen — Cascade-Delete würde sie zwar
+  // auch entfernen, aber wir wollen die Runs explizit auf "cancelled" markieren.
+  const { cancelShootingWorkflows } = await import("@/lib/workflow/engine");
+  await cancelShootingWorkflows(id, false).catch((err) =>
+    console.error(`[deleteShooting] cancelShootingWorkflows: ${err?.message ?? err}`),
+  );
   await prisma.shooting.delete({ where: { id } });
   revalidatePath("/shootings");
   revalidatePath(`/kunden/${sh.customerId}`);
@@ -572,6 +605,12 @@ export async function moveShootingToDate(shootingId: string, isoDate: string) {
       location: fresh.location,
     }).catch(() => { /* best-effort */ });
   }
+
+  // Zeitbasierte Workflows neu planen (Datum hat sich geändert).
+  const { scheduleShootingWorkflows } = await import("@/lib/workflow/engine");
+  scheduleShootingWorkflows(shootingId).catch((err) =>
+    console.error(`[moveShootingToDate] scheduleShootingWorkflows: ${err?.message ?? err}`),
+  );
 }
 
 // ---------- Termine ----------

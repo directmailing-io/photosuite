@@ -17,7 +17,33 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmailAsUser } from "@/lib/email/send";
 
-export type TriggerType = "invoice_paid" | "offer_accepted" | "lead_created" | "manual";
+export type TriggerType =
+  | "invoice_paid"
+  | "offer_accepted"
+  | "lead_created"
+  | "booking_accepted"
+  | "shooting_before"
+  | "shooting_after"
+  | "manual";
+
+export const EVENT_TRIGGERS: TriggerType[] = [
+  "invoice_paid",
+  "offer_accepted",
+  "lead_created",
+  "booking_accepted",
+];
+
+export const TIME_TRIGGERS: TriggerType[] = ["shooting_before", "shooting_after"];
+
+export const TRIGGER_LABELS: Record<TriggerType, string> = {
+  invoice_paid: "Rechnung bezahlt",
+  offer_accepted: "Angebot angenommen",
+  lead_created: "Neue Anfrage eingegangen",
+  booking_accepted: "Termin-Anfrage angenommen",
+  shooting_before: "Vor einem Shooting",
+  shooting_after: "Nach einem Shooting",
+  manual: "Manuell starten",
+};
 
 export type TriggerContext = {
   ownerId: string;
@@ -49,6 +75,7 @@ type TaskConfig = {
  */
 export async function triggerWorkflow(trigger: TriggerType, ctx: TriggerContext): Promise<void> {
   if (trigger === "manual") return; // Manuelle Trigger laufen über explizite UI-Action
+  if (TIME_TRIGGERS.includes(trigger)) return; // Zeitbasierte Trigger laufen über scheduleShootingWorkflows
 
   const workflows = await prisma.workflow.findMany({
     where: { ownerId: ctx.ownerId, trigger, isActive: true },
@@ -59,28 +86,139 @@ export async function triggerWorkflow(trigger: TriggerType, ctx: TriggerContext)
   const now = new Date();
   for (const wf of workflows) {
     if (wf.steps.length === 0) continue;
-    const run = await prisma.workflowRun.create({
-      data: {
-        workflowId: wf.id,
-        ownerId: ctx.ownerId,
-        customerId: ctx.customerId ?? null,
-        invoiceId: ctx.invoiceId ?? null,
-        offerId: ctx.offerId ?? null,
-        shootingId: ctx.shootingId ?? null,
-        leadId: ctx.leadId ?? null,
-        status: "pending",
-      },
-    });
-    await prisma.workflowJob.createMany({
-      data: wf.steps.map((step) => ({
-        runId: run.id,
-        stepPosition: step.position,
-        actionType: step.actionType,
-        configSnapshot: step.config,
-        runAt: new Date(now.getTime() + step.delayMinutes * 60_000),
-      })),
-    });
+    await createRunAndJobs(wf, ctx, now);
   }
+}
+
+/**
+ * Erzeugt einen WorkflowRun + alle WorkflowJobs mit korrekt berechneten runAt.
+ * Wird sowohl von triggerWorkflow als auch vom manuellen Trigger und vom
+ * zeitbasierten Scheduler genutzt.
+ */
+async function createRunAndJobs(
+  wf: { id: string; steps: Array<{ position: number; actionType: string; config: string; delayMinutes: number }> },
+  ctx: TriggerContext,
+  triggerAt: Date,
+): Promise<string> {
+  const run = await prisma.workflowRun.create({
+    data: {
+      workflowId: wf.id,
+      ownerId: ctx.ownerId,
+      customerId: ctx.customerId ?? null,
+      invoiceId: ctx.invoiceId ?? null,
+      offerId: ctx.offerId ?? null,
+      shootingId: ctx.shootingId ?? null,
+      leadId: ctx.leadId ?? null,
+      status: "pending",
+    },
+  });
+  await prisma.workflowJob.createMany({
+    data: wf.steps.map((step) => ({
+      runId: run.id,
+      stepPosition: step.position,
+      actionType: step.actionType,
+      configSnapshot: step.config,
+      runAt: new Date(triggerAt.getTime() + step.delayMinutes * 60_000),
+    })),
+  });
+  return run.id;
+}
+
+/**
+ * Startet einen Workflow manuell. Nur erlaubt für aktive Workflows, die zum
+ * User gehören. IDOR-sicher via ownerId-Match. Liefert die Run-ID zurück.
+ *
+ * Wird vom „Workflow starten"-Button im Shooting-/Kunden-Detail gerufen.
+ */
+export async function startManualWorkflow(
+  workflowId: string,
+  ctx: TriggerContext,
+): Promise<{ runId: string }> {
+  const wf = await prisma.workflow.findFirst({
+    where: { id: workflowId, ownerId: ctx.ownerId, isActive: true },
+    include: { steps: { orderBy: { position: "asc" } } },
+  });
+  if (!wf) throw new Error("Workflow nicht gefunden oder inaktiv");
+  if (wf.steps.length === 0) throw new Error("Workflow hat keine Schritte");
+  const runId = await createRunAndJobs(wf, ctx, new Date());
+  return { runId };
+}
+
+/**
+ * Plant alle zeitbasierten Workflows (shooting_before, shooting_after) für
+ * ein konkretes Shooting. Idempotent: bestehende offene Runs für dieselbe
+ * Workflow+Shooting-Kombination werden zuerst gecancelt und neu berechnet.
+ *
+ * Wird gerufen:
+ *  - bei Shooting-Create
+ *  - bei Shooting-Update mit Änderung an scheduledAt
+ *  - beim Aktivieren eines zeitbasierten Workflows (für alle zukünftigen Shootings)
+ */
+export async function scheduleShootingWorkflows(shootingId: string): Promise<void> {
+  const shooting = await prisma.shooting.findUnique({
+    where: { id: shootingId },
+    select: { id: true, ownerId: true, customerId: true, scheduledAt: true },
+  });
+  if (!shooting || !shooting.scheduledAt) return;
+
+  const workflows = await prisma.workflow.findMany({
+    where: {
+      ownerId: shooting.ownerId,
+      isActive: true,
+      trigger: { in: TIME_TRIGGERS },
+    },
+    include: { steps: { orderBy: { position: "asc" } } },
+  });
+
+  // Bestehende offene Runs für dieses Shooting cancellen (idempotent reschedule).
+  // Done/failed Runs lassen wir unangetastet — die sind historisch.
+  await cancelShootingWorkflows(shootingId, /* onlyPending */ true);
+
+  for (const wf of workflows) {
+    if (wf.steps.length === 0) continue;
+    const offsetMs = wf.triggerOffsetDays * 86400_000;
+    // Bei shooting_before ist der Offset im UI als positiver Wert „Tage vor" gemeint,
+    // wird hier aber als Subtraktion benötigt → Offset negieren.
+    const signed = wf.trigger === "shooting_before" ? -offsetMs : offsetMs;
+    const triggerAt = new Date(shooting.scheduledAt.getTime() + signed);
+
+    // Wenn der berechnete Trigger-Zeitpunkt schon vorbei ist, würden alle Jobs
+    // direkt fällig sein — wir überspringen das (kein nachträgliches Auslösen).
+    if (triggerAt < new Date()) continue;
+
+    await createRunAndJobs(wf, {
+      ownerId: shooting.ownerId,
+      shootingId: shooting.id,
+      customerId: shooting.customerId,
+    }, triggerAt);
+  }
+}
+
+/**
+ * Cancelt alle offenen Workflow-Runs eines Shootings.
+ * Wird gerufen bei Shooting-Delete oder vor reschedule.
+ */
+export async function cancelShootingWorkflows(
+  shootingId: string,
+  onlyPending = false,
+): Promise<void> {
+  const where: any = { shootingId };
+  if (onlyPending) where.status = "pending";
+
+  const runs = await prisma.workflowRun.findMany({
+    where,
+    select: { id: true },
+  });
+  if (runs.length === 0) return;
+  const runIds = runs.map((r) => r.id);
+
+  // Pending Jobs cancellen (laufende werden in Ruhe gelassen).
+  await prisma.workflowJob.updateMany({
+    where: { runId: { in: runIds }, status: "pending" },
+    data: { status: "cancelled" },
+  });
+  // Runs als cancelled markieren, wenn nichts mehr offen ist.
+  await markCompletedRuns();
 }
 
 /**
@@ -143,13 +281,16 @@ async function markCompletedRuns(): Promise<void> {
   });
   for (const run of pendingRuns) {
     if (run.jobs.length === 0) continue;
-    const allDone = run.jobs.every((j) => j.status === "done");
-    const anyFailed = run.jobs.some((j) => j.status === "failed");
     const anyOpen = run.jobs.some((j) => j.status === "pending" || j.status === "running");
     if (anyOpen) continue;
+    const anyDone = run.jobs.some((j) => j.status === "done");
+    const anyFailed = run.jobs.some((j) => j.status === "failed");
+    // Prioritäten: irgendwas failed → failed, sonst irgendwas done → done,
+    // sonst (alles cancelled) → cancelled
+    const newStatus = anyFailed ? "failed" : anyDone ? "done" : "cancelled";
     await prisma.workflowRun.update({
       where: { id: run.id },
-      data: { status: anyFailed ? "failed" : "done" },
+      data: { status: newStatus },
     });
   }
 }

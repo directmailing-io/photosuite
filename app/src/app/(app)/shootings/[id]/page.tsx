@@ -16,6 +16,8 @@ import { updateShooting, deleteShooting } from "../actions";
 import { ExternalLink, Copy } from "lucide-react";
 import { formatEUR } from "@/lib/utils";
 import { CustomerLinkButton } from "./CustomerLinkButton";
+import { WorkflowSection } from "@/components/WorkflowSection";
+import { loadWorkflowSectionData } from "@/lib/workflow/loaders";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +83,10 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
   ]);
   if (!shooting) return notFound();
   const packageMode = (user?.packageMode ?? "all_in_one") as "all_in_one" | "modular";
+  const workflowData = await loadWorkflowSectionData(userId, {
+    customerId: shooting.customerId,
+    shootingId: shooting.id,
+  });
 
   const publicUrl = shooting.publicSlug ? `/k/${shooting.publicSlug}` : null;
   // Gesamt-Preis = (Anzahlungspaket-Preis) + (Bildpaket-Preis, falls modular) + Add-Ons.
@@ -325,6 +331,12 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               uploadedBy: a.uploadedBy,
               createdAt: a.createdAt.toISOString(),
             }))}
+          />
+          <WorkflowSection
+            shootingId={shooting.id}
+            customerId={shooting.customerId}
+            manualWorkflows={workflowData.manualWorkflows}
+            runs={workflowData.runs}
           />
         </div>
       </div>

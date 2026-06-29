@@ -36,6 +36,7 @@ type Props = {
     name: string;
     description: string | null;
     trigger: string;
+    triggerOffsetDays: number;
     isActive: boolean;
     steps: Step[];
     runs: Run[];
@@ -46,8 +47,13 @@ const TRIGGER_LABELS: Record<string, string> = {
   invoice_paid: "Rechnung bezahlt",
   offer_accepted: "Angebot angenommen",
   lead_created: "Neue Anfrage eingegangen",
+  booking_accepted: "Termin-Anfrage angenommen",
+  shooting_before: "Vor einem Shooting",
+  shooting_after: "Nach einem Shooting",
   manual: "Manuell starten",
 };
+
+const TIME_TRIGGERS = new Set(["shooting_before", "shooting_after"]);
 
 const ACTION_META: Record<string, { label: string; Icon: typeof Mail }> = {
   email: { label: "Email senden", Icon: Mail },
@@ -65,6 +71,9 @@ export function WorkflowEditor({ workflow }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [addingStep, setAddingStep] = useState<"email" | "task" | null>(null);
+  // Lokaler Trigger-State, damit das Offset-Feld bei Trigger-Wechsel direkt erscheint/verschwindet
+  const [selectedTrigger, setSelectedTrigger] = useState(workflow.trigger);
+  const isTimeTrigger = TIME_TRIGGERS.has(selectedTrigger);
 
   async function onSaveMeta(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -128,14 +137,46 @@ export function WorkflowEditor({ workflow }: Props) {
               <input name="name" defaultValue={workflow.name} required maxLength={200} className="input" />
             </Field>
             <Field label="Trigger *">
-              <select name="trigger" defaultValue={workflow.trigger} className="select">
-                <option value="invoice_paid">Rechnung bezahlt</option>
-                <option value="offer_accepted">Angebot angenommen</option>
-                <option value="lead_created">Neue Anfrage eingegangen</option>
-                <option value="manual">Manuell starten</option>
+              <select
+                name="trigger"
+                value={selectedTrigger}
+                onChange={(e) => setSelectedTrigger(e.target.value)}
+                className="select"
+              >
+                <optgroup label="Sofort beim Ereignis">
+                  <option value="invoice_paid">Rechnung bezahlt</option>
+                  <option value="offer_accepted">Angebot angenommen</option>
+                  <option value="lead_created">Neue Anfrage eingegangen</option>
+                  <option value="booking_accepted">Termin-Anfrage angenommen</option>
+                </optgroup>
+                <optgroup label="Zeitbasiert um ein Shooting">
+                  <option value="shooting_before">Vor einem Shooting</option>
+                  <option value="shooting_after">Nach einem Shooting</option>
+                </optgroup>
+                <optgroup label="Manuell">
+                  <option value="manual">Manuell starten</option>
+                </optgroup>
               </select>
             </Field>
           </FormRow>
+          {isTimeTrigger && (
+            <Field
+              label={selectedTrigger === "shooting_before" ? "Tage VOR dem Shooting" : "Tage NACH dem Shooting"}
+              hint={
+                selectedTrigger === "shooting_before"
+                  ? 'Beispiel: 14 = „2 Wochen vor dem Shooting wird der Trigger ausgelöst, dann starten die Schritte mit ihren Verzögerungen ab dem Zeitpunkt."'
+                  : 'Beispiel: 3 = „3 Tage nach dem Shooting wird der Trigger ausgelöst, dann starten die Schritte mit ihren Verzögerungen ab dem Zeitpunkt."'
+              }
+            >
+              <input
+                type="number"
+                min="0"
+                name="triggerOffsetDays"
+                defaultValue={workflow.triggerOffsetDays}
+                className="input w-32"
+              />
+            </Field>
+          )}
           <Field label="Beschreibung">
             <textarea
               name="description"

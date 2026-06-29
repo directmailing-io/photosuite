@@ -1302,10 +1302,18 @@ model Workflow {
   id          String         @id @default(cuid())
   name        String
   description String?
-  // Trigger-Event-Typ: "invoice_paid" | "offer_accepted" | "lead_created"
-  // | "manual" (nur manuell ausführbar, z.B. „Welcome-Sequenz starten")
-  trigger     String
-  isActive    Boolean        @default(true)
+  // Trigger-Event-Typ:
+  //   "invoice_paid", "offer_accepted", "lead_created", "booking_accepted"
+  //     → event-basiert, sofort beim Domain-Event
+  //   "shooting_before", "shooting_after"
+  //     → zeitbasiert, relativ zum Shooting.scheduledAt + triggerOffsetDays
+  //   "manual"
+  //     → nur explizit per UI-Button startbar
+  trigger             String
+  // Nur für zeitbasierte Trigger (shooting_before/after) relevant.
+  // Negativer Wert = X Tage VOR Shooting, positiver = X Tage NACH Shooting.
+  triggerOffsetDays   Int      @default(0)
+  isActive            Boolean  @default(true)
   steps       WorkflowStep[]
   runs        WorkflowRun[]
   owner       User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)

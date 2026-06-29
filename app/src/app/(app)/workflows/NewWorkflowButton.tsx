@@ -59,10 +59,19 @@ export function NewWorkflowButton() {
             <label className="block text-sm">
               <span className="font-medium">Trigger *</span>
               <select name="trigger" className="select mt-1" defaultValue="invoice_paid">
-                <option value="invoice_paid">Rechnung bezahlt</option>
-                <option value="offer_accepted">Angebot angenommen</option>
-                <option value="lead_created">Neue Anfrage eingegangen</option>
-                <option value="manual">Manuell (nicht auto-getriggert)</option>
+                <optgroup label="Sofort beim Ereignis">
+                  <option value="invoice_paid">Rechnung bezahlt</option>
+                  <option value="offer_accepted">Angebot angenommen</option>
+                  <option value="lead_created">Neue Anfrage eingegangen</option>
+                  <option value="booking_accepted">Termin-Anfrage angenommen</option>
+                </optgroup>
+                <optgroup label="Zeitbasiert um ein Shooting">
+                  <option value="shooting_before">Vor einem Shooting</option>
+                  <option value="shooting_after">Nach einem Shooting</option>
+                </optgroup>
+                <optgroup label="Manuell">
+                  <option value="manual">Manuell (nicht auto-getriggert)</option>
+                </optgroup>
               </select>
             </label>
             <label className="block text-sm">

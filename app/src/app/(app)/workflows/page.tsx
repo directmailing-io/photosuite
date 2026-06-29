@@ -12,6 +12,9 @@ const TRIGGER_LABELS: Record<string, string> = {
   invoice_paid: "Rechnung bezahlt",
   offer_accepted: "Angebot angenommen",
   lead_created: "Neue Anfrage eingegangen",
+  booking_accepted: "Termin-Anfrage angenommen",
+  shooting_before: "Vor einem Shooting",
+  shooting_after: "Nach einem Shooting",
   manual: "Manuell starten",
 };
 

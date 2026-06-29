@@ -131,6 +131,18 @@ export async function acceptBooking(id: string): Promise<{ shootingId: string }>
     },
   });
 
+  // Workflow-Trigger: booking_accepted (event-basiert) + zeitbasierte Workflows
+  // für das neue Shooting planen
+  const { triggerWorkflow, scheduleShootingWorkflows } = await import("@/lib/workflow/engine");
+  triggerWorkflow("booking_accepted", {
+    ownerId: userId,
+    customerId: customer.id,
+    shootingId: shooting.id,
+  }).catch((err) => console.error(`[acceptBooking] triggerWorkflow: ${err?.message ?? err}`));
+  scheduleShootingWorkflows(shooting.id).catch((err) =>
+    console.error(`[acceptBooking] scheduleShootingWorkflows: ${err?.message ?? err}`),
+  );
+
   revalidateAll();
   return { shootingId: shooting.id };
 }

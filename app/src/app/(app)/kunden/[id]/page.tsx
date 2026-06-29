@@ -11,6 +11,8 @@ import { eurFromCents } from "@/lib/money";
 import { CustomerNoteForm } from "./CustomerNoteForm";
 import { PaymentHistory } from "@/components/PaymentHistory";
 import { CompanionsSection } from "./CompanionsSection";
+import { WorkflowSection } from "@/components/WorkflowSection";
+import { loadWorkflowSectionData } from "@/lib/workflow/loaders";
 import { CustomerTabs, type CustomerTab } from "./CustomerTabs";
 import { createDraftInvoice } from "../../buchhaltung/actions";
 
@@ -79,6 +81,8 @@ export default async function CustomerDetailPage({
     .reduce((sum, i) => sum + i.totalCents, 0);
   const openAmount = totalRevenue - totalPaid;
   const openInvoiceCount = billableInvoices.filter((i) => i.status === "ISSUED").length;
+
+  const workflowData = await loadWorkflowSectionData(userId, { customerId: customer.id });
 
   return (
     <>
@@ -345,6 +349,12 @@ export default async function CustomerDetailPage({
                 <div className="eyebrow mb-4 eyebrow-muted flex items-center gap-2"><MessageSquare size={13} /> Notiz hinzufügen</div>
                 <CustomerNoteForm customerId={customer.id} />
               </div>
+
+              <WorkflowSection
+                customerId={customer.id}
+                manualWorkflows={workflowData.manualWorkflows}
+                runs={workflowData.runs}
+              />
 
               <div className="card">
                 <div className="px-6 py-4 border-b border-stone/60">

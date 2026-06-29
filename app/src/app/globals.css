@@ -26,6 +26,11 @@
     --success: 47 107 59;       /* #2F6B3B */
     --success-soft: 227 238 223;
     --success-deep: 31 74 50;   /* #1F4A32 */
+    --success-on: 255 255 255;
+    --danger: 200 16 46;        /* #C8102E — Fehler/Abgelehnt */
+    --danger-soft: 251 233 236; /* #FBE9EC */
+    --danger-deep: 158 12 36;
+    --danger-on: 255 255 255;
 
     --shadow-soft: 0 1px 2px rgba(25,25,26,0.04), 0 1px 1px rgba(25,25,26,0.03);
     --shadow-md: 0 6px 20px rgba(25,25,26,0.08), 0 2px 6px rgba(25,25,26,0.04);
@@ -68,6 +73,11 @@
     --success: 0 138 5;
     --success-soft: 230 244 230;
     --success-deep: 0 92 4;
+    --success-on: 255 255 255;
+    --danger: 220 38 38;        /* #DC2626 */
+    --danger-soft: 254 226 226; /* #FEE2E2 */
+    --danger-deep: 153 27 27;
+    --danger-on: 255 255 255;
 
     --shadow-soft: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.04);
     --shadow-md: 0 6px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
@@ -113,6 +123,11 @@
     --success: 168 201 154;     /* #A8C99A */
     --success-soft: 45 61 38;   /* #2D3D26 */
     --success-deep: 200 227 188; /* #C8E3BC — heller in Dark */
+    --success-on: 31 20 16;     /* dunkler Text auf hellem Grün */
+    --danger: 224 145 149;      /* #E09195 — gedämpftes Rosa-Rot für Dark-Theme */
+    --danger-soft: 74 35 38;    /* #4A2326 */
+    --danger-deep: 240 180 184; /* heller in Dark */
+    --danger-on: 31 20 16;
 
     --shadow-soft: none;
     --shadow-md: 0 8px 24px rgba(0,0,0,0.5);

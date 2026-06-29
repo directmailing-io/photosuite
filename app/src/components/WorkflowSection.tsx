@@ -143,10 +143,10 @@ export function WorkflowSection({
 
 function RunRow({ run }: { run: RunHistoryItem }) {
   const tone =
-    run.status === "done" ? { bg: "#E6F3EC", color: "#2F6B4A", Icon: CheckCircle2, label: "Fertig" } :
-    run.status === "failed" ? { bg: "#FBE9EC", color: "#C8102E", Icon: AlertCircle, label: "Fehler" } :
-    run.status === "cancelled" ? { bg: "#F2F1EE", color: "#7D7878", Icon: CircleSlash, label: "Abgebrochen" } :
-    { bg: "#FBF5DE", color: "#B8860B", Icon: Clock, label: "Läuft" };
+    run.status === "done" ? { bg: "rgb(var(--success-soft))", color: "rgb(var(--success-deep))", Icon: CheckCircle2, label: "Fertig" } :
+    run.status === "failed" ? { bg: "rgb(var(--danger-soft))", color: "rgb(var(--danger-deep))", Icon: AlertCircle, label: "Fehler" } :
+    run.status === "cancelled" ? { bg: "rgb(var(--linen))", color: "rgb(var(--taupe))", Icon: CircleSlash, label: "Abgebrochen" } :
+    { bg: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))", Icon: Clock, label: "Läuft" };
   const Icon = tone.Icon;
 
   return (

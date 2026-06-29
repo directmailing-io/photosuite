@@ -122,7 +122,7 @@ export default async function FragebogenPage({
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="font-medium text-sm">{q.title}</div>
                         {isNew && (
-                          <span className="badge" style={{ background: "rgb(var(--accent))", color: "white", border: "none" }}>
+                          <span className="badge" style={{ background: "rgb(var(--accent))", color: "rgb(var(--accent-on))", border: "none" }}>
                             <Sparkles size={10} /> Neu
                           </span>
                         )}

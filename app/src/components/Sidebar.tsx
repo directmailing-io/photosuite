@@ -150,7 +150,7 @@ function NavSection({
               {it.badgeCount != null && it.badgeCount > 0 && (
                 <span
                   className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center"
-                  style={{ background: "rgb(var(--accent))", color: "white" }}
+                  style={{ background: "rgb(var(--accent))", color: "rgb(var(--accent-on))" }}
                   title={`${it.badgeCount} neue`}
                 >
                   {it.badgeCount}

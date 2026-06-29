@@ -424,7 +424,7 @@ function YesNo({ value, onChange }: { value: any; onChange: (v: boolean) => void
             style={{
               borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
               background: active ? "rgb(var(--accent))" : "rgb(var(--paper))",
-              color: active ? "#fff" : "rgb(var(--ink))",
+              color: active ? "rgb(var(--accent-on))" : "rgb(var(--ink))",
               boxShadow: active ? "0 0 0 3px rgba(200,16,46,0.12)" : "none",
             }}
           >
@@ -518,7 +518,7 @@ function SelectMulti({ options, value, onChange }: { options: string[]; value: s
                 borderColor: active ? "rgb(var(--accent))" : "rgb(var(--stone))",
                 background: active ? "rgb(var(--accent))" : "transparent",
               }}>
-              {active && <Check size={13} className="text-white" strokeWidth={3} />}
+              {active && <Check size={13} style={{ color: "rgb(var(--accent-on))" }} strokeWidth={3} />}
             </span>
             <span className="text-sm">{o}</span>
           </button>

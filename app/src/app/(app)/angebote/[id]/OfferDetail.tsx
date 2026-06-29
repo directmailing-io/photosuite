@@ -83,12 +83,12 @@ function toDateInput(iso: string | null) {
 }
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  DRAFT:     { label: "Entwurf",       color: "#9F877F", bg: "#F3EFEC" },
-  SENT:      { label: "Versendet",     color: "#19191A", bg: "#EDEDEA" },
-  ACCEPTED:  { label: "Angenommen",    color: "#2F6B4A", bg: "#E6F3EC" },
-  DECLINED:  { label: "Abgelehnt",     color: "#C8102E", bg: "#FBE9EC" },
-  EXPIRED:   { label: "Abgelaufen",    color: "#7D7878", bg: "#F2F1EE" },
-  WITHDRAWN: { label: "Zurückgezogen", color: "#7D7878", bg: "#F2F1EE" },
+  DRAFT:     { label: "Entwurf",       color: "rgb(var(--taupe))",        bg: "rgb(var(--linen))" },
+  SENT:      { label: "Versendet",     color: "rgb(var(--ink))",          bg: "rgb(var(--linen))" },
+  ACCEPTED:  { label: "Angenommen",    color: "rgb(var(--success-deep))", bg: "rgb(var(--success-soft))" },
+  DECLINED:  { label: "Abgelehnt",     color: "rgb(var(--danger-deep))",  bg: "rgb(var(--danger-soft))" },
+  EXPIRED:   { label: "Abgelaufen",    color: "rgb(var(--taupe))",        bg: "rgb(var(--linen))" },
+  WITHDRAWN: { label: "Zurückgezogen", color: "rgb(var(--taupe))",        bg: "rgb(var(--linen))" },
 };
 
 export function OfferDetail({ offer, packages, catalog }: Props) {
@@ -558,7 +558,7 @@ export function OfferDetail({ offer, packages, catalog }: Props) {
           )}
           {(offer.status === "SENT" || offer.status === "EXPIRED") && (
             <>
-              <button onClick={onAccept} disabled={busy} className="btn-primary w-full text-sm" style={{ background: "#2F6B4A" }}>
+              <button onClick={onAccept} disabled={busy} className="btn-primary w-full text-sm" style={{ background: "rgb(var(--success))", color: "rgb(var(--success-on))" }}>
                 <CheckCircle2 size={13} /> Manuell annehmen
               </button>
               <button onClick={onDecline} disabled={busy} className="btn-secondary w-full text-sm">

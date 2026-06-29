@@ -14,12 +14,12 @@ export const dynamic = "force-dynamic";
 type FilterKey = "ALL" | "DRAFT" | "SENT" | "ACCEPTED" | "DECLINED" | "EXPIRED";
 
 const STATUS_META: Record<string, { label: string; color: string; Icon: typeof Send }> = {
-  DRAFT:     { label: "Entwurf",     color: "#9F877F", Icon: CircleDashed },
-  SENT:      { label: "Versendet",   color: "#19191A", Icon: Send },
-  ACCEPTED:  { label: "Angenommen",  color: "#2F6B4A", Icon: CheckCircle2 },
-  DECLINED:  { label: "Abgelehnt",   color: "#C8102E", Icon: XCircle },
-  EXPIRED:   { label: "Abgelaufen",  color: "#7D7878", Icon: Hourglass },
-  WITHDRAWN: { label: "Zurückgezogen", color: "#7D7878", Icon: XCircle },
+  DRAFT:     { label: "Entwurf",       color: "rgb(var(--taupe))",        Icon: CircleDashed },
+  SENT:      { label: "Versendet",     color: "rgb(var(--ink))",          Icon: Send },
+  ACCEPTED:  { label: "Angenommen",    color: "rgb(var(--success-deep))", Icon: CheckCircle2 },
+  DECLINED:  { label: "Abgelehnt",     color: "rgb(var(--danger-deep))",  Icon: XCircle },
+  EXPIRED:   { label: "Abgelaufen",    color: "rgb(var(--taupe))",        Icon: Hourglass },
+  WITHDRAWN: { label: "Zurückgezogen", color: "rgb(var(--taupe))",        Icon: XCircle },
 };
 
 export default async function AngebotePage({
@@ -128,7 +128,7 @@ export default async function AngebotePage({
                         {o.number ?? "Entwurf"}
                       </span>
                       {o.convertedInvoice && (
-                        <span className="badge inline-flex items-center gap-1" style={{ background: "#E6F3EC", color: "#2F6B4A" }}>
+                        <span className="badge inline-flex items-center gap-1" style={{ background: "rgb(var(--success-soft))", color: "rgb(var(--success-deep))" }}>
                           <ArrowLeftRight size={10} /> Rechnung {o.convertedInvoice.number ?? "—"}
                         </span>
                       )}

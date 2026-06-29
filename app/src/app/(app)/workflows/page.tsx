@@ -72,8 +72,8 @@ export default async function WorkflowsPage() {
                 <span
                   className="text-xs px-2 py-1 rounded-full shrink-0"
                   style={{
-                    background: wf.isActive ? "#E6F3EC" : "#F2F1EE",
-                    color: wf.isActive ? "#2F6B4A" : "#7D7878",
+                    background: wf.isActive ? "rgb(var(--success-soft))" : "rgb(var(--linen))",
+                    color: wf.isActive ? "rgb(var(--success-deep))" : "rgb(var(--taupe))",
                   }}
                 >
                   {wf.isActive ? "Aktiv" : "Pausiert"}

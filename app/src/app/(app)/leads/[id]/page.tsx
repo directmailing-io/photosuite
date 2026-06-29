@@ -16,12 +16,12 @@ import { LeadActions } from "./LeadActions";
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  NEW: { label: "Neu", color: "#C8102E" },
-  CONTACTED: { label: "Kontaktiert", color: "#7A746B" },
-  CONSULTATION_BOOKED: { label: "Erstgespräch geplant", color: "#2F6B3B" },
-  CONSULTATION_DONE: { label: "Erstgespräch geführt", color: "#2F6B3B" },
-  CONVERTED: { label: "Zu Kundin konvertiert", color: "#19191A" },
-  LOST: { label: "Kein Fit", color: "#9F877F" },
+  NEW:                 { label: "Neu",                    color: "rgb(var(--accent))" },
+  CONTACTED:           { label: "Kontaktiert",            color: "rgb(var(--taupe))" },
+  CONSULTATION_BOOKED: { label: "Erstgespräch geplant",   color: "rgb(var(--success-deep))" },
+  CONSULTATION_DONE:   { label: "Erstgespräch geführt",   color: "rgb(var(--success-deep))" },
+  CONVERTED:           { label: "Zu Kundin konvertiert",  color: "rgb(var(--ink))" },
+  LOST:                { label: "Kein Fit",               color: "rgb(var(--taupe))" },
 };
 
 export default async function LeadDetailPage({

@@ -47,7 +47,7 @@ export function OfferActions({ token, customerName }: { token: string; customerN
             onClick={onAccept}
             disabled={pending}
             className="btn-primary justify-center py-3"
-            style={{ background: "#2F6B4A" }}
+            style={{ background: "rgb(var(--success))", color: "rgb(var(--success-on))" }}
           >
             <CheckCircle2 size={16} /> Angebot annehmen
           </button>

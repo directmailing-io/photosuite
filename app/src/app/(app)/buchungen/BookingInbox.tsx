@@ -142,7 +142,7 @@ function BookingCard({ booking }: { booking: Booking }) {
 
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="badge" style={{ background: `${statusMeta.color}15`, color: statusMeta.color }}>
+              <span className="badge" style={{ background: statusMeta.bg, color: statusMeta.color }}>
                 {statusMeta.icon}
                 {statusMeta.label}
               </span>
@@ -195,7 +195,7 @@ function BookingCard({ booking }: { booking: Booking }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs underline break-all hover:no-underline"
-                    style={{ color: "rgb(70, 115, 70)" }}
+                    style={{ color: "rgb(var(--success-deep))" }}
                   >
                     {booking.meetingUrl}
                   </a>
@@ -276,7 +276,7 @@ function BookingCard({ booking }: { booking: Booking }) {
 }
 
 const STATUS_META = {
-  PENDING: { label: "Neu", color: "rgb(80, 130, 80)", icon: <span className="w-1.5 h-1.5 rounded-full bg-current" /> },
-  CONFIRMED: { label: "Angenommen", color: "rgb(60, 105, 60)", icon: <CheckCircle2 size={10} /> },
-  CANCELLED: { label: "Abgelehnt", color: "rgb(var(--smoke))", icon: <XCircle size={10} /> },
+  PENDING:   { label: "Neu",        color: "rgb(var(--success-deep))", bg: "rgb(var(--success-soft))", icon: <span className="w-1.5 h-1.5 rounded-full bg-current" /> },
+  CONFIRMED: { label: "Angenommen", color: "rgb(var(--success-deep))", bg: "rgb(var(--success-soft))", icon: <CheckCircle2 size={10} /> },
+  CANCELLED: { label: "Abgelehnt",  color: "rgb(var(--taupe))",        bg: "rgb(var(--linen))",        icon: <XCircle size={10} /> },
 };

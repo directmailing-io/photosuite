@@ -9,12 +9,12 @@ import { LeadSlugInput } from "./LeadSlugInput";
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  NEW: { label: "Neu", color: "#C8102E" },
-  CONTACTED: { label: "Kontaktiert", color: "#7A746B" },
-  CONSULTATION_BOOKED: { label: "Termin", color: "#2F6B3B" },
-  CONSULTATION_DONE: { label: "Erstgespräch ✓", color: "#2F6B3B" },
-  CONVERTED: { label: "Kundin", color: "#19191A" },
-  LOST: { label: "Kein Fit", color: "#9F877F" },
+  NEW:                 { label: "Neu",            color: "rgb(var(--accent))" },
+  CONTACTED:           { label: "Kontaktiert",    color: "rgb(var(--taupe))" },
+  CONSULTATION_BOOKED: { label: "Termin",         color: "rgb(var(--success-deep))" },
+  CONSULTATION_DONE:   { label: "Erstgespräch ✓", color: "rgb(var(--success-deep))" },
+  CONVERTED:           { label: "Kundin",         color: "rgb(var(--ink))" },
+  LOST:                { label: "Kein Fit",       color: "rgb(var(--taupe))" },
 };
 
 function fmtDate(iso: Date): string {

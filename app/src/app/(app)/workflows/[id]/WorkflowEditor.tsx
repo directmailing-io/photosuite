@@ -261,8 +261,8 @@ export function WorkflowEditor({ workflow }: Props) {
             <span
               className="text-xs px-2 py-0.5 rounded-full"
               style={{
-                background: workflow.isActive ? "#E6F3EC" : "#F2F1EE",
-                color: workflow.isActive ? "#2F6B4A" : "#7D7878",
+                background: workflow.isActive ? "rgb(var(--success-soft))" : "rgb(var(--linen))",
+                color: workflow.isActive ? "rgb(var(--success-deep))" : "rgb(var(--taupe))",
               }}
             >
               {workflow.isActive ? "Aktiv" : "Pausiert"}
@@ -280,9 +280,9 @@ export function WorkflowEditor({ workflow }: Props) {
             <ul className="space-y-2 text-xs">
               {workflow.runs.map((r) => {
                 const tone =
-                  r.status === "done" ? { bg: "#E6F3EC", color: "#2F6B4A", Icon: CheckCircle2 } :
-                  r.status === "failed" ? { bg: "#FBE9EC", color: "#C8102E", Icon: AlertCircle } :
-                  { bg: "#F2F1EE", color: "#7D7878", Icon: Clock };
+                  r.status === "done" ? { bg: "rgb(var(--success-soft))", color: "rgb(var(--success-deep))", Icon: CheckCircle2 } :
+                  r.status === "failed" ? { bg: "rgb(var(--danger-soft))", color: "rgb(var(--danger-deep))", Icon: AlertCircle } :
+                  { bg: "rgb(var(--linen))", color: "rgb(var(--taupe))", Icon: Clock };
                 const Icon = tone.Icon;
                 return (
                   <li key={r.id} className="flex items-center gap-2">

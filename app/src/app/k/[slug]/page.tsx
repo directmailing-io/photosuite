@@ -279,7 +279,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                 >
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{ background: isDone ? "rgb(var(--linen))" : "rgb(var(--accent))", color: isDone ? "rgb(var(--smoke))" : "#fff" }}
+                    style={{ background: isDone ? "rgb(var(--linen))" : "rgb(var(--accent))", color: isDone ? "rgb(var(--smoke))" : "rgb(var(--accent-on))" }}
                   >
                     {isDone ? <CheckCircle2 size={26} /> : <FileQuestion size={26} />}
                   </div>
@@ -586,7 +586,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {primary && (
                   <div className="card p-6 relative overflow-hidden">
-                    <div className="absolute top-4 right-4 badge" style={{ background: "rgb(var(--accent))", color: "white", border: "none" }}>
+                    <div className="absolute top-4 right-4 badge" style={{ background: "rgb(var(--accent))", color: "rgb(var(--accent-on))", border: "none" }}>
                       <Star size={11} className="fill-current" /> Ansprechpartner:in
                     </div>
                     <div className="flex items-start gap-4">
@@ -690,7 +690,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                             borderColor: it.done ? "rgb(var(--accent))" : "rgb(var(--stone))",
                             background: it.done ? "rgb(var(--accent))" : "transparent",
                           }}>
-                          {it.done && <Check size={12} className="text-white" />}
+                          {it.done && <Check size={12} style={{ color: "rgb(var(--accent-on))" }} />}
                         </span>
                         <span className={it.done ? "text-smoke line-through" : "text-ink"}>{it.label}</span>
                       </li>

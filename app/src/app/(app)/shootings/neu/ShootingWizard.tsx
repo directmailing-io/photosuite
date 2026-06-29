@@ -249,7 +249,7 @@ function PackageTile({
           </div>
         )}
         {active && (
-          <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center shadow-md">
+          <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-md" style={{ background: "rgb(var(--accent))", color: "rgb(var(--accent-on))" }}>
             <Check size={15} />
           </div>
         )}
@@ -324,7 +324,7 @@ function PackageStep({
                   </div>
                 )}
                 {active && (
-                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center shadow-md">
+                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-md" style={{ background: "rgb(var(--accent))", color: "rgb(var(--accent-on))" }}>
                     <Check size={15} />
                   </div>
                 )}
@@ -361,7 +361,7 @@ function PackageStep({
               <div className="aspect-[16/9] relative overflow-hidden flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgb(var(--linen)) 0%, rgb(var(--stone)) 100%)" }}>
                 <Sparkles size={42} strokeWidth={1} className="text-taupe" />
                 {active && (
-                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center shadow-md">
+                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-md" style={{ background: "rgb(var(--accent))", color: "rgb(var(--accent-on))" }}>
                     <Check size={15} />
                   </div>
                 )}

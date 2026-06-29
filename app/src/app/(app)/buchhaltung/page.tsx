@@ -25,11 +25,11 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  DRAFT:     { label: "Entwurf",     color: "#9F877F" },
-  ISSUED:    { label: "Versendet",   color: "#19191A" },
-  PAID:      { label: "Bezahlt",     color: "#2F6B4A" },
-  OVERDUE:   { label: "Überfällig",  color: "#C8102E" },
-  CANCELLED: { label: "Storniert",   color: "#7D7878" },
+  DRAFT:     { label: "Entwurf",     color: "rgb(var(--taupe))" },
+  ISSUED:    { label: "Versendet",   color: "rgb(var(--ink))" },
+  PAID:      { label: "Bezahlt",     color: "rgb(var(--success-deep))" },
+  OVERDUE:   { label: "Überfällig",  color: "rgb(var(--danger-deep))" },
+  CANCELLED: { label: "Storniert",   color: "rgb(var(--taupe))" },
 };
 
 type PeriodKey = "month" | "quarter" | "year";

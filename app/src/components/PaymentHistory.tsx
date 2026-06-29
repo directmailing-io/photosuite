@@ -167,8 +167,8 @@ export function PaymentHistory({
                   )}
                   <button
                     onClick={() => onMarkPaid(inv.id)}
-                    className="text-[10px] px-2 py-1 rounded text-white whitespace-nowrap"
-                    style={{ background: "rgb(var(--ink))" }}
+                    className="text-[10px] px-2 py-1 rounded whitespace-nowrap"
+                    style={{ background: "rgb(var(--success))", color: "rgb(var(--success-on))" }}
                   >
                     bezahlt
                   </button>

@@ -22,9 +22,9 @@ export type NoteTemplateOption = {
 };
 
 const STATUS = {
-  OPEN: { label: "Offen", color: "#7D7878", icon: Circle },
-  DONE: { label: "Erledigt", color: "#19191A", icon: Check },
-  IMPORTANT: { label: "Sehr wichtig", color: "#C8102E", icon: AlertTriangle },
+  OPEN:      { label: "Offen",        color: "rgb(var(--taupe))",  icon: Circle },
+  DONE:      { label: "Erledigt",     color: "rgb(var(--ink))",    icon: Check },
+  IMPORTANT: { label: "Sehr wichtig", color: "rgb(var(--accent))", icon: AlertTriangle },
 } as const;
 
 // 4 fix definierte Kategorien für den Workflow Erstgespräch → Bildauswahl → Retusche.

@@ -66,8 +66,8 @@ export function InvoiceQuickActions({
         onClick={onMarkPaid}
         disabled={busy}
         title="Als bezahlt markieren"
-        className="w-8 h-8 rounded-lg flex items-center justify-center transition text-white"
-        style={{ background: "rgb(var(--ink))" }}
+        className="w-8 h-8 rounded-lg flex items-center justify-center transition"
+        style={{ background: "rgb(var(--success))", color: "rgb(var(--success-on))" }}
       >
         <CheckCircle2 size={14} />
       </button>

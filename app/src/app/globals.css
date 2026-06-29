@@ -96,24 +96,27 @@
   }
 
   :root[data-theme="midnight"] {
-    --bg: 10 10 11;             /* #0A0A0B */
-    --paper: 20 20 22;          /* #141416 */
-    --linen: 28 28 31;          /* #1C1C1F */
-    --stone: 42 42 46;          /* #2A2A2E */
-    --smoke: 16 16 18;          /* #101012 — Faint dunkle Surface (Input-BG) */
-    --taupe: 139 139 146;       /* #8B8B92 */
-    --ink: 242 242 238;         /* #F2F2EE */
-    --accent: 212 165 116;      /* #D4A574 — warmes Gold */
-    --accent-soft: 58 46 31;    /* #3A2E1F */
-    --accent-deep: 184 137 90;  /* #B8895A */
-    --accent-on: 25 25 26;
-    --success: 127 212 154;
-    --success-soft: 31 58 40;
-    --success-deep: 168 230 187;  /* heller in Midnight, weil deep auf hellem Text gemeint */
+    /* Theme „Schokolade" — sinnlicher Schokoladentraum.
+       Tiefe Kakaobraun-Töne mit beige-rosa Akzent. Der DB-Key bleibt
+       "midnight" (Migrations-Vermeidung); die UI nennt es „Schokolade". */
+    --bg: 31 20 16;             /* #1F1410 — tiefes Schoko */
+    --paper: 42 29 23;          /* #2A1D17 — Card-Schoko */
+    --linen: 56 40 32;          /* #382820 — Hover-Schoko */
+    --stone: 74 53 43;           /* #4A352B — Border-Schoko */
+    --smoke: 20 16 13;          /* #14100D — Faint dunkle Surface (Input-BG) */
+    --taupe: 176 160 150;       /* #B0A096 — warmes Helltaupe */
+    --ink: 239 227 217;         /* #EFE3D9 — Cream-Text */
+    --accent: 212 165 160;      /* #D4A5A0 — beige-rosa */
+    --accent-soft: 74 46 42;    /* #4A2E2A — sehr dunkles Rosa für Badge-BG */
+    --accent-deep: 184 136 128; /* #B88880 — Hover-Rosa */
+    --accent-on: 31 20 16;      /* dunkler Text auf rosa */
+    --success: 168 201 154;     /* #A8C99A */
+    --success-soft: 45 61 38;   /* #2D3D26 */
+    --success-deep: 200 227 188; /* #C8E3BC — heller in Dark */
 
     --shadow-soft: none;
     --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
-    --shadow-lg: 0 24px 64px rgba(0,0,0,0.6), 0 0 24px rgba(212,165,116,0.08);
+    --shadow-lg: 0 24px 64px rgba(0,0,0,0.6), 0 0 24px rgba(212,165,160,0.10);
 
     --font-display: "Fraunces", Georgia, serif;
     --font-body: "Inter", -apple-system, system-ui, sans-serif;
@@ -133,7 +136,7 @@
     --display-line: 1.1;
     --display-tracking: -0.01em;
 
-    --focus-ring: 0 0 0 3px rgba(212,165,116,0.18);
+    --focus-ring: 0 0 0 3px rgba(212,165,160,0.18);
     --focus-border-rgb: var(--accent);
   }
 
@@ -348,7 +351,7 @@
 :root[data-theme="midnight"] .btn-primary:hover {
   background: rgb(var(--accent-deep));
   filter: none;
-  box-shadow: 0 0 24px rgba(212,165,116,0.25);
+  box-shadow: 0 0 24px rgba(212,165,160,0.25);
 }
 :root[data-theme="midnight"] .btn-secondary {
   background: rgb(var(--paper));

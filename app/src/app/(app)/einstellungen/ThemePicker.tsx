@@ -64,15 +64,15 @@ const THEMES: ThemeDef[] = [
   },
   {
     key: "midnight",
-    name: "Onyx",
-    tagline: "Dunkel wie ein Plattenladen um Mitternacht.",
-    description: "Fraunces mit Inter, tiefes Anthrazit, warmes Gold als einziger Akzent. Edel, präzise, mit einem schmalen Goldstrich am aktiven Menüpunkt. Kein Standard-Darkmode — ein Statement.",
-    bg: "#0A0A0B",
-    paper: "#141416",
-    ink: "#F2F2EE",
-    accent: "#D4A574",
-    taupe: "#8B8B92",
-    swatches: ["#0A0A0B", "#141416", "#2A2A2E", "#D4A574", "#F2F2EE"],
+    name: "Schokolade",
+    tagline: "Sinnlicher Schokoladentraum der Verführung.",
+    description: "Fraunces mit Inter, tiefe Kakaobraun-Töne, beige-rosa als zarter Akzent. Warm, intim und unwiderstehlich — ein Statement für Abendsessions und intime Boudoir-Stimmung.",
+    bg: "#1F1410",
+    paper: "#2A1D17",
+    ink: "#EFE3D9",
+    accent: "#D4A5A0",
+    taupe: "#B0A096",
+    swatches: ["#1F1410", "#2A1D17", "#4A352B", "#D4A5A0", "#EFE3D9"],
     displayFont: '"Fraunces", Georgia, serif',
     bodyFont: '"Inter", system-ui, sans-serif',
     displayWeight: 500,
@@ -187,21 +187,25 @@ export function ThemePicker({ initial }: { initial: ThemeKey }) {
                   {t.tagline}
                 </p>
 
-                {/* Farb-Palette */}
+                {/* Farb-Palette — Border-Hint je nach Hex-Helligkeit, damit
+                    weiße/schwarze Swatches auf gleichfarbigem Hintergrund sichtbar bleiben. */}
                 <div className="flex items-center gap-1.5">
-                  {t.swatches.map((c, i) => (
-                    <div
-                      key={i}
-                      className="w-7 h-7"
-                      style={{
-                        background: c,
-                        borderRadius: 8,
-                        border: c === "#FFFFFF" || c === "#FFFCF8" ? "1px solid rgba(0,0,0,0.08)" : "none",
-                        boxShadow: c === "#0A0A0B" || c === "#141416" ? "inset 0 0 0 1px rgba(255,255,255,0.08)" : "none",
-                      }}
-                      aria-label={c}
-                    />
-                  ))}
+                  {t.swatches.map((c, i) => {
+                    const lum = hexLuminance(c);
+                    return (
+                      <div
+                        key={i}
+                        className="w-7 h-7"
+                        style={{
+                          background: c,
+                          borderRadius: 8,
+                          border: lum > 0.92 ? "1px solid rgba(0,0,0,0.08)" : "none",
+                          boxShadow: lum < 0.18 ? "inset 0 0 0 1px rgba(255,255,255,0.08)" : "none",
+                        }}
+                        aria-label={c}
+                      />
+                    );
+                  })}
                 </div>
               </div>
 
@@ -231,4 +235,15 @@ export function ThemePicker({ initial }: { initial: ThemeKey }) {
       })}
     </div>
   );
+}
+
+// Berechnet relative Luminance eines Hex-Codes (0..1) — für UI-Entscheidungen
+// (z.B. "Border sichtbar machen, wenn fast-weiß").
+function hexLuminance(hex: string): number {
+  const m = hex.match(/^#?([0-9a-fA-F]{6})$/);
+  if (!m) return 0.5;
+  const r = parseInt(m[1].slice(0, 2), 16) / 255;
+  const g = parseInt(m[1].slice(2, 4), 16) / 255;
+  const b = parseInt(m[1].slice(4, 6), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }

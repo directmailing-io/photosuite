@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Field, FormRow } from "@/components/form/Field";
 import {
-  Plus, Trash2, Pencil, Save, X, Upload, Eye, EyeOff, ImageIcon,
+  Plus, Trash2, Pencil, Save, X, Upload, Eye, EyeOff, ImageIcon, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createAddon, updateAddon, deleteAddon, toggleAddonActive } from "./addonActions";
@@ -31,7 +31,7 @@ export function AddonManager({ addons }: { addons: AddonRow[] }) {
     <div className="card">
       <div className="px-6 py-4 flex items-center justify-between border-b border-stone/60">
         <div>
-          <div className="eyebrow eyebrow-muted">Zusatzprodukte</div>
+          <div className="eyebrow eyebrow-muted">Produkte</div>
           <div className="text-sm text-smoke mt-1 max-w-md">
             Bilderbuch M, Bilderbuch L, Leinwände, Make-up — alles, was du zu deinen Paketen dazu verkaufen willst.
           </div>
@@ -51,7 +51,7 @@ export function AddonManager({ addons }: { addons: AddonRow[] }) {
 
       {addons.length === 0 && !adding ? (
         <div className="px-6 py-12 text-center text-sm text-smoke">
-          Noch keine Zusatzprodukte. Leg das erste an.
+          Noch keine Produkte. Leg das erste an.
         </div>
       ) : (
         <ul className="divide-y divide-stone/60">
@@ -161,6 +161,9 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
   const [pickedFile, setPickedFile] = useState<File | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
   const [pending, startTransition] = useTransition();
+  // Inline-Error, damit der konkrete Fehlergrund (z.B. Upload-Storage-Problem)
+  // sichtbar bleibt — auch nach dem Toast-Fadeout.
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -179,6 +182,7 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSaveError(null);
     const fd = new FormData(e.currentTarget);
     if (removeImage) fd.set("removeImage", "1");
     if (pickedFile) fd.set("image", pickedFile);
@@ -191,7 +195,9 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
         router.refresh();
         onClose();
       } catch (err: any) {
-        toast.error(err?.message ?? "Fehler beim Speichern");
+        const msg = err?.message ?? "Beim Speichern ist ein Fehler aufgetreten.";
+        setSaveError(msg);
+        toast.error("Speichern fehlgeschlagen", { description: msg, duration: 8000 });
       }
     });
   }
@@ -272,6 +278,34 @@ function AddonForm({ addon, onClose }: { addon?: AddonRow; onClose: () => void }
           Aktiv (zur Auswahl in Paketen/Shootings)
         </label>
       </div>
+
+      {saveError && (
+        <div
+          className="flex items-start gap-2.5 p-3 rounded-lg text-xs leading-relaxed"
+          style={{
+            background: "rgb(var(--accent-soft))",
+            color: "rgb(var(--accent-deep))",
+            border: "1px solid rgb(var(--accent) / 0.4)",
+          }}
+          role="alert"
+        >
+          <AlertCircle size={14} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
+          <div className="flex-1">
+            <div className="font-semibold mb-0.5" style={{ color: "rgb(var(--accent))" }}>
+              Speichern fehlgeschlagen
+            </div>
+            <div>{saveError}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveError(null)}
+            className="shrink-0 opacity-60 hover:opacity-100"
+            title="Hinweis schließen"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2 border-t border-stone/60">
         <button type="button" onClick={onClose} disabled={pending} className="btn-ghost text-sm">

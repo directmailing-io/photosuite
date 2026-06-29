@@ -449,21 +449,21 @@ function CalendarStep({
             {type.description}
           </p>
         )}
-        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "rgb(var(--smoke))" }}>
+        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "rgb(var(--taupe))" }}>
           <span className="inline-flex items-center gap-1.5">
             <Clock size={14} style={{ color: "rgb(var(--accent))" }} />
-            {type.durationMin} Minuten
+            <span>{type.durationMin} Minuten</span>
           </span>
           {locations.map((loc) => (
             <span key={loc.key + loc.label} className="inline-flex items-center gap-1.5">
               <MapPin size={14} style={{ color: "rgb(var(--accent))" }} />
-              {loc.label}
+              <span>{loc.label}</span>
             </span>
           ))}
           {type.priceCents > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <CalendarIcon size={14} style={{ color: "rgb(var(--accent))" }} />
-              {fmtPrice(type.priceCents)}
+              <span>{fmtPrice(type.priceCents)}</span>
             </span>
           )}
         </div>
@@ -533,16 +533,17 @@ function CalendarStep({
                   "aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition relative select-none";
 
                 if (!hasSlots) {
-                  // Nicht klickbar — leer/dim
+                  // Nicht klickbar, aber sichtbar in Grau — damit der Monat als
+                  // vollständiges Raster erkennbar bleibt und nicht abrupt endet.
                   return (
                     <div
                       key={cell.key}
                       className={baseClass}
                       style={{
-                        color: isOtherMonth ? "transparent" : "rgb(var(--smoke))",
+                        color: "rgb(var(--taupe))",
                         background: "transparent",
                         cursor: "not-allowed",
-                        opacity: isOtherMonth ? 0 : 0.35,
+                        opacity: isOtherMonth ? 0.35 : 0.55,
                       }}
                       aria-disabled="true"
                     >

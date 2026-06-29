@@ -25,16 +25,25 @@ export async function createAddon(formData: FormData) {
   if (!name) throw new Error("Name ist Pflicht");
   if (price == null || price < 0) throw new Error("Preis ist Pflicht");
 
-  // Optional: Bild-Upload
+  // Optional: Bild-Upload — Fehler hier sollen klar verständlich beim User landen.
   const file = formData.get("image") as File | null;
   let imageUrl: string | undefined;
   let imageMimeType: string | undefined;
   if (file && file.size > 0) {
     const allowed = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
-    if (!allowed.includes(file.type)) throw new Error("Bildformat nicht unterstützt");
-    const res = await saveUpload(file, "addons");
-    imageUrl = res.url;
-    imageMimeType = file.type;
+    if (!allowed.includes(file.type)) {
+      throw new Error(`Dieses Bildformat geht nicht (${file.type || "unbekannt"}). Erlaubt: PNG, JPG, SVG, WEBP.`);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error(`Das Bild ist zu groß (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximal 5 MB.`);
+    }
+    try {
+      const res = await saveUpload(file, "addons");
+      imageUrl = res.url;
+      imageMimeType = file.type;
+    } catch (err: any) {
+      throw new Error(`Bild konnte nicht hochgeladen werden: ${err?.message ?? "Unbekannter Fehler"}`);
+    }
   }
 
   const last = await prisma.addon.findFirst({
@@ -43,19 +52,23 @@ export async function createAddon(formData: FormData) {
     select: { position: true },
   });
 
-  await prisma.addon.create({
-    data: {
-      ownerId: userId,
-      name,
-      description: s(formData.get("description")),
-      price,
-      isActive: formData.get("isActive") === "on",
-      position: (last?.position ?? -1) + 1,
-      imageUrl,
-      imageOriginalUrl: imageUrl,
-      imageMimeType,
-    },
-  });
+  try {
+    await prisma.addon.create({
+      data: {
+        ownerId: userId,
+        name,
+        description: s(formData.get("description")),
+        price,
+        isActive: formData.get("isActive") === "on",
+        position: (last?.position ?? -1) + 1,
+        imageUrl,
+        imageOriginalUrl: imageUrl,
+        imageMimeType,
+      },
+    });
+  } catch (err: any) {
+    throw new Error(`Datenbank-Fehler beim Anlegen: ${err?.message ?? "Unbekannt"}`);
+  }
   revalidatePath("/einstellungen");
   revalidatePath("/pakete");
   revalidatePath("/shootings");

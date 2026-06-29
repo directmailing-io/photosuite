@@ -16,7 +16,7 @@ const TABS: TabDef[] = [
   { key: "zahlungen", label: "Zahlungen",        icon: CreditCard },
   { key: "kalender",  label: "Kalender",         icon: CalendarSync },
   { key: "buchung",   label: "Buchungslinks",    icon: CalendarCheck },
-  { key: "addons",    label: "Zusatzprodukte",   icon: Gift },
+  { key: "addons",    label: "Produkte",         icon: Gift },
   { key: "status",    label: "Status",           icon: ListChecks },
   { key: "tags",      label: "Tags",             icon: Tags },
   { key: "design",    label: "Design",           icon: Palette },

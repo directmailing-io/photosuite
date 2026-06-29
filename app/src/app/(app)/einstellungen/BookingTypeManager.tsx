@@ -738,8 +738,8 @@ function Stepper({ current, onJump }: { current: number; onJump: (s: number) => 
               }}
             >
               {done ? <Check size={12} /> : <Icon size={12} />}
-              <span className="hidden sm:inline">{s.label}</span>
-              <span className="sm:hidden">{s.num}</span>
+              {/* Label immer rendern, damit auch zukünftige Schritte erkennbar sind (z.B. „Zeit & Verfügbarkeit"). */}
+              <span>{s.label}</span>
             </button>
             {i < steps.length - 1 && (
               <div className="h-px flex-1" style={{ background: done ? "rgba(120, 167, 119, 0.4)" : "rgb(var(--stone))" }} />
@@ -881,6 +881,15 @@ function Step2Timing({
               label={v === 0 ? "Kein" : `${v} Min`}
             />
           ))}
+          <CustomNumberInput
+            value={state.bufferBeforeMin}
+            onChange={(v) => update("bufferBeforeMin", Math.max(0, Math.min(240, v)))}
+            unit="Min"
+            isCustom={!BUFFER_PICKS.includes(state.bufferBeforeMin)}
+            min={0}
+            max={240}
+            step={5}
+          />
         </PickerSection>
         <PickerSection label="Puffer danach" hint="Nachbereitung, Reinigung">
           {BUFFER_PICKS.map((v) => (
@@ -891,6 +900,15 @@ function Step2Timing({
               label={v === 0 ? "Kein" : `${v} Min`}
             />
           ))}
+          <CustomNumberInput
+            value={state.bufferAfterMin}
+            onChange={(v) => update("bufferAfterMin", Math.max(0, Math.min(240, v)))}
+            unit="Min"
+            isCustom={!BUFFER_PICKS.includes(state.bufferAfterMin)}
+            min={0}
+            max={240}
+            step={5}
+          />
         </PickerSection>
       </div>
 
@@ -1006,24 +1024,25 @@ function Step3Options({
           Name und E-Mail werden immer abgefragt. Hier kannst du eigene Felder hinzufügen — schnell über Vorlagen oder selbst gestaltet.
         </div>
 
-        {/* Vorlagen */}
+        {/* Vorlagen — Click toggelt das Feld (Add oder Remove). */}
         <div className="flex flex-wrap gap-1.5 mb-3">
           {FIELD_QUICK_PRESETS.map((p) => {
-            const already = state.dynamicFields.some(
+            const matched = state.dynamicFields.find(
               (f) => f.type === p.field.type && f.label.toLowerCase() === p.field.label.toLowerCase(),
             );
+            const already = !!matched;
             return (
               <button
                 key={p.label}
                 type="button"
-                onClick={() => !already && onAddField(p.field)}
-                disabled={already}
-                className="text-[11px] rounded-full border px-2.5 py-1 transition-colors flex items-center gap-1"
+                onClick={() => (already ? onRemoveField(matched!.id) : onAddField(p.field))}
+                className="text-[11px] rounded-full border px-2.5 py-1 transition-colors flex items-center gap-1 font-medium hover:border-ink/40"
+                title={already ? "Feld entfernen" : "Feld hinzufügen"}
                 style={{
                   borderColor: already ? "rgba(120, 167, 119, 0.4)" : "rgb(var(--stone))",
                   background: already ? "rgba(120, 167, 119, 0.10)" : "rgb(var(--paper))",
-                  color: already ? "rgb(70, 115, 70)" : "rgb(var(--smoke))",
-                  cursor: already ? "default" : "pointer",
+                  color: already ? "rgb(70, 115, 70)" : "rgb(var(--taupe))",
+                  cursor: "pointer",
                 }}
               >
                 {already ? <Check size={10} /> : <Plus size={10} />} {p.label}
@@ -1323,9 +1342,11 @@ function FieldEditorRow({
               />
             </div>
           </div>
-          {field.type === "select" && (
+          {(field.type === "select" || field.type === "checkbox") && (
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-smoke">Optionen (eine pro Zeile)</label>
+              <label className="text-[10px] uppercase tracking-wider text-smoke">
+                Optionen (eine pro Zeile)
+              </label>
               <textarea
                 value={(field.options ?? []).join("\n")}
                 onChange={(e) => onChange({
@@ -1335,6 +1356,11 @@ function FieldEditorRow({
                 className="textarea text-sm mt-0.5"
                 placeholder={"Boudoir\nFamily\nBusiness"}
               />
+              <div className="text-[10px] text-smoke mt-1">
+                {field.type === "select"
+                  ? "Die Kundin wählt eine Option aus einem Dropdown."
+                  : "Die Kundin kann mehrere Optionen ankreuzen."}
+              </div>
             </div>
           )}
         </div>

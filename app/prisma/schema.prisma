@@ -593,6 +593,7 @@ model Package {
   shootings              Shooting[]                 @relation("ShootingPrimaryPackage")
   imageShootings         Shooting[]                 @relation("ShootingImagePackage")
   checklistTemplates     PackageChecklistTemplate[]
+  documents              PackageDocument[]
   defaultQuestionnaires  QuestionnaireTemplate[]    @relation("PackageDefaultQuestionnaires")
   // Default-Team für neue Shootings
   primaryContact         TeamMember?                @relation("PackageDefaultContact", fields: [primaryContactId], references: [id])
@@ -607,6 +608,27 @@ model Package {
   ownerId                String                    
 
   @@index([ownerId])
+}
+
+// Dokumente, die zu einem Paket gehören (Prep Guide, Outfit Guide, …).
+// Werden im Kunden-Dashboard (/k/[slug]) zum Download angezeigt — Tenant-Isolation
+// passiert via Package.ownerId; das Dokument selbst trägt keine eigene ownerId.
+model PackageDocument {
+  id          String   @id @default(cuid())
+  package     Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageId   String
+  title       String   // z.B. "Prep Guide", "Outfit-Inspiration"
+  description String?  // 1-2 Zeilen Kontext für die Kundin
+  fileUrl     String   // Public-URL (Supabase Storage)
+  filename    String   // Original-Dateiname (für Download-Header)
+  mimeType    String   // application/pdf, image/png, …
+  sizeBytes   Int
+  position    Int      @default(0)
+  isVisible   Boolean  @default(true) // off = im Studio sichtbar, aber nicht für Kundin
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([packageId])
 }
 
 // Zusatzprodukte (Bilderbuch M, Leinwand 60x90, Make-up-Service …)

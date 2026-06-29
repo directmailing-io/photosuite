@@ -35,7 +35,14 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
     where: { publicSlug: slug },
     include: {
       customer: true,
-      package: true,
+      package: {
+        include: {
+          documents: {
+            where: { isVisible: true },
+            orderBy: { position: "asc" },
+          },
+        },
+      },
       addons: { orderBy: { position: "asc" }, include: { addon: true } },
       dates: { orderBy: { startAt: "asc" } },
       checklists: {
@@ -208,6 +215,50 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
             </section>
           );
         })()}
+
+        {/* PAKET-DOKUMENTE — Prep Guide, Outfit Guide etc. */}
+        {shooting.package?.documents && shooting.package.documents.length > 0 && (
+          <section className="card p-8">
+            <div className="eyebrow">Material zur Vorbereitung</div>
+            <h2 className="font-serif text-3xl mt-1 mb-6">Dokumente zu deinem Paket</h2>
+            <ul className="space-y-3">
+              {shooting.package.documents.map((d) => {
+                const isImage = d.mimeType.startsWith("image/");
+                const isPdf = d.mimeType === "application/pdf";
+                const typeLabel = isImage ? "Bild" : isPdf ? "PDF" : "Dokument";
+                return (
+                  <li key={d.id}>
+                    <a
+                      href={d.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 rounded-lg border border-stone bg-paper hover:bg-linen transition"
+                    >
+                      <div
+                        className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 font-serif text-sm"
+                        style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent-deep))" }}
+                      >
+                        {typeLabel === "Bild" ? "IMG" : typeLabel === "PDF" ? "PDF" : "DOC"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-serif text-lg leading-tight">{d.title}</div>
+                        {d.description && (
+                          <div className="text-sm text-smoke mt-1 line-clamp-2">{d.description}</div>
+                        )}
+                        <div className="text-xs text-smoke mt-1">
+                          {typeLabel} · {d.filename}
+                        </div>
+                      </div>
+                      <div className="text-xs text-smoke shrink-0 font-medium">
+                        Öffnen →
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* FRAGEBÖGEN */}
         {shooting.questionnaires.length > 0 && (

@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { PackageForm } from "../PackageForm";
 import { ChecklistTemplates } from "./ChecklistTemplates";
+import { PackageDocuments } from "./PackageDocuments";
 import { updatePackage, deletePackage } from "../actions";
 
 export default async function EditPackagePage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,7 @@ export default async function EditPackagePage({ params }: { params: Promise<{ id
           orderBy: [{ audience: "asc" }, { position: "asc" }],
           include: { items: { orderBy: { position: "asc" } } },
         },
+        documents: { orderBy: { position: "asc" } },
       },
     }),
     prisma.user.findUnique({ where: { id: userId }, select: { packageMode: true } }),
@@ -73,6 +75,21 @@ export default async function EditPackagePage({ params }: { params: Promise<{ id
             title: t.title,
             audience: t.audience,
             items: t.items.map((i) => ({ id: i.id, label: i.label })),
+          }))}
+        />
+      </div>
+      <div className="mt-6">
+        <PackageDocuments
+          packageId={id}
+          documents={pkg.documents.map((d) => ({
+            id: d.id,
+            title: d.title,
+            description: d.description,
+            fileUrl: d.fileUrl,
+            filename: d.filename,
+            mimeType: d.mimeType,
+            sizeBytes: d.sizeBytes,
+            isVisible: d.isVisible,
           }))}
         />
       </div>

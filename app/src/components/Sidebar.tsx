@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Inbox,
   Sparkles,
+  FileSignature,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "./authActions";
@@ -35,6 +36,7 @@ const dailyItems: NavItem[] = [
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
   { href: "/buchungen", label: "Buchungen", icon: Inbox },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
+  { href: "/angebote", label: "Angebote", icon: FileSignature },
   { href: "/finanzen", label: "Finanzen", icon: Receipt },
 ];
 

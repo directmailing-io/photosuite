@@ -43,3 +43,29 @@ export function renderInvoiceNumber(format: string, now: Date, counter: number):
     .replace(/\{###\}/g, String(counter).padStart(3, "0"))
     .replace(/\{##\}/g, String(counter).padStart(2, "0"));
 }
+
+/**
+ * Erzeugt atomar die nächste Angebots-Nummer. Eigener Counter, eigenes Format
+ * (User.offerNumberFormat — Default „A-{YYYY}-{####}").
+ */
+export async function nextOfferNumber(userId: string): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { offerCounter: true, offerCounterYear: true, offerNumberFormat: true },
+    });
+    if (!user) throw new Error("User nicht gefunden");
+    const sameYear = user.offerCounterYear === year;
+    const nextCounter = sameYear ? user.offerCounter + 1 : 1;
+    await tx.user.update({
+      where: { id: userId },
+      data: { offerCounter: nextCounter, offerCounterYear: year },
+    });
+    return { counter: nextCounter, format: user.offerNumberFormat };
+  });
+
+  return renderInvoiceNumber(updated.format, now, updated.counter);
+}

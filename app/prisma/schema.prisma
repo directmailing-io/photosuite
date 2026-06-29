@@ -89,6 +89,10 @@ model User {
   invoiceNumberFormat    String                  @default("{YYYY}-{####}") // Tokens YYYY, YY, MM, ####, ###
   invoiceCounterYear     Int                     @default(0) // letzter zurückgesetzter Jahres-Counter
   invoiceCounter         Int                     @default(0) // laufender Zähler (innerhalb des Jahres)
+  // Angebots-Nummerierung (analog Rechnungen, eigener Counter)
+  offerNumberFormat      String                  @default("A-{YYYY}-{####}")
+  offerCounterYear       Int                     @default(0)
+  offerCounter           Int                     @default(0)
   invoicePaymentDueDays  Int                     @default(14)
   // Design-Variante für die Rechnungs-PDF. "classic" (DIN 5008 plain), "elegant"
   // (Serif-Headings, warmer Akzent), "modern" (Akzentleiste oben, kräftiger).
@@ -127,6 +131,7 @@ model User {
   bookingTypes           BookingType[]
   bookings               Booking[]
   invoices               Invoice[]
+  offers                 Offer[]
   tasks                  Task[]
   activities             Activity[]
   paymentSchedules       PaymentSchedule[]
@@ -319,9 +324,11 @@ model Invoice {
   stripePaymentMethod    String? // "card" | "sepa_debit" | "paypal" | "klarna" | "link" | …
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
+  // Back-Ref: ein Angebot, das in diese Rechnung konvertiert wurde
+  fromOffer              Offer?              @relation("OfferConvertedInvoice")
   // Tenant
   owner                  User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId                String             
+  ownerId                String
 
   @@index([customerId])
   @@index([shootingId])
@@ -448,6 +455,69 @@ model InvoiceItem {
   position       Int     @default(0)
 }
 
+// Angebote/Offerten — geht der Rechnung voraus. Lisa schickt einen Vorschlag,
+// die Kundin kann via Public-Link annehmen oder ablehnen. Bei Annahme kann das
+// Angebot in einen Rechnungs-Entwurf konvertiert werden (gleiche Items + Beträge).
+model Offer {
+  id                String      @id @default(cuid())
+  number            String?     @unique // bei status >= SENT vergeben, eigener Counter
+  status            String      @default("DRAFT") // DRAFT | SENT | ACCEPTED | DECLINED | EXPIRED | WITHDRAWN
+  customer          Customer    @relation(fields: [customerId], references: [id])
+  customerId        String
+  shooting          Shooting?   @relation(fields: [shootingId], references: [id])
+  shootingId        String?
+  // Empfänger-Snapshot zum Zeitpunkt des Versands (immutable nach Issue).
+  recipientName     String      @default("")
+  recipientAddress  String      @default("")
+  // Aussteller-Snapshot (analog Invoice — JSON).
+  issuerSnapshot    String
+  title             String      @default("Angebot")
+  intro             String?     // freier Vorspann unter dem Titel
+  notes             String?     // freier Hinweis (Bedingungen, Hinweise)
+  internalNote      String?     // nicht auf dem PDF — nur für Lisa
+  issueDate         DateTime    @default(now())
+  validUntil        DateTime?   // Gültigkeitsfrist (z.B. 14 Tage)
+  // Summen (immer mitgespeichert für schnelle Liste-Anzeige)
+  subtotalCents     Int         @default(0)
+  vatRate           Float       @default(19)
+  isSmallBusiness   Boolean     @default(false)
+  vatAmountCents    Int         @default(0)
+  totalCents        Int         @default(0)
+  items             OfferItem[]
+  // Workflow-Stati
+  sentAt            DateTime?
+  acceptedAt        DateTime?
+  declinedAt        DateTime?
+  declineReason     String?
+  // Wenn akzeptiert + konvertiert: Rückreferenz auf die generierte Rechnung
+  convertedInvoice  Invoice?    @relation("OfferConvertedInvoice", fields: [convertedInvoiceId], references: [id])
+  convertedInvoiceId String?    @unique
+  // Public-Token für /k/o/[token] (Annahme/Ablehnung durch die Kundin)
+  publicToken       String?     @unique
+  // Tenant
+  owner             User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId           String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([ownerId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model OfferItem {
+  id             String  @id @default(cuid())
+  offer          Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offerId        String
+  title          String  @default("Leistung")
+  description    String?
+  quantity       Float   @default(1)
+  unit           String? @default("Pauschal")
+  unitPriceCents Int
+  totalCents     Int
+  position       Int     @default(0)
+}
+
 model InvoiceReminder {
   id         String    @id @default(cuid())
   invoice    Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -540,6 +610,7 @@ model Customer {
   activities     Activity[]
   tasks          Task[]
   invoices       Invoice[]
+  offers         Offer[]
   companions     CustomerCompanion[]
   bookings       Booking[]
   // Tenant
@@ -756,6 +827,7 @@ model Shooting {
   activities       Activity[]
   questionnaires   Questionnaire[]
   invoices         Invoice[]
+  offers           Offer[]
   paymentSchedule  PaymentSchedule?
   bookings         Booking[]
   kanbanPosition   Int              @default(0)

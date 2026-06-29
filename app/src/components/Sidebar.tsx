@@ -18,6 +18,7 @@ import {
   Sparkles,
   FileSignature,
   Workflow as WorkflowIcon,
+  FormInput as FormInputIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "./authActions";
@@ -45,6 +46,7 @@ const setupItems: NavItem[] = [
   { href: "/pakete", label: "Pakete", icon: PackageIcon },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/fragebogen", label: "Fragebögen", icon: FileQuestion },
+  { href: "/formulare", label: "Formulare", icon: FormInputIcon },
   { href: "/workflows", label: "Workflows", icon: WorkflowIcon },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ];

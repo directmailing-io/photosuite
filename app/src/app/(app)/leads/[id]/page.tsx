@@ -35,6 +35,8 @@ export default async function LeadDetailPage({
     where: { id, ownerId: userId },
     include: {
       convertedCustomer: { select: { id: true, firstName: true, lastName: true } },
+      leadForm: { select: { id: true, name: true } },
+      fieldValues: { orderBy: { position: "asc" } },
     },
   });
   if (!lead) return notFound();
@@ -124,6 +126,21 @@ export default async function LeadDetailPage({
               <div className="mt-5 pt-4 border-t border-stone/60">
                 <div className="text-xs text-smoke mb-2">Nachricht</div>
                 <div className="text-sm whitespace-pre-wrap leading-relaxed">{lead.message}</div>
+              </div>
+            )}
+            {lead.fieldValues.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-stone/60">
+                <div className="text-xs text-smoke mb-3">
+                  Weitere Antworten{lead.leadForm && ` (Formular: ${lead.leadForm.name})`}
+                </div>
+                <dl className="space-y-3">
+                  {lead.fieldValues.map((fv) => (
+                    <div key={fv.id}>
+                      <dt className="text-xs text-smoke">{fv.label}</dt>
+                      <dd className="text-sm whitespace-pre-wrap mt-0.5">{fv.value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
           </section>

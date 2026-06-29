@@ -45,6 +45,7 @@ model User {
   // Format: kurzer URL-safe Slug, z.B. „lisa-boudoir".
   leadSlug               String?                 @unique
   leads                  Lead[]
+  leadForms              LeadForm[]
   // SMTP-Konfiguration für Email-Notifications an Kundinnen.
   // EU-Stack: Lisa pflegt ihre eigenen SMTP-Zugangsdaten (z.B. Mailbox.org, IONOS) —
   // damit bleibt die App provider-agnostisch und CLOUD-Act-frei.
@@ -1162,6 +1163,11 @@ model Lead {
   internalNotes     String?
   // Spam-Mitigation: IP-Hash zur lokalen Rate-Limit-Heuristik
   ipHash            String?
+  // Über welches Formular wurde der Lead erzeugt? Nullable für Backwards-Compat
+  // (alte Leads ohne Form-Referenz).
+  leadForm   LeadForm? @relation(fields: [leadFormId], references: [id], onDelete: SetNull)
+  leadFormId String?
+  fieldValues LeadFieldValue[]
   // Convert-FK
   convertedCustomer Customer? @relation("LeadConvertedCustomer", fields: [convertedCustomerId], references: [id], onDelete: SetNull)
   convertedCustomerId String?
@@ -1173,6 +1179,77 @@ model Lead {
 
   @@index([ownerId, status])
   @@index([ownerId, createdAt])
+  @@index([leadFormId])
+}
+
+// ---------- Formular-Builder ----------
+//
+// LeadForm = ein vom User konfiguriertes öffentliches Anfrage-Formular.
+// Pro User beliebig viele (z.B. „Boudoir-Anfrage", „Hochzeit-Anfrage").
+// Erreichbar unter /anfrage/[slug] und einbettbar via JS-Snippet.
+model LeadForm {
+  id              String          @id @default(cuid())
+  // Slug ist URL-Teil — unique pro Owner (zwei Owner können den gleichen
+  // Slug haben, aber innerhalb eines Users muss er eindeutig sein).
+  slug            String
+  name            String          // intern, z.B. „Boudoir Anfrage Standard"
+  headline        String?         // public Heading auf der Form-Page
+  intro           String?         // Beschreibung unter dem Heading
+  buttonText      String          @default("Anfrage senden")
+  successMessage  String?         // wird nach erfolgreichem Submit gezeigt
+  isActive        Boolean         @default(true)
+  // Design-Anpassungen für die Public-/Embed-Variante
+  accentColor     String          @default("#C8102E")
+  fontStyle       String          @default("sans") // "sans" | "serif"
+  background      String          @default("paper") // "paper" | "linen" | "transparent"
+  // Tenant
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId         String
+  fields          LeadFormField[]
+  leads           Lead[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([ownerId, slug])
+  @@index([ownerId])
+}
+
+// Ein Feld innerhalb eines LeadForm. Felder mit `systemKey` mappen auf
+// dedizierte Lead-Spalten (firstName, lastName, email, phone, message);
+// Felder ohne systemKey sind Custom-Felder und werden als LeadFieldValue
+// gespeichert (Antwort + Label-Snapshot zum Zeitpunkt der Anfrage).
+model LeadFormField {
+  id          String   @id @default(cuid())
+  form        LeadForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formId      String
+  // Feld-Typ: "text" | "textarea" | "email" | "phone" | "select" | "consent" | "date"
+  type        String
+  // Optional: System-Mapping. Wenn gesetzt, wird der Wert in die jeweilige
+  // Lead-Spalte geschrieben statt in LeadFieldValue.
+  systemKey   String?  // firstName | lastName | email | phone | message
+  label       String
+  helpText    String?
+  placeholder String?
+  required    Boolean  @default(false)
+  // Für select-Typ: JSON-Array von Strings (Optionen)
+  options     String?
+  position    Int      @default(0)
+
+  @@index([formId])
+}
+
+// Antwort auf ein Custom-Feld (Nicht-System-Feld). Wird mit Label-Snapshot
+// gespeichert, damit spätere Feld-Umbenennungen alte Leads nicht verändern.
+model LeadFieldValue {
+  id       String @id @default(cuid())
+  lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId   String
+  fieldId  String // soft-ref auf LeadFormField (kein FK — Field-Delete soll alte Antworten nicht killen)
+  label    String // Snapshot des Field-Labels
+  value    String // Freier Text-Wert
+  position Int    @default(0)
+
+  @@index([leadId])
 }
 
 // Shooting-Slot-Planung: Lisa markiert Tage vorab als „Slot-Tag" — damit sie

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Receipt, User, Tags, ListChecks, AlertCircle, CreditCard, Calendar as CalendarSync, Gift, CalendarCheck, Palette, FileText, Mail, Workflow, Briefcase } from "lucide-react";
+import { Receipt, User, Tags, ListChecks, AlertCircle, CreditCard, Calendar as CalendarSync, Gift, CalendarCheck, Palette, FileText, Mail, Briefcase } from "lucide-react";
 
-export type SettingsTab = "studio" | "rechnung" | "zahlungen" | "kalender" | "buchung" | "email" | "addons" | "artikel" | "status" | "tags" | "design" | "vorlagen" | "workflows";
+export type SettingsTab = "studio" | "rechnung" | "zahlungen" | "kalender" | "buchung" | "email" | "addons" | "artikel" | "status" | "tags" | "design" | "vorlagen";
 
 type TabDef = {
   key: SettingsTab;
@@ -22,7 +22,6 @@ const TABS: TabDef[] = [
   { key: "status",    label: "Status",           icon: ListChecks },
   { key: "tags",      label: "Tags",             icon: Tags },
   { key: "vorlagen",  label: "Notiz-Vorlagen",   icon: FileText },
-  { key: "workflows", label: "Workflows",        icon: Workflow },
   { key: "design",    label: "Design",           icon: Palette },
 ];
 

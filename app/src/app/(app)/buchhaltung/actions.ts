@@ -514,6 +514,10 @@ export async function updateInvoiceProfile(formData: FormData) {
       invoiceIban: s(formData.get("invoiceIban")) ?? null,
       invoiceBic: s(formData.get("invoiceBic")) ?? null,
       invoiceFooterNote: s(formData.get("invoiceFooterNote")) ?? null,
+      invoiceDesign: (() => {
+        const v = String(formData.get("invoiceDesign") ?? "classic");
+        return v === "elegant" || v === "modern" ? v : "classic";
+      })(),
       invoiceNumberFormat: s(formData.get("invoiceNumberFormat")) ?? "{YYYY}-{####}",
       invoicePaymentDueDays: num(formData.get("invoicePaymentDueDays")) ?? 14,
       reminderDays1: num(formData.get("reminderDays1")) ?? 7,

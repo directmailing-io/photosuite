@@ -25,6 +25,7 @@ type Profile = {
   invoiceIban: string | null;
   invoiceBic: string | null;
   invoiceFooterNote: string | null;
+  invoiceDesign: string;
   invoiceNumberFormat: string;
   invoicePaymentDueDays: number;
   invoiceCounter: number;
@@ -249,6 +250,15 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
         <Field label="Fußzeilen-Hinweis (optional)" hint='z.B. "Vielen Dank für deine Buchung."'>
           <textarea name="invoiceFooterNote" defaultValue={initial.invoiceFooterNote ?? ""} rows={2} className="textarea" />
         </Field>
+
+        <div className="pt-2">
+          <div className="font-medium text-sm mb-1">Rechnungs-Design</div>
+          <div className="text-xs text-smoke mb-3">
+            Bestimmt Akzentfarbe, Schrift-Stil und Header-Akzent in der Rechnungs-PDF.
+            Wird beim PDF-Generieren auf alle Rechnungen angewandt.
+          </div>
+          <DesignPicker initial={initial.invoiceDesign} />
+        </div>
       </div>
 
       <div className="hairline pt-5 space-y-4">
@@ -327,5 +337,107 @@ function ReminderRow({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Visuelle Auswahl zwischen den drei Rechnungs-Designs. Statt einer langen
+ * Erklärung sieht Lisa direkt die Akzentfarbe + Schrift-Hinweis pro Variante.
+ */
+function DesignPicker({ initial }: { initial: string }) {
+  const [selected, setSelected] = useState(
+    initial === "elegant" || initial === "modern" ? initial : "classic",
+  );
+  const designs: Array<{
+    key: "classic" | "elegant" | "modern";
+    name: string;
+    description: string;
+    accent: string;
+    fontStyle: "sans" | "serif";
+    showBar: boolean;
+  }> = [
+    {
+      key: "classic",
+      name: "Classic",
+      description: "DIN 5008, klare Sans-Serif. Vertraut und neutral.",
+      accent: "#C8102E",
+      fontStyle: "sans",
+      showBar: false,
+    },
+    {
+      key: "elegant",
+      name: "Elegant",
+      description: "Serif-Headings, warmer Bronze-Akzent. Hochwertig, ruhig.",
+      accent: "#8C5A35",
+      fontStyle: "serif",
+      showBar: false,
+    },
+    {
+      key: "modern",
+      name: "Modern",
+      description: "Sans-Serif, schwarzer Akzent-Balken am Titel. Markant.",
+      accent: "#19191A",
+      fontStyle: "sans",
+      showBar: true,
+    },
+  ];
+
+  return (
+    <>
+      <input type="hidden" name="invoiceDesign" value={selected} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {designs.map((d) => {
+          const isSelected = selected === d.key;
+          return (
+            <button
+              key={d.key}
+              type="button"
+              onClick={() => setSelected(d.key)}
+              className="text-left p-4 rounded-lg border transition relative"
+              style={{
+                borderColor: isSelected ? "rgb(var(--accent))" : "rgb(var(--stone))",
+                background: isSelected ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
+                borderWidth: isSelected ? 2 : 1,
+              }}
+            >
+              <div
+                className="h-12 rounded mb-3 flex items-end p-2 gap-1.5"
+                style={{ background: "#FAFAFA" }}
+              >
+                {d.showBar && (
+                  <div style={{ background: d.accent, width: 6, height: 24 }} />
+                )}
+                <span
+                  style={{
+                    color: "#19191A",
+                    fontFamily: d.fontStyle === "serif" ? "Georgia, serif" : "system-ui, sans-serif",
+                    fontWeight: 700,
+                    fontSize: 16,
+                  }}
+                >
+                  Rechnung
+                </span>
+                <span
+                  className="ml-auto text-[10px] tabular-nums font-semibold"
+                  style={{ color: d.accent }}
+                >
+                  1.200,00 €
+                </span>
+              </div>
+              <div className="font-medium text-sm">{d.name}</div>
+              <div className="text-xs text-smoke mt-1">{d.description}</div>
+              {isSelected && (
+                <div
+                  className="absolute top-2 right-2 text-xs font-medium"
+                  style={{ color: "rgb(var(--accent))" }}
+                >
+                  ✓ Ausgewählt
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }

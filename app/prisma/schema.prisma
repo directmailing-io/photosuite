@@ -90,6 +90,9 @@ model User {
   invoiceCounterYear     Int                     @default(0) // letzter zurückgesetzter Jahres-Counter
   invoiceCounter         Int                     @default(0) // laufender Zähler (innerhalb des Jahres)
   invoicePaymentDueDays  Int                     @default(14)
+  // Design-Variante für die Rechnungs-PDF. "classic" (DIN 5008 plain), "elegant"
+  // (Serif-Headings, warmer Akzent), "modern" (Akzentleiste oben, kräftiger).
+  invoiceDesign          String                  @default("classic")
   // Mahnwesen-Defaults
   reminderDays1          Int                     @default(7) // Zahlungserinnerung: X Tage nach Fälligkeit
   reminderDays2          Int                     @default(7) // 1. Mahnung: X Tage nach Erinnerung

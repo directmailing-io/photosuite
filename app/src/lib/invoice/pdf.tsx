@@ -57,6 +57,8 @@ export type InvoiceForPdf = {
   // Logo wird beim Render vom Disk geladen (siehe loadLogoBuffer in load.ts) und hier reingereicht.
   logoBuffer?: Buffer | null;
   logoFormat?: "png" | "jpg" | null;
+  // Design-Variante (classic | elegant | modern). Default: classic.
+  design?: string | null;
 };
 
 // ---------- Farben ----------
@@ -64,9 +66,56 @@ const ink = "#19191A";
 const smoke = "#7D7878";
 const stone = "#CFCEC9";
 const lineGrey = "#A6A4A0";
-const accent = "#C8102E";
 
-const s = StyleSheet.create({
+// ---------- Designs ----------
+// Lisa kann das Rechnungs-Design pro User in den Einstellungen wählen.
+// Jedes Design definiert nur die Variationen über dem DIN-5008-Layout:
+// Akzentfarbe, Heading-Font und ein optionaler Akzent-Balken am Titel.
+export type InvoiceDesign = "classic" | "elegant" | "modern";
+
+type ThemeConfig = {
+  accent: string;
+  accentSoft: string;     // Hintergrund für noteBox
+  infoBoxBg: string;      // Hintergrund für infoBox + tableHead
+  headingFont: string;    // Document/Section-Headings
+  titleFont: string;      // Großer Rechnungs-Titel
+  titleSize: number;
+  showTitleBar: boolean;  // dicke Akzentleiste links vom Titel
+};
+
+const THEMES: Record<InvoiceDesign, ThemeConfig> = {
+  classic: {
+    accent: "#C8102E",
+    accentSoft: "#FBE9EC",
+    infoBoxBg: "#F2F1EE",
+    headingFont: "Helvetica-Bold",
+    titleFont: "Helvetica-Bold",
+    titleSize: 20,
+    showTitleBar: false,
+  },
+  elegant: {
+    accent: "#8C5A35",   // warmer Bronze
+    accentSoft: "#F4ECDF",
+    infoBoxBg: "#F8F4ED",
+    headingFont: "Times-Bold",
+    titleFont: "Times-Bold",
+    titleSize: 22,
+    showTitleBar: false,
+  },
+  modern: {
+    accent: "#19191A",   // ink-schwarz, kräftig
+    accentSoft: "#E9E9E9",
+    infoBoxBg: "#F2F1EE",
+    headingFont: "Helvetica-Bold",
+    titleFont: "Helvetica-Bold",
+    titleSize: 24,
+    showTitleBar: true,
+  },
+};
+
+function createStyles(theme: ThemeConfig) {
+  const accent = theme.accent;
+  return StyleSheet.create({
   page: {
     // Body beginnt ab 110 mm, damit Anschriftenfeld + Bezugszeile genug Platz haben
     paddingTop: mm(108),
@@ -89,7 +138,7 @@ const s = StyleSheet.create({
   },
   logoName: {
     fontSize: 16,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: theme.headingFont,
     letterSpacing: 0.5,
     textAlign: "right",
   },
@@ -120,7 +169,7 @@ const s = StyleSheet.create({
   },
   recipientLineBold: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: theme.headingFont,
     marginBottom: 1.5,
     lineHeight: 1.25,
   },
@@ -134,13 +183,13 @@ const s = StyleSheet.create({
     alignItems: "flex-end",
   },
   referenceLine: { fontSize: 10.5, marginBottom: 1 },
-  referenceLineEm: { fontSize: 10.5, fontFamily: "Helvetica-Bold", marginBottom: 1 },
+  referenceLineEm: { fontSize: 10.5, fontFamily: theme.headingFont, marginBottom: 1 },
   referenceHint: { fontSize: 8.5, color: smoke, marginTop: 3 },
 
   // ---- Titel + Brief ----
   docTitle: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
+    fontSize: theme.titleSize,
+    fontFamily: theme.titleFont,
     marginBottom: 14,
   },
   intro: { fontSize: 10.5, marginBottom: 18, lineHeight: 1.5 },
@@ -149,13 +198,13 @@ const s = StyleSheet.create({
   table: { marginBottom: 8 },
   tableHead: {
     flexDirection: "row",
-    backgroundColor: "#F2F1EE",
+    backgroundColor: theme.infoBoxBg,
     paddingVertical: 6,
     paddingHorizontal: 4,
   },
   tableHeadCell: {
     fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: theme.headingFont,
     color: ink,
   },
   tableRow: {
@@ -195,7 +244,7 @@ const s = StyleSheet.create({
     borderTopColor: ink,
     borderBottomWidth: 1,
     borderBottomColor: ink,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: theme.headingFont,
     fontSize: 11.5,
   },
   amountDueBlock: {
@@ -206,7 +255,7 @@ const s = StyleSheet.create({
     marginTop: 4,
     borderTopWidth: 1.2,
     borderTopColor: accent,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: theme.headingFont,
     fontSize: 12,
     color: accent,
   },
@@ -215,7 +264,7 @@ const s = StyleSheet.create({
   noteBox: {
     marginTop: 18,
     padding: 10,
-    backgroundColor: "#FBE9EC",
+    backgroundColor: theme.accentSoft,
     borderLeftWidth: 2,
     borderLeftColor: accent,
     fontSize: 9.5,
@@ -223,7 +272,7 @@ const s = StyleSheet.create({
   infoBox: {
     marginTop: 10,
     padding: 9,
-    backgroundColor: "#F2F1EE",
+    backgroundColor: theme.infoBoxBg,
     fontSize: 9.5,
     color: ink,
   },
@@ -247,11 +296,24 @@ const s = StyleSheet.create({
   },
   footerCol: { width: "32%" },
   footerColTitle: {
-    fontFamily: "Helvetica-Bold",
+    fontFamily: theme.headingFont,
     color: ink,
     marginBottom: 2,
     fontSize: 7.5,
   },
+  // ---- Title-Bar (nur modern) ----
+  titleBar: {
+    width: mm(8),
+    height: mm(9),
+    backgroundColor: accent,
+    marginRight: mm(4),
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+
   pageNum: {
     position: "absolute",
     bottom: mm(4),
@@ -260,6 +322,7 @@ const s = StyleSheet.create({
     color: smoke,
   },
 });
+}
 
 // ---------- Helfer ----------
 const fmtDate = (d: Date | null) =>
@@ -306,7 +369,7 @@ function closingText(kind: string, dueDate: Date, issueDate: Date, ibanPresent: 
 }
 
 // ---------- Komponente ----------
-function InvoicePage({ invoice }: { invoice: InvoiceForPdf }) {
+function InvoicePage({ invoice, theme, s }: { invoice: InvoiceForPdf; theme: ThemeConfig; s: ReturnType<typeof createStyles> }) {
   const meta = docMeta(invoice.kind);
   const isCancel = invoice.kind === "CANCEL";
   const showVat = !invoice.isSmallBusiness;
@@ -369,13 +432,20 @@ function InvoicePage({ invoice }: { invoice: InvoiceForPdf }) {
         </View>
 
         {/* ===== Titel + Vorspann (ohne Anrede — Boudoir-Studio, persönlicher Ton) ===== */}
-        <Text style={s.docTitle}>{meta.title}</Text>
+        {theme.showTitleBar ? (
+          <View style={s.titleRow}>
+            <View style={s.titleBar} />
+            <Text style={[s.docTitle, { marginBottom: 0 }]}>{meta.title}</Text>
+          </View>
+        ) : (
+          <Text style={s.docTitle}>{meta.title}</Text>
+        )}
         <Text style={s.intro}>{intro}</Text>
 
         {/* ===== Storno-Verweis ===== */}
         {isCancel && invoice.cancelsInvoice && (
           <View style={s.noteBox}>
-            <Text style={{ fontFamily: "Helvetica-Bold", marginBottom: 3 }}>
+            <Text style={{ fontFamily: theme.headingFont, marginBottom: 3 }}>
               Storno der Rechnung Nr. {invoice.cancelsInvoice.number} vom {fmtDate(invoice.cancelsInvoice.issueDate)}
             </Text>
             <Text>
@@ -503,11 +573,18 @@ function InvoicePage({ invoice }: { invoice: InvoiceForPdf }) {
   );
 }
 
-export function InvoiceDocument({ invoice }: { invoice: InvoiceForPdf }) {
+function resolveTheme(design: string | null | undefined): ThemeConfig {
+  const key: InvoiceDesign = design === "elegant" || design === "modern" ? design : "classic";
+  return THEMES[key];
+}
+
+export function InvoiceDocument({ invoice, design }: { invoice: InvoiceForPdf; design?: string | null }) {
   const meta = docMeta(invoice.kind);
+  const theme = resolveTheme(design);
+  const s = createStyles(theme);
   return (
     <Document title={invoice.number ? `${meta.title} ${invoice.number}` : `${meta.title} (Entwurf)`}>
-      <InvoicePage invoice={invoice} />
+      <InvoicePage invoice={invoice} theme={theme} s={s} />
     </Document>
   );
 }
@@ -515,26 +592,29 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceForPdf }) {
 // Beleg-Paket: Originalrechnung + Stornorechnung in einer PDF-Datei (zwei logische Seiten).
 // Reihenfolge ist immer: Original zuerst, dann Storno — chronologisch und für Buchhaltung erwartbar.
 export function CombinedInvoiceDocument({
-  original, cancel,
-}: { original: InvoiceForPdf; cancel: InvoiceForPdf }) {
+  original, cancel, design,
+}: { original: InvoiceForPdf; cancel: InvoiceForPdf; design?: string | null }) {
   const title = original.number && cancel.number
     ? `Rechnung ${original.number} + Storno ${cancel.number}`
     : "Beleg-Paket Rechnung + Storno";
+  const theme = resolveTheme(design);
+  const s = createStyles(theme);
   return (
     <Document title={title}>
-      <InvoicePage invoice={original} />
-      <InvoicePage invoice={cancel} />
+      <InvoicePage invoice={original} theme={theme} s={s} />
+      <InvoicePage invoice={cancel} theme={theme} s={s} />
     </Document>
   );
 }
 
-export async function renderInvoicePdf(invoice: InvoiceForPdf): Promise<NodeJS.ReadableStream> {
-  return await renderToStream(<InvoiceDocument invoice={invoice} />);
+export async function renderInvoicePdf(invoice: InvoiceForPdf, design?: string | null): Promise<NodeJS.ReadableStream> {
+  return await renderToStream(<InvoiceDocument invoice={invoice} design={design ?? invoice.design} />);
 }
 
 export async function renderCombinedInvoicePdf(
   original: InvoiceForPdf,
   cancel: InvoiceForPdf,
+  design?: string | null,
 ): Promise<NodeJS.ReadableStream> {
-  return await renderToStream(<CombinedInvoiceDocument original={original} cancel={cancel} />);
+  return await renderToStream(<CombinedInvoiceDocument original={original} cancel={cancel} design={design ?? original.design} />);
 }

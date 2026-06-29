@@ -76,15 +76,14 @@ export async function loadInvoiceForPdf(id: string): Promise<InvoiceForPdf | nul
   // greifen wir auf das aktuelle User-Logo zurück. Snapshot-Inhalte bleiben unangetastet.
   let logoUrl = issuer.logoUrl;
   let logoMime = issuer.logoMimeType;
-  if (!logoUrl) {
-    const owner = await prisma.user.findUnique({
-      where: { id: invoice.ownerId },
-      select: { logoUrl: true, logoMimeType: true },
-    });
-    if (owner?.logoUrl) {
-      logoUrl = owner.logoUrl;
-      logoMime = owner.logoMimeType;
-    }
+  // Owner-Info wird einmal geladen — Design hängt am User, Logo-Fallback ebenfalls.
+  const owner = await prisma.user.findUnique({
+    where: { id: invoice.ownerId },
+    select: { logoUrl: true, logoMimeType: true, invoiceDesign: true },
+  });
+  if (!logoUrl && owner?.logoUrl) {
+    logoUrl = owner.logoUrl;
+    logoMime = owner.logoMimeType;
   }
   const logo = await loadLogoBuffer(logoUrl, logoMime);
 
@@ -121,6 +120,7 @@ export async function loadInvoiceForPdf(id: string): Promise<InvoiceForPdf | nul
     cancelsInvoice: invoice.cancelsInvoice
       ? { number: invoice.cancelsInvoice.number ?? "—", issueDate: invoice.cancelsInvoice.issueDate }
       : null,
+    design: owner?.invoiceDesign ?? null,
   };
 }
 

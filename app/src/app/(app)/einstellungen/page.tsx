@@ -115,6 +115,7 @@ export default async function EinstellungenPage({
             invoiceIban: user.invoiceIban,
             invoiceBic: user.invoiceBic,
             invoiceFooterNote: user.invoiceFooterNote,
+            invoiceDesign: user.invoiceDesign,
             invoiceNumberFormat: user.invoiceNumberFormat,
             invoicePaymentDueDays: user.invoicePaymentDueDays,
             invoiceCounter: user.invoiceCounter,

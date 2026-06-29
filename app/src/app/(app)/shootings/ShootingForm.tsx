@@ -44,6 +44,7 @@ export type ShootingInitial = {
   primaryContactId?: string | null;
   teamIds?: string[];
   bookedAddons?: BookedAddon[];
+  showTeamOnPublic?: boolean;
 };
 
 type Props = {
@@ -346,6 +347,20 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
           initialPrimaryId={initial?.primaryContactId}
           initialMemberIds={initial?.teamIds}
         />
+        <label className="flex items-start gap-2 mt-4 pt-4 border-t border-stone/60 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            name="showTeamOnPublic"
+            defaultChecked={initial?.showTeamOnPublic ?? true}
+            className="mt-0.5 w-4 h-4"
+          />
+          <div>
+            <div className="font-medium">Team auf der Kundenansicht zeigen</div>
+            <div className="text-xs text-smoke mt-0.5">
+              Wenn deaktiviert, sieht die Kundin keinen Team-Block auf ihrem Dashboard.
+            </div>
+          </div>
+        </label>
       </section>
 
       <section className="card p-6">

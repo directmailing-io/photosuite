@@ -415,6 +415,11 @@ export async function updateShooting(id: string, formData: FormData) {
       finalPaid: formData.get("finalPaid") === "on",
       paymentTerms: s(formData.get("paymentTerms")) ?? null,
       primaryContactId: safePrimaryId,
+      // Team-Block in Kundenansicht zeigen? Checkbox-Semantik:
+      // wenn das Feld im Form vorhanden ist, wird der Wert übernommen, sonst bestehend.
+      showTeamOnPublic: formData.has("showTeamOnPublic")
+        ? formData.get("showTeamOnPublic") === "on"
+        : existing.showTeamOnPublic,
       team: { set: safeTeamIds.map((id) => ({ id })) },
     },
   });

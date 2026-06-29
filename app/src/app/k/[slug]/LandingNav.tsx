@@ -106,9 +106,17 @@ export function LandingNav({
                     background: isActive
                       ? scrolled ? "rgb(var(--ink))" : "rgba(255,255,255,0.18)"
                       : "transparent",
+                    // Beim Scrollen werden inaktive Buttons dezenter (helleres Grau,
+                    // Hover bringt sie nach vorne) — der aktive Button bleibt prominent.
                     color: isActive
                       ? scrolled ? "rgb(var(--bg))" : "rgb(var(--bg))"
-                      : scrolled ? "rgb(var(--smoke))" : "rgba(255,255,255,0.75)",
+                      : scrolled ? "rgb(var(--taupe) / 0.6)" : "rgba(255,255,255,0.75)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive && scrolled) e.currentTarget.style.color = "rgb(var(--ink))";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive && scrolled) e.currentTarget.style.color = "rgb(var(--taupe) / 0.6)";
                   }}
                 >
                   {s.label}

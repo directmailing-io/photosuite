@@ -9,6 +9,7 @@ import {
   AlertCircle, Hourglass,
 } from "lucide-react";
 import { CalendarDownloadButton } from "./CalendarDownloadButton";
+import { PrintChecklistButton } from "./PrintChecklistButton";
 import { LandingNav } from "./LandingNav";
 import { Avatar } from "@/components/Avatar";
 import { STATUS_LABELS, type StatusKey } from "@/lib/questionnaire";
@@ -121,22 +122,33 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
         <div className="max-w-5xl mx-auto px-6 pt-12 pb-20 min-h-[70vh] flex flex-col justify-end" style={{ color: "rgb(var(--bg))" }}>
           <div className="eyebrow" style={{ color: "rgba(255,255,255,0.85)" }}>
             <span style={{ display: "inline-block", width: 32, height: 1, background: "rgb(var(--accent))", marginRight: 12, verticalAlign: "middle" }}></span>
-            {studio?.studioName ?? "Studio"}
+            Dein persönliches Kunden-Dashboard
           </div>
           <h1 className="font-serif font-medium mt-4 leading-[1.02]" style={{ fontSize: "clamp(40px, 7vw, 80px)" }}>
             Hi <em style={{ color: "rgb(var(--accent))", fontStyle: "italic" }}>{firstName}</em>,
             <br />schön, dass du da bist.
           </h1>
+          <p className="mt-6 max-w-2xl text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.92)" }}>
+            Hier findest du alle wichtigen Infos rund um dein Shooting — unsere gemeinsamen Termine,
+            Location, Rechnungen, Zahlungsmöglichkeiten und mehr. Diese Seite halten wir laufend aktuell,
+            schau also gern immer mal wieder rein.
+          </p>
           {description && (
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed" style={{ color: "rgba(255,255,255,0.92)" }}>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed italic" style={{ color: "rgba(255,255,255,0.85)" }}>
               {description}
             </p>
           )}
-          <div className="flex flex-wrap gap-4 mt-8 text-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
+          <div className="flex flex-wrap gap-6 mt-8 text-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
             {shooting.package && (
               <div>
                 <div className="eyebrow" style={{ color: "rgba(255,255,255,0.6)" }}>Paket</div>
                 <div className="font-serif text-xl">{shooting.package.name}</div>
+              </div>
+            )}
+            {shooting.scheduledAt && (
+              <div>
+                <div className="eyebrow" style={{ color: "rgba(255,255,255,0.6)" }}>Shootingtag</div>
+                <div className="font-serif text-xl">{fmtDate(shooting.scheduledAt)}</div>
               </div>
             )}
             {shooting.dates[0] && (
@@ -241,7 +253,7 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
         )}
 
         {/* TERMINE */}
-        {shooting.dates.length > 0 && (
+        {(shooting.dates.length > 0 || shooting.scheduledAt) && (
           <section id="termine" className="card p-8 scroll-mt-20">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -253,6 +265,46 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               )}
             </div>
 
+            {/* Hauptshooting-Termin als hervorgehobene Card oben — separater Block,
+                damit er sofort erkennbar ist (auch ohne ShootingDate-Einträge). */}
+            {shooting.scheduledAt && (
+              <div
+                className="rounded-xl p-5 mb-6 border-l-4"
+                style={{
+                  background: "rgb(var(--accent-soft))",
+                  borderColor: "rgb(var(--accent))",
+                }}
+              >
+                <div className="eyebrow" style={{ color: "rgb(var(--accent))" }}>Der Shootingtag</div>
+                <div className="flex flex-wrap items-baseline gap-3 mt-1">
+                  <div className="font-serif text-2xl text-ink">
+                    {shooting.title || "Shooting"}
+                  </div>
+                </div>
+                <div className="text-sm text-ink/80 mt-2 flex flex-wrap items-center gap-x-5 gap-y-1">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={14} style={{ color: "rgb(var(--accent))" }} />
+                    {fmtDate(shooting.scheduledAt)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock size={14} style={{ color: "rgb(var(--accent))" }} />
+                    {fmtTime(shooting.scheduledAt)}
+                    {shooting.durationMin ? ` · ${Math.floor(shooting.durationMin / 60)}h ${shooting.durationMin % 60 ? `${shooting.durationMin % 60}min` : ""}`.trim() : ""}
+                  </span>
+                  {shooting.location && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin size={14} style={{ color: "rgb(var(--accent))" }} /> {shooting.location}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {shooting.dates.length > 0 && (
+              <>
+                {shooting.scheduledAt && (
+                  <div className="eyebrow eyebrow-muted mb-4">Weitere Termine</div>
+                )}
             <ol className="relative">
               {shooting.dates.map((d, idx) => (
                 <li key={d.id} className="relative pl-10 pb-8 last:pb-0">
@@ -303,6 +355,8 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                 </li>
               ))}
             </ol>
+              </>
+            )}
           </section>
         )}
 
@@ -467,8 +521,8 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
           </section>
         )}
 
-        {/* TEAM */}
-        {(shooting.primaryContact || shooting.team.length > 0) && (() => {
+        {/* TEAM — sichtbar nur, wenn pro-Shooting nicht abgeschaltet. */}
+        {shooting.showTeamOnPublic && (shooting.primaryContact || shooting.team.length > 0) && (() => {
           const primary = shooting.primaryContact;
           const others = shooting.team.filter((m) => m.id !== primary?.id);
           return (
@@ -493,10 +547,15 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                     {primary.bio && (
                       <p className="text-sm text-ink/80 mt-4 leading-relaxed">{primary.bio}</p>
                     )}
-                    {(primary.email || primary.phone) && (
+                    {(primary.email || primary.phone || primary.website) && (
                       <div className="hairline mt-4 pt-3 text-xs text-smoke flex flex-wrap gap-x-4 gap-y-1">
                         {primary.email && <a href={`mailto:${primary.email}`} className="flex items-center gap-1 hover:text-ink"><Mail size={11} /> {primary.email}</a>}
                         {primary.phone && <a href={`tel:${primary.phone}`} className="flex items-center gap-1 hover:text-ink"><Phone size={11} /> {primary.phone}</a>}
+                        {primary.website && (
+                          <a href={primary.website} target="_blank" rel="noopener" className="flex items-center gap-1 hover:text-ink">
+                            <Globe size={11} /> {primary.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>
@@ -522,6 +581,27 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
                     {m.bio && (
                       <p className="text-sm text-smoke mt-4 leading-relaxed line-clamp-3">{m.bio}</p>
                     )}
+                    {/* Optional: Kontaktwege für Team-Mitglieder, damit die Kundin
+                        ggf. eigenständig durchstöbern kann (z.B. Make-up-Artist-Website). */}
+                    {(m.email || m.phone || m.website || m.instagram) && (
+                      <div className="hairline mt-4 pt-3 text-xs text-smoke flex flex-wrap gap-x-4 gap-y-1">
+                        {m.website && (
+                          <a href={m.website} target="_blank" rel="noopener" className="flex items-center gap-1 hover:text-ink">
+                            <Globe size={11} /> {m.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                          </a>
+                        )}
+                        {m.instagram && (
+                          <a href={`https://instagram.com/${m.instagram.replace(/^@/, "")}`} target="_blank" rel="noopener" className="flex items-center gap-1 hover:text-ink">
+                            <Instagram size={11} /> {m.instagram}
+                          </a>
+                        )}
+                        {m.email && (
+                          <a href={`mailto:${m.email}`} className="flex items-center gap-1 hover:text-ink">
+                            <Mail size={11} /> {m.email}
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -529,12 +609,19 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
           );
         })()}
 
-        {/* CHECKLISTEN */}
+        {/* CHECKLISTEN — markiert als print-only, damit beim Browser-Druck
+            nur dieser Bereich erscheint (Layout/Nav/Hero werden weggeblendet). */}
         {shooting.checklists.length > 0 && (
-          <section id="checkliste" className="scroll-mt-20">
-            <div className="mb-6">
-              <div className="eyebrow">Damit alles glatt läuft</div>
-              <h2 className="font-serif text-3xl mt-1">Kleine Checkliste für dich</h2>
+          <section id="checkliste" className="scroll-mt-20 print-only">
+            <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div className="eyebrow">Damit alles glatt läuft</div>
+                <h2 className="font-serif text-3xl mt-1">Kleine Checkliste für dich</h2>
+                <div className="text-xs text-smoke mt-1 print-hide">
+                  Tipp: oben rechts kannst du die Checkliste als PDF speichern oder drucken.
+                </div>
+              </div>
+              <PrintChecklistButton />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {shooting.checklists.map((cl) => (
@@ -573,27 +660,27 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
               {studio.studioTagline && <p className="text-sm opacity-75 max-w-xl">{studio.studioTagline}</p>}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
-                {studio.studioPhone && (
+                {studio.studioPhone && studio.showStudioPhone && (
                   <a href={`tel:${studio.studioPhone}`} className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Phone size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioPhone}
                   </a>
                 )}
-                {studio.studioEmail && (
+                {studio.studioEmail && studio.showStudioEmail && (
                   <a href={`mailto:${studio.studioEmail}`} className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Mail size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioEmail}
                   </a>
                 )}
-                {studio.studioWebsite && (
+                {studio.studioWebsite && studio.showStudioWebsite && (
                   <a href={studio.studioWebsite} target="_blank" className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Globe size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioWebsite.replace(/^https?:\/\//, "")}
                   </a>
                 )}
-                {studio.studioInstagram && (
+                {studio.studioInstagram && studio.showStudioInstagram && (
                   <a href={`https://instagram.com/${studio.studioInstagram.replace(/^@/, "")}`} target="_blank" className="flex items-center gap-3 hover:opacity-100 opacity-90">
                     <Instagram size={15} style={{ color: "rgb(var(--accent))" }} /> {studio.studioInstagram}
                   </a>
                 )}
-                {studio.studioAddress && (
+                {studio.studioAddress && studio.showStudioAddress && (
                   <div className="flex items-start gap-3 col-span-full">
                     <MapPin size={15} style={{ color: "rgb(var(--accent))" }} className="mt-0.5" />
                     <span className="whitespace-pre-line">{studio.studioAddress}</span>

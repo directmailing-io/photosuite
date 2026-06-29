@@ -15,6 +15,11 @@ type Profile = {
   studioWebsite: string | null;
   studioAddress: string | null;
   studioInstagram: string | null;
+  showStudioPhone: boolean;
+  showStudioEmail: boolean;
+  showStudioWebsite: boolean;
+  showStudioAddress: boolean;
+  showStudioInstagram: boolean;
 };
 
 export function StudioProfile({ initial }: { initial: Profile }) {
@@ -49,14 +54,65 @@ export function StudioProfile({ initial }: { initial: Profile }) {
         <Field label="Tagline" hint="Kurzer Satz unter dem Namen"><input name="studioTagline" defaultValue={initial.studioTagline ?? ""} className="input" /></Field>
       </FormRow>
       <FormRow>
-        <Field label="E-Mail"><input type="email" name="studioEmail" defaultValue={initial.studioEmail ?? ""} className="input" /></Field>
-        <Field label="Telefon"><input name="studioPhone" defaultValue={initial.studioPhone ?? ""} className="input" /></Field>
+        <Field
+          label="E-Mail"
+          hint={
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="showStudioEmail" defaultChecked={initial.showStudioEmail} className="w-3 h-3" />
+              <span>Auf Kundenseite anzeigen</span>
+            </label>
+          }
+        >
+          <input type="email" name="studioEmail" defaultValue={initial.studioEmail ?? ""} className="input" />
+        </Field>
+        <Field
+          label="Telefon"
+          hint={
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="showStudioPhone" defaultChecked={initial.showStudioPhone} className="w-3 h-3" />
+              <span>Auf Kundenseite anzeigen</span>
+            </label>
+          }
+        >
+          <input name="studioPhone" defaultValue={initial.studioPhone ?? ""} className="input" />
+        </Field>
       </FormRow>
       <FormRow>
-        <Field label="Website"><input name="studioWebsite" defaultValue={initial.studioWebsite ?? ""} placeholder="https://…" className="input" /></Field>
-        <Field label="Instagram"><input name="studioInstagram" defaultValue={initial.studioInstagram ?? ""} placeholder="@username" className="input" /></Field>
+        <Field
+          label="Website"
+          hint={
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="showStudioWebsite" defaultChecked={initial.showStudioWebsite} className="w-3 h-3" />
+              <span>Auf Kundenseite anzeigen</span>
+            </label>
+          }
+        >
+          <input name="studioWebsite" defaultValue={initial.studioWebsite ?? ""} placeholder="https://…" className="input" />
+        </Field>
+        <Field
+          label="Instagram"
+          hint={
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="showStudioInstagram" defaultChecked={initial.showStudioInstagram} className="w-3 h-3" />
+              <span>Auf Kundenseite anzeigen</span>
+            </label>
+          }
+        >
+          <input name="studioInstagram" defaultValue={initial.studioInstagram ?? ""} placeholder="@username" className="input" />
+        </Field>
       </FormRow>
-      <Field label="Adresse" hint="Mehrzeilig möglich">
+      <Field
+        label="Adresse"
+        hint={
+          <span className="flex flex-wrap items-center gap-3">
+            <span>Mehrzeilig möglich.</span>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="showStudioAddress" defaultChecked={initial.showStudioAddress} className="w-3 h-3" />
+              <span>Auf Kundenseite anzeigen</span>
+            </label>
+          </span>
+        }
+      >
         <textarea name="studioAddress" defaultValue={initial.studioAddress ?? ""} rows={3} className="textarea" placeholder="Studio-Name\nStraße\nPLZ Stadt" />
       </Field>
 

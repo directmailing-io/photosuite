@@ -8,7 +8,7 @@ export function Field({
   className = "",
 }: {
   label?: string;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
   children: ReactNode;
   className?: string;

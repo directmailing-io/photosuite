@@ -209,6 +209,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
                 primaryContactId: shooting.primaryContactId,
                 teamIds: shooting.team.map((m) => m.id),
                 bookedAddons: shooting.addons.map((b) => ({ addonId: b.addonId, quantity: b.quantity, unitPrice: b.unitPrice })),
+                showTeamOnPublic: shooting.showTeamOnPublic,
               }}
               customers={customers}
               packages={packages.map((p) => ({

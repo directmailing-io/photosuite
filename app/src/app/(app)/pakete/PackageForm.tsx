@@ -74,7 +74,14 @@ export function PackageForm({ initial, team, questionnaires, addons = [], packag
       await action(fd);
       toast.success(initial?.id ? "Gespeichert" : "Paket angelegt");
       router.refresh();
-    } catch (err) {
+    } catch (err: any) {
+      // Server-Actions mit `redirect(...)` werfen eine NEXT_REDIRECT-Exception, die
+      // Next.js selbst behandeln muss — wenn wir sie hier abfangen, scheitert der Redirect
+      // und der User sieht den kryptischen „Server Components render"-Fehler.
+      const digest = err?.digest;
+      if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
       toast.error(err instanceof Error ? err.message : "Fehler");
     } finally {
       setBusy(false);
@@ -85,7 +92,14 @@ export function PackageForm({ initial, team, questionnaires, addons = [], packag
     if (!deleteAction) return;
     if (!confirm("Paket wirklich löschen?")) return;
     setBusy(true);
-    try { await deleteAction(); } catch { toast.error("Konnte nicht löschen"); setBusy(false); }
+    try {
+      await deleteAction();
+    } catch (err: any) {
+      const digest = err?.digest;
+      if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) throw err;
+      toast.error("Konnte nicht löschen");
+      setBusy(false);
+    }
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -219,8 +233,11 @@ export function PackageForm({ initial, team, questionnaires, addons = [], packag
           <Field label="Zahlungsbedingungen">
             <textarea name="paymentTerms" defaultValue={initial?.paymentTerms ?? ""} rows={3} className="textarea" placeholder={`z.B. „50 % bei Buchung, Rest am Shootingtag"`} />
           </Field>
-          <Field label="Termin-Dauer (Minuten)" hint="Wie lange blockiert das Paket den Kalender? Wird beim Slot-Finden geprüft (muss am Stück reinpassen).">
-            <input name="durationMin" type="number" min="0" defaultValue={initial?.durationMin ?? ""} className="input" />
+          <Field
+            label="Termin-Dauer"
+            hint="Wie lange blockiert das Paket den Kalender? Wird beim Slot-Finden geprüft (muss am Stück reinpassen)."
+          >
+            <DurationHoursMinutesInput initialMinutes={initial?.durationMin ?? null} />
           </Field>
           <FormRow>
             <Field label="Puffer vorher (Min)" hint="Aufbau, Anreise">
@@ -300,5 +317,49 @@ export function PackageForm({ initial, team, questionnaires, addons = [], packag
         </div>
       </div>
     </form>
+  );
+}
+
+/**
+ * Stunden+Minuten-Input für Termin-Dauer.
+ * Rendert 2 kleine Number-Inputs (h + min) und ein Hidden-Input mit der
+ * aggregierten Minuten-Summe — das ist der Wert, den die Server-Action liest.
+ *
+ * Edit-Case: bestehender durationMin wird aufgeteilt (z.B. 90 → 1h 30min).
+ * Validierung: Stunden 0..24, Minuten 0..59 (clamp). Leer = beides 0 → 0 min.
+ */
+function DurationHoursMinutesInput({ initialMinutes }: { initialMinutes: number | null }) {
+  const initialH = initialMinutes != null ? Math.floor(initialMinutes / 60) : 0;
+  const initialM = initialMinutes != null ? initialMinutes % 60 : 0;
+  const [hours, setHours] = useState<number>(initialH);
+  const [minutes, setMinutes] = useState<number>(initialM);
+  const total = Math.max(0, hours * 60 + minutes);
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        min={0}
+        max={24}
+        step={1}
+        value={hours}
+        onChange={(e) => setHours(Math.max(0, Math.min(24, Number(e.target.value) || 0)))}
+        className="input w-24"
+        aria-label="Stunden"
+      />
+      <span className="text-sm text-smoke">Std</span>
+      <input
+        type="number"
+        min={0}
+        max={59}
+        step={5}
+        value={minutes}
+        onChange={(e) => setMinutes(Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
+        className="input w-24"
+        aria-label="Minuten"
+      />
+      <span className="text-sm text-smoke">Min</span>
+      <input type="hidden" name="durationMin" value={String(total)} />
+    </div>
   );
 }

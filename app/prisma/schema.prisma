@@ -29,6 +29,13 @@ model User {
   studioWebsite          String?
   studioAddress          String? // mehrzeilig
   studioInstagram        String?
+  // Visibility-Toggles für die Kundenansicht. Default: alle sichtbar (rückwärts-kompatibel).
+  // Lisa kann pro Feld entscheiden, ob es im Public-Footer erscheinen soll.
+  showStudioPhone        Boolean                 @default(true)
+  showStudioEmail        Boolean                 @default(true)
+  showStudioWebsite      Boolean                 @default(true)
+  showStudioAddress      Boolean                 @default(true)
+  showStudioInstagram    Boolean                 @default(true)
   studioTagline          String? // kleiner Satz unter dem Namen
   // Studio-Logo (für Customer-Portal + Rechnungs-PDF)
   // logoUrl: das verwendete Logo (gecropped bei Raster, original bei SVG)
@@ -662,6 +669,8 @@ model Shooting {
   primaryContact   TeamMember?      @relation("ShootingPrimaryContact", fields: [primaryContactId], references: [id])
   primaryContactId String?
   team             TeamMember[]     @relation("ShootingTeam")
+  // Public-Visibility: zeigt der „Team"-Block in der Kundenansicht? Default an.
+  showTeamOnPublic Boolean          @default(true)
   // Gebuchte Zusatzprodukte (Bilderbuch M, Leinwand etc.) — Quantity + Preis-Snapshot in ShootingAddon
   addons           ShootingAddon[]
   // Inhalt

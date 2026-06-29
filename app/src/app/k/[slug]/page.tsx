@@ -747,8 +747,18 @@ export default async function CustomerView({ params }: { params: Promise<{ slug:
           );
         })()}
 
-        <div className="text-center text-xs text-smoke flex items-center justify-center gap-1.5 pt-4">
-          <Heart size={11} className="text-accent" /> Wir freuen uns auf dich, {firstName}.
+        <div className="text-center pt-4 space-y-3">
+          <div>
+            <Link
+              href={`/k/${slug}/profil`}
+              className="text-xs text-smoke hover:text-ink transition underline underline-offset-4 decoration-stone"
+            >
+              Mein Profil aktualisieren →
+            </Link>
+          </div>
+          <div className="text-xs text-smoke flex items-center justify-center gap-1.5">
+            <Heart size={11} className="text-accent" /> Wir freuen uns auf dich, {firstName}.
+          </div>
         </div>
       </div>
     </div>

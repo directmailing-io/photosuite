@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CalendarCheck, Inbox, Settings, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { BookingInbox } from "./BookingInbox";
 
 export const dynamic = "force-dynamic";
@@ -53,16 +54,16 @@ export default async function BuchungenPage({
     <>
       <PageHeader
         eyebrow="Inbox"
-        title="Online-Buchungen"
-        subtitle="Anfragen von deinem öffentlichen Buchungslink — annehmen wird automatisch zu Kundin und Shooting."
+        title="Termine"
+        subtitle="Termin-Anfragen von deinem öffentlichen Buchungslink — annehmen wird automatisch zu Kundin und Shooting."
       >
         <Link href="/einstellungen?tab=buchung" className="btn-secondary">
           <Settings size={14} /> Buchungstypen verwalten
         </Link>
       </PageHeader>
 
-      {/* Filter-Tabs */}
-      <div className="flex items-center gap-1 mb-6 border-b border-stone/60">
+      {/* Filter-Tabs als sichtbare graue Pills */}
+      <div className="flex flex-wrap gap-2 mb-6 text-xs">
         <FilterTab href="/buchungen?filter=pending" label="Neu" active={filter === "pending"} count={countByStatus.PENDING ?? 0} highlight />
         <FilterTab href="/buchungen?filter=confirmed" label="Angenommen" active={filter === "confirmed"} count={countByStatus.CONFIRMED ?? 0} />
         <FilterTab href="/buchungen?filter=cancelled" label="Abgelehnt" active={filter === "cancelled"} count={countByStatus.CANCELLED ?? 0} />
@@ -73,11 +74,11 @@ export default async function BuchungenPage({
         totalAll === 0 ? (
           <EmptyState
             icon={<Inbox size={36} strokeWidth={1.25} />}
-            title="Noch keine Buchungen"
+            title="Noch keine Termine"
             description={
               types.length === 0
                 ? 'Lege zuerst einen Buchungstyp an — z.B. „Erstgespräch 30 Min kostenlos".'
-                : "Sobald jemand über deinen Link bucht, taucht die Anfrage hier auf."
+                : "Sobald jemand über deinen Link einen Termin bucht, taucht die Anfrage hier auf."
             }
             action={
               types.length === 0 ? (
@@ -93,7 +94,7 @@ export default async function BuchungenPage({
           />
         ) : (
           <div className="card p-12 text-center text-sm text-smoke">
-            Keine Buchungen in diesem Filter.
+            Keine Termine in diesem Filter.
           </div>
         )
       ) : (
@@ -135,25 +136,29 @@ function FilterTab({
 }: {
   href: string; label: string; active: boolean; count: number; highlight?: boolean;
 }) {
+  // Pills: aktive = dunkler Ink-Background, inaktive = grau-umrandet (sichtbar).
+  // „Neu" mit highlight: rote Punkt-Indikator, wenn Anfragen offen sind und Tab nicht aktiv.
   return (
     <Link
       href={href}
-      className="px-4 py-2.5 text-sm transition flex items-center gap-2 -mb-px border-b-2"
-      style={{
-        borderColor: active ? "rgb(var(--ink))" : "transparent",
-        color: active ? "rgb(var(--ink))" : "rgb(var(--smoke))",
-        fontWeight: active ? 500 : 400,
-      }}
+      className={cn(
+        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition",
+        active
+          ? "bg-ink text-paper border-ink"
+          : "border-stone bg-paper hover:bg-linen text-ink",
+      )}
     >
-      {label}
+      <span>{label}</span>
       {count > 0 && (
         <span
-          className="text-[10px] tabular-nums px-1.5 py-0.5 rounded font-medium"
+          className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full font-medium"
           style={{
-            background: highlight && count > 0 && !active
+            background: highlight && !active
               ? "rgb(var(--accent))"
-              : active ? "rgb(var(--linen))" : "rgb(var(--linen))",
-            color: highlight && count > 0 && !active ? "#fff" : "rgb(var(--smoke))",
+              : active ? "rgba(255,255,255,0.18)" : "rgb(var(--linen))",
+            color: highlight && !active
+              ? "#fff"
+              : active ? "rgb(var(--paper))" : "rgb(var(--smoke))",
           }}
         >
           {count}

@@ -35,7 +35,7 @@ const dailyItems: NavItem[] = [
   { href: "/kunden", label: "Kunden", icon: Users },
   { href: "/shootings", label: "Shootings", icon: Camera },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
-  { href: "/buchungen", label: "Buchungen", icon: Inbox },
+  { href: "/buchungen", label: "Termine", icon: Inbox },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/angebote", label: "Angebote", icon: FileSignature },
   { href: "/finanzen", label: "Finanzen", icon: Receipt },

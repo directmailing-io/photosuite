@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lisa CRM — Session-Zusammenfassung 29.06.2026</title>
+<style>
+  :root {
+    --paper: #FBFAF7;
+    --linen: #F3EFEC;
+    --ink: #19191A;
+    --smoke: #7D7878;
+    --stone: #CFCEC9;
+    --accent: #8C5A35;
+    --accent-soft: #F4ECDF;
+    --success: #2F6B4A;
+    --success-soft: #E6F3EC;
+    --warning: #B8860B;
+    --warning-soft: #FBF5DE;
+    --danger: #C8102E;
+    --danger-soft: #FBE9EC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+    margin: 0;
+    background: var(--linen);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 32px 80px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    color: var(--smoke);
+    font-weight: 600;
+  }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 38px;
+    margin: 8px 0 4px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    color: var(--smoke);
+    font-size: 14px;
+  }
+  h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 24px;
+    margin: 48px 0 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--stone);
+    padding-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    font-weight: 600;
+  }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--stone);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--paper);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--stone);
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--stone);
+  }
+  th {
+    background: var(--linen);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--smoke);
+  }
+  tr:last-child td { border-bottom: 0; }
+  td.idx {
+    font-family: Georgia, serif;
+    font-weight: 700;
+    width: 32px;
+    color: var(--accent);
+  }
+  td.status {
+    text-align: right;
+    font-size: 13px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pill.done {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+  .pill.warn {
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+  .pill.todo {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+  .alert {
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    border-left: 4px solid;
+  }
+  .alert .alert-head {
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .alert .alert-head .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .alert.danger {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+  }
+  .alert.danger .badge {
+    background: var(--danger);
+    color: #fff;
+  }
+  .alert.warning {
+    background: var(--warning-soft);
+    border-color: var(--warning);
+  }
+  .alert.warning .badge {
+    background: var(--warning);
+    color: #fff;
+  }
+  .alert.info {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .alert.info .badge {
+    background: var(--accent);
+    color: #fff;
+  }
+  pre {
+    background: #1E1B17;
+    color: #F3EFEC;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 10px 0;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  code {
+    background: var(--linen);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  ul.tight {
+    margin: 8px 0;
+    padding-left: 22px;
+  }
+  ul.tight li { margin-bottom: 4px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .grid .card { margin-bottom: 0; }
+  footer {
+    margin-top: 60px;
+    text-align: center;
+    color: var(--smoke);
+    font-size: 12px;
+    border-top: 1px solid var(--stone);
+    padding-top: 24px;
+  }
+  .icon {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Photosuite · Session-Bericht</div>
+  <h1>Zusammenfassung 29.06.2026</h1>
+  <div class="sub">7 Mini-Projekte umgesetzt · 2 ENV-Vars gesetzt · 1 Feature zurückgestellt</div>
+</header>
+
+<!-- ===================== SECTION 1 ===================== -->
+<h2><span class="icon">✅</span> Diese Session umgesetzt</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:32px">#</th>
+      <th>Feature</th>
+      <th style="width:120px;text-align:right">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="idx">A</td>
+      <td>
+        <strong>Artikel-Katalog</strong> (Dienstleistung / Produkt)<br>
+        <span class="sub">Picker im Rechnungs-Editor, Snapshot-Kopie der Position</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+    <tr>
+      <td class="idx">B</td>
+      <td>
+        <strong>Bezahllink optional</strong><br>
+        <span class="sub">Toggle pro Rechnung, Storno automatisch ohne Link</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+    <tr>
+      <td class="idx">C</td>
+      <td>
+        <strong>Auto-Zahlungsbestätigung</strong><br>
+        <span class="sub">Bei manuell + Stripe-Webhook · Kundin + du · einzeln abschaltbar</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+    <tr>
+      <td class="idx">D</td>
+      <td>
+        <strong>Paket-Dokumente</strong> (Prep / Outfit Guide …)<br>
+        <span class="sub">Upload im Paket-Detail · Anzeige im Kunden-Self-Service</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+    <tr>
+      <td class="idx">E</td>
+      <td>
+        <strong>Rechnungs-Designs</strong><br>
+        <span class="sub">classic · elegant · modern — wählbar in Einstellungen</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+    <tr>
+      <td class="idx">F</td>
+      <td>
+        <strong>Angebote-Modul</strong><br>
+        <span class="sub">Eigener Counter · Public-Annahme · Convert-to-Invoice</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+    <tr>
+      <td class="idx">G</td>
+      <td>
+        <strong>Workflow-Engine</strong><br>
+        <span class="sub">Trigger + verzögerte Steps + Vercel-Cron alle 5 Min</span>
+      </td>
+      <td class="status"><span class="pill done">live</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="sub" style="margin-top:14px;text-align:center">
+  7 atomare Commits · alle auf <code>main</code> · alle Builds grün
+</div>
+
+<!-- ===================== SECTION 2 ===================== -->
+<h2><span class="icon">✅</span> ENV-Setup — erledigt</h2>
+
+<style>
+  .alert.success {
+    background: var(--success-soft);
+    border-color: var(--success);
+  }
+  .alert.success .badge {
+    background: var(--success);
+    color: #fff;
+  }
+  .alert.success code {
+    background: rgba(47, 107, 74, 0.12);
+  }
+  .test-result {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 8px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+  .test-result .check { color: var(--success); font-weight: 700; }
+</style>
+
+<!-- ALERT 1: APP_ENCRYPTION_KEY -->
+<div class="alert success">
+  <div class="alert-head">
+    <span class="badge">Erledigt</span>
+    <span>1. <code>APP_ENCRYPTION_KEY</code> in Vercel gesetzt</span>
+  </div>
+  <p>Der vorhandene <code>SECRET_ENCRYPTION_KEY</code>-Wert wurde unter dem korrekten Namen <code>APP_ENCRYPTION_KEY</code> in der Production-Umgebung dupliziert. Stripe-Keys und SMTP-Passwörter sind damit entschlüsselbar.</p>
+  <p class="sub"><strong>Beachte:</strong> Beim Pullen war im alten Wert ein literales <code>\n</code> am Ende — wie damals bei der DATABASE_URL. Wert wurde vor dem Setzen bereinigt (44 Zeichen base64 = 32 Byte Schlüssel).</p>
+</div>
+
+<!-- ALERT 2: CRON_SECRET -->
+<div class="alert success">
+  <div class="alert-head">
+    <span class="badge">Erledigt</span>
+    <span>2. <code>CRON_SECRET</code> in Vercel gesetzt</span>
+  </div>
+  <p>Ein 64-Hex-Zeichen-Zufallswert (32 Byte) wurde generiert und als Production-ENV hinterlegt. Vercel-Cron sendet das Secret automatisch im Authorization-Header bei jedem 5-Minuten-Lauf mit.</p>
+  <div class="test-result">
+    <strong>Verifikation gegen <code>/api/cron/workflows</code>:</strong><br>
+    <span class="check">✓</span> Ohne Auth → HTTP 401<br>
+    <span class="check">✓</span> Falsches Secret → HTTP 401<br>
+    <span class="check">✓</span> Korrektes Secret → HTTP 200, <code>{"ok":true,"picked":0,"done":0,"failed":0}</code>
+  </div>
+</div>
+
+<div class="card" style="background: var(--linen);">
+  <h3 style="margin-top:0">🚀 Production-Deployment</h3>
+  <p style="margin-bottom:0">Nach dem Setzen beider ENVs wurde ein Production-Re-Deploy ausgelöst — Status <strong>Ready</strong>, beide neuen Werte sind live aktiv. Cron läuft alle 5 Minuten automatisch.</p>
+</div>
+
+<!-- ===================== SECTION 3 ===================== -->
+<h2><span class="icon">🟡</span> Aus früherer Session noch zurückgestellt</h2>
+
+<div class="alert info">
+  <div class="alert-head">
+    <span class="badge">Optional</span>
+    <span>Video-Meetings (Zoom + Google Meet) OAuth-Setup</span>
+  </div>
+  <p>Der Code für automatische Meeting-Erstellung pro Buchung ist seit Commit <code>8ea2377</code> drin und funktioniert — aber die OAuth-Apps müssen noch registriert und die ENV-Variablen gesetzt werden.</p>
+  <p><strong>Was fehlt:</strong></p>
+  <ul class="tight">
+    <li>Zoom Marketplace App registrieren (User-managed Scopes: <code>meeting:write</code> + <code>user:read</code>)</li>
+    <li>Google Cloud Project + Calendar API + OAuth Client einrichten</li>
+    <li>ENV-Variablen lokal + auf Vercel setzen</li>
+    <li>Im CRM unter <em>Einstellungen → Kalender → Online-Meeting-Tools</em> verbinden</li>
+    <li>Test-Buchung machen und prüfen, ob der Meeting-Link automatisch erzeugt wird</li>
+  </ul>
+  <p class="sub">Step-by-Step-Anleitung liegt unter <code>/Users/kurzeja/lisa-crm/docs/oauth-setup.html</code>.</p>
+</div>
+
+<!-- ===================== SECTION 4 ===================== -->
+<h2><span class="icon">💡</span> Nice-to-have für später</h2>
+
+<div class="grid">
+  <div class="card">
+    <h3>Manueller Workflow-Start</h3>
+    <p class="sub">Der Trigger <code>manual</code> wird vom Code unterstützt, aber es gibt noch keinen UI-Button am Kunden/Shooting, um einen Workflow händisch zu starten.</p>
+  </div>
+
+  <div class="card">
+    <h3>Workflow-Templates</h3>
+    <p class="sub">Setup-Helfer mit fertigen Beispielen wie <em>„Folge-Mail 7 Tage nach Zahlung — bitte um Google-Review"</em> als 1-Klick-Vorlage.</p>
+  </div>
+
+  <div class="card">
+    <h3>Angebots-PDF</h3>
+    <p class="sub">Aktuell nur als Public-HTML-Page. Falls Kundin das Angebot drucken oder archivieren will, wäre ein PDF-Download hilfreich.</p>
+  </div>
+
+  <div class="card">
+    <h3>Angebots-Auto-Expire im Cron</h3>
+    <p class="sub">Derzeit nur beim Listen-Aufruf. Wenn niemand die Liste öffnet, bleiben abgelaufene Angebote auf <em>SENT</em>. Im Workflow-Cron mitlaufen lassen.</p>
+  </div>
+</div>
+
+<!-- ===================== SECTION 5 ===================== -->
+<h2><span class="icon">🎯</span> Empfohlenes Vorgehen jetzt</h2>
+
+<div class="card">
+  <ol style="margin:0;padding-left:24px;line-height:1.8">
+    <li><s>APP_ENCRYPTION_KEY in Vercel ergänzen + Re-Deploy</s> <span class="pill done">erledigt</span></li>
+    <li><s>CRON_SECRET setzen + Re-Deploy</s> <span class="pill done">erledigt</span></li>
+    <li><s>Cron-Endpoint testen</s> <span class="pill done">grün (401/401/200)</span></li>
+    <li>Einen ersten <strong>Workflow anlegen</strong> — z. B. <em>„Rechnung bezahlt → 3 Tage später Danke-Mail"</em> unter <code>/workflows</code></li>
+    <li>Einen ersten <strong>Artikel-Katalog</strong> pflegen (Einstellungen → Artikel) und auf einer Rechnung den Picker testen</li>
+    <li>Optional: <strong>Rechnungs-Design</strong> wechseln (Einstellungen → Rechnungs-Profil) und eine PDF herunterladen, um den neuen Look zu sehen</li>
+    <li>Erstmal nutzen, dann sehen, was im Alltag wirklich fehlt</li>
+  </ol>
+</div>
+
+<footer>
+  Lisa CRM (photosuite) · Stand 29.06.2026 · Session-Commits <code>6c7b2c2 → 7f12bbf</code>
+</footer>
+
+</div>
+</body>
+</html>

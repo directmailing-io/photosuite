@@ -108,11 +108,24 @@ function BookingCard({ booking }: { booking: Booking }) {
   const statusMeta = STATUS_META[booking.status as keyof typeof STATUS_META] ?? STATUS_META.PENDING;
   const isCancelled = booking.status === "CANCELLED";
 
+  // Bei angenommenen Terminen mit Shooting wird die ganze Card klickbar.
+  // Die Aktionen für PENDING-Cards bleiben weiter über Buttons (Annehmen/Ablehnen).
+  const cardLink = booking.status === "CONFIRMED" && booking.shootingId
+    ? `/shootings/${booking.shootingId}`
+    : null;
+
   return (
     <li
-      className="card overflow-hidden"
+      className="card overflow-hidden relative group"
       style={{ opacity: isCancelled ? 0.6 : 1 }}
     >
+      {cardLink && (
+        <Link
+          href={cardLink}
+          aria-label="Zur Shooting-Kartei"
+          className="absolute inset-0 z-10 rounded-lg hover:bg-linen/40 transition"
+        />
+      )}
       <div className="h-1" style={{ background: booking.bookingType.color }} />
       <div className="p-5">
         <div className="flex flex-wrap items-start gap-4">
@@ -153,7 +166,7 @@ function BookingCard({ booking }: { booking: Booking }) {
               </span>
             </div>
 
-            <div className="text-sm text-smoke flex items-center gap-4 flex-wrap">
+            <div className="text-sm text-smoke flex items-center gap-4 flex-wrap relative z-20">
               <a href={`mailto:${booking.customerEmail}`} className="flex items-center gap-1.5 hover:text-ink transition">
                 <Mail size={12} /> {booking.customerEmail}
               </a>
@@ -173,7 +186,7 @@ function BookingCard({ booking }: { booking: Booking }) {
 
             {/* Online-Meeting-Link */}
             {booking.meetingProvider && booking.meetingUrl && (
-              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start" style={{ background: "rgba(120, 167, 119, 0.10)", border: "1px solid rgba(120, 167, 119, 0.3)" }}>
+              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start relative z-20" style={{ background: "rgba(120, 167, 119, 0.10)", border: "1px solid rgba(120, 167, 119, 0.3)" }}>
                 <Video size={13} className="text-smoke shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] uppercase tracking-wider text-smoke">{providerName(booking.meetingProvider)} Meeting</div>
@@ -190,7 +203,7 @@ function BookingCard({ booking }: { booking: Booking }) {
               </div>
             )}
             {booking.bookingType.videoProvider && !booking.meetingUrl && booking.status !== "CANCELLED" && (
-              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start" style={{ background: "rgb(var(--accent-soft))", border: "1px solid rgb(var(--accent))" }}>
+              <div className="mt-2 p-3 rounded-lg text-sm flex gap-2 items-start relative z-20" style={{ background: "rgb(var(--accent-soft))", border: "1px solid rgb(var(--accent))" }}>
                 <Video size={13} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
                 <div className="flex-1 min-w-0 text-xs">
                   <div className="font-medium" style={{ color: "rgb(var(--accent))" }}>
@@ -213,8 +226,8 @@ function BookingCard({ booking }: { booking: Booking }) {
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-1.5 shrink-0">
+          {/* Actions — z-20 damit Klicks nicht zum Card-Link bubblen */}
+          <div className="flex flex-col gap-1.5 shrink-0 relative z-20">
             {booking.status === "PENDING" && (
               <>
                 <button onClick={onAccept} disabled={pending} className="btn-primary text-xs h-8 whitespace-nowrap">
@@ -226,9 +239,9 @@ function BookingCard({ booking }: { booking: Booking }) {
               </>
             )}
             {booking.status === "CONFIRMED" && booking.shootingId && (
-              <Link href={`/shootings/${booking.shootingId}`} className="btn-secondary text-xs h-8 whitespace-nowrap">
-                <ExternalLink size={13} /> Shooting
-              </Link>
+              <div className="text-xs text-smoke flex items-center gap-1 whitespace-nowrap pointer-events-none">
+                Zur Kartei <ExternalLink size={11} />
+              </div>
             )}
             {(booking.status === "CANCELLED" || isPast) && (
               <button onClick={onDelete} disabled={pending} className="btn-ghost text-xs h-8" style={{ color: "rgb(var(--accent))" }}>
@@ -240,7 +253,7 @@ function BookingCard({ booking }: { booking: Booking }) {
       </div>
 
       {cancelOpen && (
-        <div className="px-5 py-4 border-t border-stone/60 bg-linen/30 space-y-3">
+        <div className="px-5 py-4 border-t border-stone/60 bg-linen/30 space-y-3 relative z-20">
           <label className="text-xs text-smoke">Grund (optional, intern)</label>
           <input
             type="text"

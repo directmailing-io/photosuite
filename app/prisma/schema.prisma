@@ -108,6 +108,15 @@ model User {
   // Auch der "Ganzer Tag"-Quick-Button im Kalender füllt diese Range ein.
   defaultDayStartMinutes Int                     @default(540) // 09:00
   defaultDayEndMinutes   Int                     @default(1080) // 18:00
+  // User-konfigurierbare Quick-Preset-Zeiten (für „Vormittag/Nachmittag/Abend"-Buttons im AvailabilityManager).
+  defaultMorningStart    Int                     @default(540)  // 09:00
+  defaultMorningEnd      Int                     @default(780)  // 13:00
+  defaultAfternoonStart  Int                     @default(840)  // 14:00
+  defaultAfternoonEnd    Int                     @default(1080) // 18:00
+  defaultEveningStart    Int                     @default(1080) // 18:00
+  defaultEveningEnd      Int                     @default(1320) // 22:00
+  // Shooting-Slot-Planungstage: Lisa markiert Tage vorab, an denen sie Shootings anbieten will.
+  shootingPlanDays       ShootingPlanDay[]
   // Persönliche Meeting-Räume pro Provider (Tier-1-Fallback). Wenn OAuth-Verbindung
   // existiert, wird stattdessen pro Buchung ein eigenes Meeting erstellt.
   zoomPersonalLink       String?
@@ -893,7 +902,24 @@ model AvailabilityOverride {
   updatedAt   DateTime @updatedAt
   // Tenant
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId     String  
+  ownerId     String
+
+  @@unique([ownerId, date])
+  @@index([ownerId])
+}
+
+// Shooting-Slot-Planung: Lisa markiert Tage vorab als „Slot-Tag" — damit sie
+// die Buchungen pro Zeitraum bewusst limitieren kann. Diese Tage werden im
+// Kalender mit farbigem Rahmen + 20%-Fill hervorgehoben.
+model ShootingPlanDay {
+  id        String   @id @default(cuid())
+  date      String // "YYYY-MM-DD"
+  color     String   @default("#C8102E") // Hex
+  label     String? // optional: „Boudoir-Tag", „Family-Sessions" …
+  createdAt DateTime @default(now())
+  // Tenant
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String
 
   @@unique([ownerId, date])
   @@index([ownerId])

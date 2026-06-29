@@ -72,6 +72,34 @@ export async function saveWeeklyRules(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
+// User-konfigurierbare Preset-Zeiten (Vormittag/Nachmittag/Abend) speichern.
+// Validierung: Endzeit muss nach Startzeit, alle innerhalb [0..24h].
+export async function savePresetTimes(formData: FormData): Promise<void> {
+  const userId = await requireUserId();
+  function pair(startKey: string, endKey: string, label: string): [number, number] {
+    const s = hhmmToMinutes(String(formData.get(startKey) ?? ""));
+    const e = hhmmToMinutes(String(formData.get(endKey) ?? ""));
+    if (s == null || e == null) throw new Error(`Bitte gültige Zeit für ${label} eingeben.`);
+    if (e <= s) throw new Error(`${label}: Endzeit muss nach der Startzeit liegen.`);
+    return [s, e];
+  }
+  const [morningStart, morningEnd] = pair("morningStart", "morningEnd", "Vormittag");
+  const [afternoonStart, afternoonEnd] = pair("afternoonStart", "afternoonEnd", "Nachmittag");
+  const [eveningStart, eveningEnd] = pair("eveningStart", "eveningEnd", "Abend");
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      defaultMorningStart: morningStart,
+      defaultMorningEnd: morningEnd,
+      defaultAfternoonStart: afternoonStart,
+      defaultAfternoonEnd: afternoonEnd,
+      defaultEveningStart: eveningStart,
+      defaultEveningEnd: eveningEnd,
+    },
+  });
+  revalidateAll();
+}
+
 // User-Default-Zeitfenster für „ganzer Tag" speichern.
 export async function saveDefaultDayWindow(formData: FormData): Promise<void> {
   const userId = await requireUserId();

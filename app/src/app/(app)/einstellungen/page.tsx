@@ -246,6 +246,12 @@ async function CalendarSection({ userId }: { userId: string }) {
       select: {
         defaultDayStartMinutes: true,
         defaultDayEndMinutes: true,
+        defaultMorningStart: true,
+        defaultMorningEnd: true,
+        defaultAfternoonStart: true,
+        defaultAfternoonEnd: true,
+        defaultEveningStart: true,
+        defaultEveningEnd: true,
         zoomPersonalLink: true,
         googleMeetPersonalLink: true,
         teamsPersonalLink: true,
@@ -262,6 +268,14 @@ async function CalendarSection({ userId }: { userId: string }) {
       <AvailabilityManager
         defaultDayStartMinutes={user?.defaultDayStartMinutes ?? 540}
         defaultDayEndMinutes={user?.defaultDayEndMinutes ?? 1080}
+        presetTimes={{
+          morningStart: user?.defaultMorningStart ?? 540,
+          morningEnd: user?.defaultMorningEnd ?? 780,
+          afternoonStart: user?.defaultAfternoonStart ?? 840,
+          afternoonEnd: user?.defaultAfternoonEnd ?? 1080,
+          eveningStart: user?.defaultEveningStart ?? 1080,
+          eveningEnd: user?.defaultEveningEnd ?? 1320,
+        }}
         weekly={weekly.map((w) => ({
           weekday: w.weekday,
           isAvailable: w.isAvailable,

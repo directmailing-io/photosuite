@@ -79,8 +79,8 @@ export default async function ShootingsPage({
     (s) => s.scheduledAt && s.scheduledAt >= calRangeStart && s.scheduledAt < calRangeEnd,
   );
 
-  // Verfügbarkeit fürs angezeigte Grid + nächste freie Tage + Online-Buchungen
-  const [availabilityDays, nextFreeDays, calendarBookings] = view === "calendar"
+  // Verfügbarkeit fürs angezeigte Grid + nächste freie Tage + Online-Buchungen + Plan-Tage
+  const [availabilityDays, nextFreeDays, calendarBookings, planDays] = view === "calendar"
     ? await Promise.all([
         getAvailability(userId, calRangeStart, calRangeEnd),
         findNextFreeDays(userId, new Date(), 10, 90),
@@ -94,8 +94,12 @@ export default async function ShootingsPage({
           include: { bookingType: { select: { name: true, color: true } } },
           orderBy: { startAt: "asc" },
         }),
+        prisma.shootingPlanDay.findMany({
+          where: { ownerId: userId },
+          orderBy: { date: "asc" },
+        }),
       ])
-    : [[], [], []];
+    : [[], [], [], [] as Array<{ date: string; color: string; label: string | null }>];
 
   return (
     <>
@@ -149,6 +153,7 @@ export default async function ShootingsPage({
           packages={packages}
           availability={availabilityDays}
           nextFreeDays={nextFreeDays}
+          planDays={planDays.map((p) => ({ date: p.date, color: p.color, label: p.label }))}
           bookings={calendarBookings.map((b) => ({
             id: b.id,
             customerName: b.customerName,

@@ -26,6 +26,7 @@ import {
 } from "@/lib/availability";
 import {
   saveDefaultDayWindow,
+  savePresetTimes,
   saveWeeklyRules,
   upsertOverride,
   deleteOverride,
@@ -51,9 +52,19 @@ export type OverrideRow = {
   note: string | null;
 };
 
+export type PresetTimes = {
+  morningStart: number;
+  morningEnd: number;
+  afternoonStart: number;
+  afternoonEnd: number;
+  eveningStart: number;
+  eveningEnd: number;
+};
+
 type Props = {
   defaultDayStartMinutes: number;
   defaultDayEndMinutes: number;
+  presetTimes: PresetTimes;
   weekly: WeeklyRow[];
   overrides: OverrideRow[];
 };
@@ -61,6 +72,7 @@ type Props = {
 export function AvailabilityManager({
   defaultDayStartMinutes,
   defaultDayEndMinutes,
+  presetTimes,
   weekly,
   overrides,
 }: Props) {
@@ -70,15 +82,102 @@ export function AvailabilityManager({
         defaultDayStartMinutes={defaultDayStartMinutes}
         defaultDayEndMinutes={defaultDayEndMinutes}
       />
-      <WeeklyEditor weekly={weekly} />
+      <PresetTimesCard initial={presetTimes} />
+      <WeeklyEditor weekly={weekly} presetTimes={presetTimes} />
       <WeeklyPreview
         weekly={weekly}
         overrides={overrides}
         defaultDayStartMinutes={defaultDayStartMinutes}
         defaultDayEndMinutes={defaultDayEndMinutes}
       />
-      <OverrideEditor overrides={overrides} />
+      <OverrideEditor overrides={overrides} presetTimes={presetTimes} />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * A.1) PresetTimesCard — User-konfigurierbare Vormittag/Nachmittag/Abend
+ * ------------------------------------------------------------------ */
+
+function PresetTimesCard({ initial }: { initial: PresetTimes }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [t, setT] = useState({
+    morningStart: minutesToHHMM(initial.morningStart),
+    morningEnd: minutesToHHMM(initial.morningEnd),
+    afternoonStart: minutesToHHMM(initial.afternoonStart),
+    afternoonEnd: minutesToHHMM(initial.afternoonEnd),
+    eveningStart: minutesToHHMM(initial.eveningStart),
+    eveningEnd: minutesToHHMM(initial.eveningEnd),
+  });
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    startTransition(async () => {
+      try {
+        await savePresetTimes(fd);
+        toast.success("Voreingestellte Zeiten gespeichert");
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err?.message ?? "Fehler");
+      }
+    });
+  }
+
+  const ROWS: Array<{ key: keyof typeof t; startKey: keyof typeof t; endKey: keyof typeof t; label: string; sub: string }> = [
+    { key: "morningStart", startKey: "morningStart", endKey: "morningEnd", label: "Vormittag", sub: "z. B. 09:00 – 13:00" },
+    { key: "afternoonStart", startKey: "afternoonStart", endKey: "afternoonEnd", label: "Nachmittag", sub: "z. B. 14:00 – 18:00" },
+    { key: "eveningStart", startKey: "eveningStart", endKey: "eveningEnd", label: "Abend", sub: "z. B. 18:00 – 22:00" },
+  ];
+
+  return (
+    <form onSubmit={onSubmit} className="card">
+      <div className="px-6 py-4 border-b border-stone/60 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="eyebrow eyebrow-muted flex items-center gap-1.5">
+            <Clock size={11} /> Voreingestellte Tageszeiten
+          </div>
+          <div className="text-sm text-smoke mt-1 max-w-xl">
+            Deine eigenen Default-Zeiten für die Quick-Buttons „Vormittag / Nachmittag / Abend". Pro Tag kannst du sie weiterhin individuell überschreiben.
+          </div>
+        </div>
+      </div>
+      <div className="px-6 py-5 space-y-3">
+        {ROWS.map((r) => (
+          <div key={r.key} className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-[120px]">
+              <div className="text-sm font-medium">{r.label}</div>
+              <div className="text-[11px] text-smoke">{r.sub}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="time"
+                name={r.startKey}
+                value={t[r.startKey]}
+                onChange={(e) => setT((s) => ({ ...s, [r.startKey]: e.target.value }))}
+                className="input h-9 text-sm w-28"
+                required
+              />
+              <span className="text-xs text-smoke">bis</span>
+              <input
+                type="time"
+                name={r.endKey}
+                value={t[r.endKey]}
+                onChange={(e) => setT((s) => ({ ...s, [r.endKey]: e.target.value }))}
+                className="input h-9 text-sm w-28"
+                required
+              />
+            </div>
+          </div>
+        ))}
+        <div className="flex justify-end pt-2 border-t border-stone/60">
+          <button type="submit" disabled={pending} className="btn-primary text-sm h-9">
+            <Save size={13} /> {pending ? "…" : "Speichern"}
+          </button>
+        </div>
+      </div>
+    </form>
   );
 }
 
@@ -165,14 +264,30 @@ type WeeklyDayState = {
   windows: TimeWindow[];
 };
 
-const QUICK_MORNING: TimeWindow = { start: 9 * 60, end: 13 * 60 };
-const QUICK_AFTERNOON: TimeWindow = { start: 14 * 60, end: 18 * 60 };
-const QUICK_EVENING: TimeWindow = { start: 18 * 60, end: 22 * 60 };
-const QUICK_PRESETS: { key: string; label: string; range: TimeWindow }[] = [
-  { key: "morning", label: "Vormittag", range: QUICK_MORNING },
-  { key: "afternoon", label: "Nachmittag", range: QUICK_AFTERNOON },
-  { key: "evening", label: "Abend", range: QUICK_EVENING },
-];
+// Preset-Zonen (für Fuzzy-Match „Slot zählt zum Preset"): bewusst überlappend.
+// Ein Slot zählt zur Zone, wenn sein Mittelpunkt in dieser Range liegt.
+const PRESET_ZONES = {
+  morning:   { from: 5 * 60,  to: 13 * 60 },
+  afternoon: { from: 12 * 60, to: 18 * 60 },
+  evening:   { from: 17 * 60, to: 23 * 60 },
+} as const;
+
+type PresetKey = "morning" | "afternoon" | "evening";
+
+function getPresets(p: PresetTimes): Array<{ key: PresetKey; label: string; range: TimeWindow }> {
+  return [
+    { key: "morning",   label: "Vormittag",   range: { start: p.morningStart,   end: p.morningEnd } },
+    { key: "afternoon", label: "Nachmittag",  range: { start: p.afternoonStart, end: p.afternoonEnd } },
+    { key: "evening",   label: "Abend",       range: { start: p.eveningStart,   end: p.eveningEnd } },
+  ];
+}
+
+// Slot ist „im Preset", wenn sein Mittelpunkt in der Preset-Zone liegt.
+function isWindowInZone(w: TimeWindow, key: PresetKey): boolean {
+  const center = (w.start + w.end) / 2;
+  const zone = PRESET_ZONES[key];
+  return center >= zone.from && center <= zone.to;
+}
 
 function initialWeeklyState(weekly: WeeklyRow[]): Map<number, WeeklyDayState> {
   const m = new Map<number, WeeklyDayState>();
@@ -198,7 +313,7 @@ function initialWeeklyState(weekly: WeeklyRow[]): Map<number, WeeklyDayState> {
   return m;
 }
 
-function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
+function WeeklyEditor({ weekly, presetTimes }: { weekly: WeeklyRow[]; presetTimes: PresetTimes }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<Map<number, WeeklyDayState>>(() => initialWeeklyState(weekly));
@@ -330,6 +445,7 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
                 <WeeklyDayRow
                   weekday={w}
                   state={day}
+                  presetTimes={presetTimes}
                   onToggleAvailable={() => updateDay(w, { isAvailable: !day.isAvailable })}
                   onSetMode={(useDefault) => updateDay(w, { useDefault })}
                   onSetWindow={(i, patch) => setWindow(w, i, patch)}
@@ -358,6 +474,7 @@ function WeeklyEditor({ weekly }: { weekly: WeeklyRow[] }) {
 function WeeklyDayRow({
   weekday,
   state,
+  presetTimes,
   onToggleAvailable,
   onSetMode,
   onSetWindow,
@@ -367,6 +484,7 @@ function WeeklyDayRow({
 }: {
   weekday: number;
   state: WeeklyDayState;
+  presetTimes: PresetTimes;
   onToggleAvailable: () => void;
   onSetMode: (useDefault: boolean) => void;
   onSetWindow: (idx: number, patch: Partial<TimeWindow>) => void;
@@ -409,7 +527,7 @@ function WeeklyDayRow({
         <ToggleButton
           checked={state.isAvailable}
           onChange={onToggleAvailable}
-          label={state.isAvailable ? "Verfügbar" : "Nicht verfügbar"}
+          label={state.isAvailable ? "Geöffnet" : "Geschlossen"}
         />
 
         {state.isAvailable && (
@@ -439,7 +557,9 @@ function WeeklyDayRow({
       {/* Wenn verfügbar: Quick-Adds + Timeline + ggf. Window-Liste */}
       {state.isAvailable && (
         <div className="px-4 pb-4 space-y-3">
-          {/* Quick-Add-Buttons als zentrale Aktion */}
+          {/* Quick-Add-Buttons als zentrale Aktion. Presets bleiben aktiv,
+              wenn ein Slot in der jeweiligen Tages-Zone liegt — auch bei manuell
+              angepassten Zeiten. */}
           <div className="flex flex-wrap gap-1.5">
             <QuickPresetButton
               active={state.useDefault}
@@ -447,10 +567,10 @@ function WeeklyDayRow({
               label="Ganzer Tag"
               onClick={() => onSetMode(true)}
             />
-            {QUICK_PRESETS.map((p) => {
-              const present = !state.useDefault && state.windows.some(
-                (w) => w.start === p.range.start && w.end === p.range.end,
-              );
+            {getPresets(presetTimes).map((p) => {
+              const present =
+                !state.useDefault &&
+                state.windows.some((w) => isWindowInZone(w, p.key));
               return (
                 <QuickPresetButton
                   key={p.key}
@@ -896,7 +1016,7 @@ function WeeklyPreview({
  * D) OverrideEditor — Ausnahmen
  * ------------------------------------------------------------------ */
 
-function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
+function OverrideEditor({ overrides, presetTimes }: { overrides: OverrideRow[]; presetTimes: PresetTimes }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
 
@@ -926,6 +1046,7 @@ function OverrideEditor({ overrides }: { overrides: OverrideRow[] }) {
       {adding && (
         <div className="px-6 py-5 bg-linen/40 border-b border-stone/60">
           <OverrideForm
+            presetTimes={presetTimes}
             onClose={() => setAdding(false)}
             onSaved={() => {
               setAdding(false);
@@ -1049,7 +1170,9 @@ function DeleteOverrideButton({ id }: { id: string }) {
   );
 }
 
-function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function OverrideForm({
+  presetTimes, onClose, onSaved,
+}: { presetTimes: PresetTimes; onClose: () => void; onSaved: () => void }) {
   const [pending, startTransition] = useTransition();
   const [date, setDate] = useState("");
   const [dateEnd, setDateEnd] = useState("");
@@ -1146,7 +1269,7 @@ function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         <ToggleButton
           checked={isAvailable}
           onChange={() => setIsAvailable((v) => !v)}
-          label={isAvailable ? "Verfügbar" : "Gesperrt"}
+          label={isAvailable ? "Geöffnet" : "Geschlossen"}
         />
         {isAvailable && (
           <div className="flex items-center gap-1">
@@ -1178,14 +1301,13 @@ function OverrideForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           />
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
             <span className="text-xs text-smoke mr-1">Schnell:</span>
-            <QuickWindowChip
-              onClick={() => addWindow(QUICK_MORNING)}
-              label="Vormittag 09:00–13:00"
-            />
-            <QuickWindowChip
-              onClick={() => addWindow(QUICK_AFTERNOON)}
-              label="Nachmittag 14:00–18:00"
-            />
+            {getPresets(presetTimes).map((p) => (
+              <QuickWindowChip
+                key={p.key}
+                onClick={() => addWindow(p.range)}
+                label={`${p.label} ${minutesToHHMM(p.range.start)}–${minutesToHHMM(p.range.end)}`}
+              />
+            ))}
           </div>
         </div>
       )}

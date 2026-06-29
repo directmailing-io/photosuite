@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Field, FormRow } from "@/components/form/Field";
-import { Save, Receipt, AlertCircle } from "lucide-react";
+import { Save, Receipt, AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { updateInvoiceProfile } from "../buchhaltung/actions";
+import { parseGermanIban } from "@/lib/blz";
 
 type Profile = {
   invoiceCompanyName: string | null;
@@ -40,6 +41,34 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [isKU, setIsKU] = useState(initial.isSmallBusiness);
+
+  // Bankverbindungs-State — kontrolliert, damit IBAN-Live-Lookup Bank + BIC auto-füllen kann.
+  // User kann jeden Wert weiterhin manuell überschreiben (z.B. wenn die BLZ nicht in unserer Tabelle ist).
+  const [iban, setIban] = useState(initial.invoiceIban ?? "");
+  const [bankName, setBankName] = useState(initial.invoiceBankName ?? "");
+  const [bic, setBic] = useState(initial.invoiceBic ?? "");
+  // Lookup-Hinweis für die UI: zeigt „aus IBAN erkannt", „BLZ nicht gefunden" etc.
+  const [bankHint, setBankHint] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // IBAN → Bank-Name + BIC. Triggert bei jedem IBAN-Change.
+  // Wir überschreiben Bank+BIC nur, wenn sie LEER sind oder wir sie zuvor selbst
+  // gesetzt haben — damit manuelle Korrekturen erhalten bleiben.
+  useEffect(() => {
+    const result = parseGermanIban(iban);
+    if (!result.ok || result.country !== "DE" || !result.blz) {
+      setBankHint(null);
+      return;
+    }
+    if (result.bank) {
+      // Auto-Fill nur, wenn die Felder leer sind (oder mit dem alten Auto-Wert übereinstimmen).
+      setBankName((cur) => (cur ? cur : result.bank!.name));
+      setBic((cur) => (cur ? cur : result.bank!.bic));
+      setBankHint({ ok: true, msg: `Automatisch aus IBAN erkannt: ${result.bank.name}` });
+    } else {
+      setBankHint({ ok: false, msg: "Bank zur BLZ nicht in unserer Liste — bitte manuell ausfüllen." });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iban]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -142,22 +171,63 @@ export function InvoiceProfile({ initial }: { initial: Profile }) {
 
       <div className="hairline pt-5 space-y-4">
         <div className="font-medium text-sm">Bankverbindung (für PDF-Footer)</div>
-        <FormRow>
-          <Field label="Bank"><input name="invoiceBankName" defaultValue={initial.invoiceBankName ?? ""} className="input" /></Field>
-          <Field label="BIC"><input name="invoiceBic" defaultValue={initial.invoiceBic ?? ""} className="input" /></Field>
-        </FormRow>
+
+        <Field label="IBAN" hint="Bei deutscher IBAN werden Bank & BIC automatisch erkannt.">
+          <input
+            name="invoiceIban"
+            value={iban}
+            onChange={(e) => setIban(e.target.value)}
+            placeholder="DE89 3704 0044 0532 0130 00"
+            className="input font-mono"
+            autoComplete="off"
+          />
+        </Field>
+
+        {bankHint && (
+          <div
+            className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
+            style={{
+              background: bankHint.ok ? "rgb(var(--success-soft))" : "rgb(var(--accent-soft))",
+              color: bankHint.ok ? "rgb(var(--success-deep))" : "rgb(var(--accent-deep))",
+            }}
+          >
+            <Sparkles size={12} />
+            <span>{bankHint.msg}</span>
+          </div>
+        )}
+
+        <Field label="Bank" hint="Name des Kreditinstituts">
+          <input
+            name="invoiceBankName"
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            className="input"
+            autoComplete="off"
+          />
+        </Field>
+
         <Field
-          label="Name des Bankkontos"
-          hint='Kontoinhaber:in — falls abweichend vom Firmennamen. Erscheint auf Rechnungen als „Kto.-Inh.".'
+          label="Kontoinhaber:in"
+          hint='Falls abweichend vom Firmennamen — erscheint auf Rechnungen als „Kto.-Inh.".'
         >
           <input
             name="invoiceBankAccountName"
             defaultValue={initial.invoiceBankAccountName ?? ""}
             placeholder={initial.invoiceCompanyOwner || initial.invoiceCompanyName || ""}
             className="input"
+            autoComplete="off"
           />
         </Field>
-        <Field label="IBAN"><input name="invoiceIban" defaultValue={initial.invoiceIban ?? ""} placeholder="DE89 3704 0044 0532 0130 00" className="input font-mono" /></Field>
+
+        <Field label="BIC" hint="Wird automatisch aus der IBAN ermittelt — manuell überschreibbar.">
+          <input
+            name="invoiceBic"
+            value={bic}
+            onChange={(e) => setBic(e.target.value)}
+            className="input font-mono"
+            autoComplete="off"
+          />
+        </Field>
       </div>
 
       <div className="hairline pt-5 space-y-4">

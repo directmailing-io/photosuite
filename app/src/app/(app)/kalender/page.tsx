@@ -35,7 +35,7 @@ export default async function KalenderPage({
   const calRangeStart = new Date(monthStart); calRangeStart.setDate(calRangeStart.getDate() - 7);
   const calRangeEnd = new Date(monthEnd); calRangeEnd.setDate(calRangeEnd.getDate() + 7);
 
-  const [shootings, customers, packages, externalEvents, availabilityDays, nextFreeDays, calendarBookings] = await Promise.all([
+  const [shootings, customers, packages, externalEvents, availabilityDays, nextFreeDays, calendarBookings, planDays] = await Promise.all([
     prisma.shooting.findMany({
       where: { ownerId: userId, scheduledAt: { gte: calRangeStart, lt: calRangeEnd } },
       include: { customer: true, package: true, status: true },
@@ -75,6 +75,10 @@ export default async function KalenderPage({
       include: { bookingType: { select: { name: true, color: true } } },
       orderBy: { startAt: "asc" },
     }),
+    prisma.shootingPlanDay.findMany({
+      where: { ownerId: userId },
+      orderBy: { date: "asc" },
+    }),
   ]);
 
   return (
@@ -96,6 +100,7 @@ export default async function KalenderPage({
         packages={packages}
         availability={availabilityDays}
         nextFreeDays={nextFreeDays}
+        planDays={planDays.map((p) => ({ date: p.date, color: p.color, label: p.label }))}
         bookings={calendarBookings.map((b) => ({
           id: b.id,
           customerName: b.customerName,

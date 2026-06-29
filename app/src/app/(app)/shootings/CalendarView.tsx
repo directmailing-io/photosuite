@@ -18,6 +18,7 @@ import { Field, FormRow } from "@/components/form/Field";
 import { moveShootingToDate, createShooting } from "./actions";
 import { acceptBooking, cancelBooking } from "../buchungen/actions";
 import { setDayAvailability } from "../einstellungen/availabilityActions";
+import { setShootingPlanDay, removeShootingPlanDay, PLAN_DAY_COLORS } from "../einstellungen/planDayActions";
 import {
   findStartTimesInDay, minutesToHHMM, hhmmToMinutes,
   type TimeWindow,
@@ -92,6 +93,12 @@ export type AvailabilityDay = {
   overrideId: string | null;
 };
 
+export type PlanDay = {
+  date: string;        // YYYY-MM-DD
+  color: string;       // Hex
+  label: string | null;
+};
+
 type Props = {
   shootings: CalendarShooting[];
   externalEvents: ExternalEvent[];
@@ -102,12 +109,24 @@ type Props = {
   packages: CalendarPackage[];
   availability: AvailabilityDay[];
   nextFreeDays: AvailabilityDay[];
+  planDays?: PlanDay[];
   // Wo soll die Navigation hin? "/kalender" (eigene Route) oder "/shootings?view=calendar".
   basePath?: string;
 };
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Hex (#RRGGBB) + Alpha (0..1) → "rgba(r, g, b, a)" — für 20%-Fill bei Plan-Tagen.
+// Bei ungültigem Hex Fallback auf reine Akzentfarbe.
+function hexWithAlpha(hex: string, alpha: number): string {
+  const m = hex.match(/^#?([0-9a-fA-F]{6})$/);
+  if (!m) return "rgba(200, 16, 46, 0.2)";
+  const r = parseInt(m[1].slice(0, 2), 16);
+  const g = parseInt(m[1].slice(2, 4), 16);
+  const b = parseInt(m[1].slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -121,7 +140,7 @@ function addMonths(year: number, month: number, delta: number): { year: number; 
   return { year: newYear, month: newMonth };
 }
 
-export function CalendarView({ shootings: initialShootings, externalEvents, bookings = [], year, month, customers, packages, availability, nextFreeDays, basePath = "/shootings?view=calendar" }: Props) {
+export function CalendarView({ shootings: initialShootings, externalEvents, bookings = [], year, month, customers, packages, availability, nextFreeDays, planDays = [], basePath = "/shootings?view=calendar" }: Props) {
   const router = useRouter();
   const [shootings, setShootings] = useState(initialShootings);
   const [selected, setSelected] = useState<CalendarShooting | null>(null);
@@ -138,6 +157,13 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
     for (const d of availability) map.set(d.date, d);
     return map;
   }, [availability]);
+
+  // Plan-Tage (Shooting-Slots-Planung) pro Tag indexieren.
+  const planByDay = useMemo(() => {
+    const map = new Map<string, PlanDay>();
+    for (const p of planDays) map.set(p.date, p);
+    return map;
+  }, [planDays]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -313,6 +339,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
               const isLastRow = i >= 35;
               const isLastCol = i % 7 === 6;
               const dayAvailability = availabilityByDay.get(dayKey) ?? null;
+              const dayPlan = planByDay.get(dayKey) ?? null;
               return (
                 <DayCell
                   key={i}
@@ -327,6 +354,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
                   externalEvents={dayExternal}
                   bookings={dayBookings}
                   availability={dayAvailability}
+                  planDay={dayPlan}
                   dimNonFree={showOnlyFree}
                   onSelect={(s) => setSelected(s)}
                   onSelectBooking={(b) => setSelectedBooking(b)}
@@ -377,6 +405,7 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
         <AvailabilityPopover
           isoDate={editAvailabilityFor}
           availability={availabilityByDay.get(editAvailabilityFor) ?? null}
+          planDay={planByDay.get(editAvailabilityFor) ?? null}
           onClose={() => setEditAvailabilityFor(null)}
         />
       )}
@@ -388,10 +417,11 @@ export function CalendarView({ shootings: initialShootings, externalEvents, book
 // markiert ihn als verfügbar/unverfügbar (mit optionalen Zeitfenstern).
 // Schreibt einen AvailabilityOverride.
 function AvailabilityPopover({
-  isoDate, availability, onClose,
+  isoDate, availability, planDay, onClose,
 }: {
   isoDate: string;
   availability: AvailabilityDay | null;
+  planDay: PlanDay | null;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -419,6 +449,11 @@ function AvailabilityPopover({
     return [];
   });
   const [note, setNote] = useState(availability?.note ?? "");
+
+  // Plan-Tag-Status: bestehend? Sonst null (= nicht markiert)
+  const [planEnabled, setPlanEnabled] = useState<boolean>(!!planDay);
+  const [planColor, setPlanColor] = useState<string>(planDay?.color ?? PLAN_DAY_COLORS[0]);
+  const [planLabel, setPlanLabel] = useState<string>(planDay?.label ?? "");
 
   const dateLabel = new Date(isoDate + "T00:00:00").toLocaleDateString("de-DE", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -473,7 +508,15 @@ function AvailabilityPopover({
               : windows,
           note: note.trim() || null,
         });
-        toast.success("Verfügbarkeit gespeichert");
+        // Plan-Tag-Markierung — separat persistieren.
+        // Unverändert lassen, wenn weder vorher noch jetzt aktiv (keine unnötigen DB-Hits).
+        if (planEnabled) {
+          await setShootingPlanDay({ date: isoDate, color: planColor, label: planLabel || null });
+        } else if (planDay) {
+          // War vorher gesetzt, jetzt deaktiviert → entfernen.
+          await removeShootingPlanDay(isoDate);
+        }
+        toast.success("Gespeichert");
         router.refresh();
         onClose();
       } catch (err: any) {
@@ -669,6 +712,59 @@ function AvailabilityPopover({
             />
           </div>
 
+          {/* Plan-Tag (Shooting-Slots-Planung) */}
+          <div className="space-y-2 p-3 rounded-lg border" style={{ borderColor: "rgb(var(--stone))" }}>
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <div>
+                <div className="text-sm font-medium">Als Shooting-Tag markieren</div>
+                <div className="text-xs text-smoke mt-0.5">
+                  Hebt diesen Tag im Kalender hervor — als geplanter Slot für Shootings.
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={planEnabled}
+                onChange={(e) => setPlanEnabled(e.target.checked)}
+                className="w-4 h-4"
+              />
+            </label>
+            {planEnabled && (
+              <div className="pt-2 space-y-2">
+                <div>
+                  <label className="text-xs text-smoke">Farbe</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {PLAN_DAY_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setPlanColor(c)}
+                        aria-label={c}
+                        title={c}
+                        className="w-6 h-6 rounded-full transition"
+                        style={{
+                          background: c,
+                          outline: planColor === c ? "2px solid rgb(var(--ink))" : "none",
+                          outlineOffset: 2,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-smoke">Label (optional)</label>
+                  <input
+                    type="text"
+                    value={planLabel}
+                    onChange={(e) => setPlanLabel(e.target.value)}
+                    placeholder="z.B. Boudoir-Tag"
+                    maxLength={60}
+                    className="input h-9 text-sm mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Footer */}
           <div className="flex items-center justify-between gap-2 pt-3 border-t border-stone/60">
             <div>
@@ -787,7 +883,7 @@ function FreeSlotsPanel({
 }
 
 function DayCell({
-  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, bookings, availability, dimNonFree, onSelect, onSelectBooking, onCreate, onEditAvailability,
+  date, dayKey, inMonth, isToday, isWeekend, isLastRow, isLastCol, shootings, externalEvents, bookings, availability, planDay, dimNonFree, onSelect, onSelectBooking, onCreate, onEditAvailability,
 }: {
   date: Date;
   dayKey: string;
@@ -800,6 +896,7 @@ function DayCell({
   externalEvents: ExternalEvent[];
   bookings: CalendarBooking[];
   availability: AvailabilityDay | null;
+  planDay: PlanDay | null;
   dimNonFree: boolean;
   onSelect: (s: CalendarShooting) => void;
   onSelectBooking: (b: CalendarBooking) => void;
@@ -828,6 +925,12 @@ function DayCell({
   const dimmed = dimNonFree && inMonth && !hasFreeTime;
   const isOverride = !!availability?.isOverride;
 
+  // Shooting-Slot-Planung: wenn dieser Tag als Plan-Tag markiert ist, übersteuert
+  // er das Standard-Background mit 20% Color-Fill + farbigem Rand (planDay.color).
+  // Sichtbar auch wenn der Tag „geschlossen" oder ohne Verfügbarkeit ist.
+  const planBg = planDay && inMonth ? hexWithAlpha(planDay.color, 0.20) : null;
+  const planBorder = planDay && inMonth ? planDay.color : null;
+
   return (
     <div
       ref={setNodeRef}
@@ -837,10 +940,12 @@ function DayCell({
         !isLastCol && "border-r border-stone/60",
       )}
       style={{
-        background: isOver ? "rgb(var(--accent-soft))" : baseBg,
+        background: isOver ? "rgb(var(--accent-soft))" : (planBg ?? baseBg),
         opacity: inMonth ? (dimmed ? 0.35 : 1) : 0.55,
         outline: isOver
           ? "2px solid rgb(var(--accent))"
+          : planBorder
+          ? `2px solid ${planBorder}`
           : (hasFreeTime && inMonth ? "1px solid rgba(120, 167, 119, 0.45)" : "none"),
         outlineOffset: -1,
       }}
@@ -852,6 +957,17 @@ function DayCell({
           style={{ background: "rgb(var(--accent))" }}
           title="Manuelle Ausnahme"
         />
+      )}
+
+      {/* Plan-Tag-Label (rechts unten, dezent) — nur wenn ein Label gesetzt ist */}
+      {inMonth && planDay?.label && (
+        <div
+          className="absolute bottom-1 left-1 right-1 truncate text-[10px] font-medium pointer-events-none"
+          style={{ color: planDay.color }}
+          title={planDay.label}
+        >
+          ● {planDay.label}
+        </div>
       )}
 
       <div className="flex items-center justify-between mb-1.5">

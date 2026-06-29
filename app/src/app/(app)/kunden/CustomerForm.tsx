@@ -22,6 +22,16 @@ export type CustomerInitial = {
   billingZip?: string | null;
   billingCity?: string | null;
   billingCountry?: string | null;
+  welcomeStreet?: string | null;
+  welcomeZip?: string | null;
+  welcomeCity?: string | null;
+  welcomeCountry?: string | null;
+  welcomeNote?: string | null;
+  deliveryStreet?: string | null;
+  deliveryZip?: string | null;
+  deliveryCity?: string | null;
+  deliveryCountry?: string | null;
+  deliveryNote?: string | null;
   instagram?: string | null;
   facebook?: string | null;
   tiktok?: string | null;
@@ -197,6 +207,36 @@ export function CustomerForm({ initial, statuses, tags, action, deleteAction }: 
         </Field>
       </section>
 
+      {/* Lieferadressen: Welcome-Package + Fotoprodukte. Beide optional, beide
+          mit Toggle „wie Rechnungsadresse" für den Standardfall (Felder leer). */}
+      <DeliveryAddressSection
+        label="Welcome-Package"
+        hint="Wenn Lisa eine kleine Überraschung schickt — z.B. an Tante, Freundin, Nachbarin."
+        namePrefix="welcome"
+        initial={{
+          street: initial?.welcomeStreet ?? null,
+          zip: initial?.welcomeZip ?? null,
+          city: initial?.welcomeCity ?? null,
+          country: initial?.welcomeCountry ?? null,
+          note: initial?.welcomeNote ?? null,
+        }}
+        notePlaceholder='z.B. „bitte klingeln bei Müller / Code 4231"…'
+      />
+
+      <DeliveryAddressSection
+        label="Lieferadresse für Fotoprodukte"
+        hint="Wohin werden Alben, Leinwände, Drucke geliefert? Packstation oder Sonderadresse hier hinterlegen."
+        namePrefix="delivery"
+        initial={{
+          street: initial?.deliveryStreet ?? null,
+          zip: initial?.deliveryZip ?? null,
+          city: initial?.deliveryCity ?? null,
+          country: initial?.deliveryCountry ?? null,
+          note: initial?.deliveryNote ?? null,
+        }}
+        notePlaceholder='z.B. „Packstation 174, Kundennummer 12345" oder „Bitte beim Nachbarn abgeben"…'
+      />
+
       {/* Social */}
       <section className="card p-6">
         <div className="eyebrow mb-4 eyebrow-muted">Social</div>
@@ -235,5 +275,97 @@ export function CustomerForm({ initial, statuses, tags, action, deleteAction }: 
         </div>
       </div>
     </form>
+  );
+}
+
+/**
+ * Collapsible Lieferadressen-Sektion mit „wie Rechnungsadresse"-Toggle.
+ * Wenn der Toggle aktiv ist (Default für leere Adressen), wird die DB null
+ * gespeichert — beim Versand fällt der Code auf die Rechnungsadresse zurück.
+ *
+ * UI-Pattern: Card mit Checkbox oben. Felder sind versteckt wenn Checkbox=on
+ * und keine Werte vorhanden sind. Sobald User Felder ausfüllt, bleiben sie
+ * sichtbar.
+ *
+ * Inputs werden bewusst kontrolliert gerendert, damit ein „leeren"-Click
+ * (Checkbox an → off) die Werte korrekt clearen kann.
+ */
+function DeliveryAddressSection({
+  label,
+  hint,
+  namePrefix,
+  initial,
+  notePlaceholder,
+}: {
+  label: string;
+  hint: string;
+  namePrefix: "welcome" | "delivery";
+  initial: {
+    street: string | null;
+    zip: string | null;
+    city: string | null;
+    country: string | null;
+    note: string | null;
+  };
+  notePlaceholder: string;
+}) {
+  const hasInitial = !!(initial.street || initial.zip || initial.city || initial.country || initial.note);
+  const [useBilling, setUseBilling] = useState<boolean>(!hasInitial);
+  const [street, setStreet] = useState(initial.street ?? "");
+  const [zip, setZip] = useState(initial.zip ?? "");
+  const [city, setCity] = useState(initial.city ?? "");
+  const [country, setCountry] = useState(initial.country ?? "");
+  const [note, setNote] = useState(initial.note ?? "");
+
+  // Wenn „wie Rechnungsadresse" aktiv ist, schicken wir leere Strings — die Action
+  // mapped sie auf null. Sonst die echten Werte.
+  const emit = (v: string) => (useBilling ? "" : v);
+
+  return (
+    <section className="card p-6">
+      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+        <div>
+          <div className="eyebrow eyebrow-muted">{label}</div>
+          <div className="text-xs text-smoke mt-1 max-w-xl">{hint}</div>
+        </div>
+        <label className="flex items-center gap-2 text-xs cursor-pointer mt-1">
+          <input
+            type="checkbox"
+            checked={useBilling}
+            onChange={(e) => setUseBilling(e.target.checked)}
+            className="w-3.5 h-3.5"
+          />
+          <span>Wie Rechnungsadresse</span>
+        </label>
+      </div>
+
+      {!useBilling && (
+        <>
+          <Field label="Straße & Hausnummer" className="mb-3">
+            <input value={street} onChange={(e) => setStreet(e.target.value)} className="input" />
+          </Field>
+          <FormRow>
+            <Field label="PLZ">
+              <input value={zip} onChange={(e) => setZip(e.target.value)} className="input" />
+            </Field>
+            <Field label="Stadt">
+              <input value={city} onChange={(e) => setCity(e.target.value)} className="input" />
+            </Field>
+          </FormRow>
+          <Field label="Land" className="mt-3">
+            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Deutschland" className="input" />
+          </Field>
+          <Field label="Notiz" hint="Optional — Hinweise für den Boten." className="mt-3">
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={notePlaceholder} className="input" />
+          </Field>
+        </>
+      )}
+
+      <input type="hidden" name={`${namePrefix}Street`} value={emit(street)} />
+      <input type="hidden" name={`${namePrefix}Zip`} value={emit(zip)} />
+      <input type="hidden" name={`${namePrefix}City`} value={emit(city)} />
+      <input type="hidden" name={`${namePrefix}Country`} value={emit(country)} />
+      <input type="hidden" name={`${namePrefix}Note`} value={emit(note)} />
+    </section>
   );
 }

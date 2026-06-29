@@ -473,6 +473,21 @@ model Customer {
   billingZip     String?
   billingCity    String?
   billingCountry String?             @default("Deutschland")
+  // Lieferadresse für Welcome-Package (kann von der Rechnungsadresse abweichen,
+  // z.B. an Tante/Nachbarin, weil Lisa die Kundin überraschen will).
+  // null = Rechnungsadresse verwenden.
+  welcomeStreet  String?
+  welcomeZip     String?
+  welcomeCity    String?
+  welcomeCountry String?
+  welcomeNote    String? // „an Frau Müller, Nachbarin" / „bitte klingeln"
+  // Lieferadresse für Fotoprodukte (Alben, Leinwände, Drucke).
+  // null = Rechnungsadresse verwenden.
+  deliveryStreet  String?
+  deliveryZip     String?
+  deliveryCity    String?
+  deliveryCountry String?
+  deliveryNote    String? // „Packstation 174, Kundennummer …"
   // Social
   instagram      String?
   facebook       String?

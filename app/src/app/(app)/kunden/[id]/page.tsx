@@ -156,11 +156,42 @@ export default async function CustomerDetailPage({
                   <div className="flex items-start gap-3">
                     <MapPin size={14} className="text-smoke shrink-0 mt-0.5" />
                     <div>
+                      <div className="text-[10px] uppercase tracking-wider text-smoke mb-0.5">Rechnung</div>
                       {customer.billingStreet && <div>{customer.billingStreet}</div>}
                       {(customer.billingZip || customer.billingCity) && (
                         <div>{customer.billingZip} {customer.billingCity}</div>
                       )}
                       {customer.billingCountry && <div className="text-smoke text-xs">{customer.billingCountry}</div>}
+                    </div>
+                  </div>
+                )}
+
+                {(customer.welcomeStreet || customer.welcomeCity || customer.welcomeNote) && (
+                  <div className="flex items-start gap-3">
+                    <MapPin size={14} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-smoke mb-0.5">Welcome-Package</div>
+                      {customer.welcomeStreet && <div>{customer.welcomeStreet}</div>}
+                      {(customer.welcomeZip || customer.welcomeCity) && (
+                        <div>{customer.welcomeZip} {customer.welcomeCity}</div>
+                      )}
+                      {customer.welcomeCountry && <div className="text-smoke text-xs">{customer.welcomeCountry}</div>}
+                      {customer.welcomeNote && <div className="text-smoke text-xs italic mt-0.5">„{customer.welcomeNote}"</div>}
+                    </div>
+                  </div>
+                )}
+
+                {(customer.deliveryStreet || customer.deliveryCity || customer.deliveryNote) && (
+                  <div className="flex items-start gap-3">
+                    <MapPin size={14} className="shrink-0 mt-0.5" style={{ color: "rgb(var(--accent))" }} />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-smoke mb-0.5">Fotoprodukte</div>
+                      {customer.deliveryStreet && <div>{customer.deliveryStreet}</div>}
+                      {(customer.deliveryZip || customer.deliveryCity) && (
+                        <div>{customer.deliveryZip} {customer.deliveryCity}</div>
+                      )}
+                      {customer.deliveryCountry && <div className="text-smoke text-xs">{customer.deliveryCountry}</div>}
+                      {customer.deliveryNote && <div className="text-smoke text-xs italic mt-0.5">„{customer.deliveryNote}"</div>}
                     </div>
                   </div>
                 )}

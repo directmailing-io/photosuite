@@ -12,13 +12,12 @@ import {
   LogOut,
   UsersRound,
   FileQuestion,
-  Receipt,
+  Euro,
   CalendarDays,
   Inbox,
   Sparkles,
   FileSignature,
   Workflow as WorkflowIcon,
-  FormInput as FormInputIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "./authActions";
@@ -39,14 +38,16 @@ const dailyItems: NavItem[] = [
   { href: "/buchungen", label: "Termine", icon: Inbox },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
   { href: "/angebote", label: "Angebote", icon: FileSignature },
-  { href: "/finanzen", label: "Finanzen", icon: Receipt },
+  { href: "/finanzen", label: "Finanzen", icon: Euro },
 ];
 
 const setupItems: NavItem[] = [
   { href: "/pakete", label: "Pakete", icon: PackageIcon },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/fragebogen", label: "Fragebögen", icon: FileQuestion },
-  { href: "/formulare", label: "Formulare", icon: FormInputIcon },
+  // „Formulare" ist erst halb fertig (Builder ist da, aber UX braucht noch
+  // Schliff). Vorerst nicht in der Sidebar — Lisa hat das selbst angefordert.
+  // Direkt-Zugriff über /formulare bleibt funktional.
   { href: "/workflows", label: "Workflows", icon: WorkflowIcon },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ];

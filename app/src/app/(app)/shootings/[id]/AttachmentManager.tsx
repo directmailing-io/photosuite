@@ -3,13 +3,14 @@
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { addAttachment, deleteAttachment } from "../actions";
-import { Paperclip, Upload, Trash2, FileText, User as UserIcon, Camera } from "lucide-react";
+import { Paperclip, Upload, Trash2, FileText, User as UserIcon, Camera, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 
 type Att = {
   id: string;
   filename: string;
   url: string;
+  mimeType: string | null;
   sizeBytes: number | null;
   uploadedBy: string;        // "STUDIO" oder "CUSTOMER"
   createdAt: string;         // ISO
@@ -37,6 +38,11 @@ export function AttachmentManager({ shootingId, attachments }: { shootingId: str
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
 
+  // Anzahl bildhafter Anhänge — bestimmt, ob der Moodboard-Button sinnvoll ist.
+  const imageCount = attachments.filter((a) =>
+    a.mimeType === "image/jpeg" || a.mimeType === "image/png" || a.mimeType === "image/webp"
+  ).length;
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -61,12 +67,25 @@ export function AttachmentManager({ shootingId, attachments }: { shootingId: str
 
   return (
     <div className="card p-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="eyebrow eyebrow-muted flex items-center gap-2"><Paperclip size={13} /> Dateien</div>
-        <input ref={fileInput} type="file" className="hidden" onChange={onFile} />
-        <button onClick={() => fileInput.current?.click()} className="btn-secondary text-xs h-8">
-          <Upload size={13} /> Hochladen
-        </button>
+        <div className="flex items-center gap-1.5">
+          {imageCount > 0 && (
+            <a
+              href={`/api/shootings/${shootingId}/moodboard`}
+              target="_blank"
+              rel="noopener"
+              className="btn-ghost text-xs h-8"
+              title={`Moodboard aus ${imageCount} Bildern als PDF`}
+            >
+              <LayoutGrid size={13} /> Moodboard-PDF
+            </a>
+          )}
+          <input ref={fileInput} type="file" className="hidden" onChange={onFile} />
+          <button onClick={() => fileInput.current?.click()} className="btn-secondary text-xs h-8">
+            <Upload size={13} /> Hochladen
+          </button>
+        </div>
       </div>
 
       {attachments.length === 0 ? (

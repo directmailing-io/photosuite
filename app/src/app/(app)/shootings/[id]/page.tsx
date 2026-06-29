@@ -320,6 +320,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               id: a.id,
               filename: a.filename,
               url: a.url,
+              mimeType: a.mimeType,
               sizeBytes: a.sizeBytes,
               uploadedBy: a.uploadedBy,
               createdAt: a.createdAt.toISOString(),

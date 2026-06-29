@@ -305,47 +305,83 @@ async function executeJob(job: { id: string; runId: string; actionType: string; 
     await executeEmail(run.ownerId, config as EmailConfig, vars);
   } else if (job.actionType === "task") {
     await executeTask(run.ownerId, config as TaskConfig, vars, run);
+  } else if (job.actionType === "tag_add" || job.actionType === "tag_remove") {
+    await executeTag(run.ownerId, run.customerId, job.actionType, config as TagConfig);
   } else {
     throw new Error(`Unbekannter actionType: ${job.actionType}`);
   }
 }
 
+type TagConfig = { tagId: string };
+
 type TemplateVars = {
-  customer?: { firstName: string; lastName: string; email: string | null };
-  invoice?: { number: string | null; total: string };
-  offer?: { number: string | null; total: string };
-  shooting?: { title: string };
-  studio?: { name: string; fromEmail: string | null };
+  customer?: {
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    email: string | null;
+    phone: string | null;
+    birthday: string | null;
+    billingStreet: string | null;
+    billingZip: string | null;
+    billingCity: string | null;
+    billingCountry: string | null;
+  };
+  invoice?: { number: string | null; total: string; dueDate: string | null };
+  offer?: { number: string | null; total: string; validUntil: string | null };
+  shooting?: { title: string; scheduledAt: string | null; location: string | null };
+  studio?: { name: string; fromEmail: string | null; phone: string | null; website: string | null };
+  lead?: { firstName: string; lastName: string | null; email: string };
 };
 
-async function loadVariables(run: { customerId: string | null; invoiceId: string | null; offerId: string | null; shootingId: string | null; ownerId: string }): Promise<TemplateVars> {
-  const [owner, customer, invoice, offer, shooting] = await Promise.all([
+function fmtDate(d: Date | null): string | null {
+  if (!d) return null;
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+async function loadVariables(run: {
+  customerId: string | null; invoiceId: string | null; offerId: string | null;
+  shootingId: string | null; leadId: string | null; ownerId: string;
+}): Promise<TemplateVars> {
+  const [owner, customer, invoice, offer, shooting, lead] = await Promise.all([
     prisma.user.findUnique({
       where: { id: run.ownerId },
-      select: { studioName: true, smtpFromEmail: true, smtpFromName: true, name: true },
+      select: {
+        studioName: true, smtpFromName: true, name: true,
+        smtpFromEmail: true, studioPhone: true, studioWebsite: true,
+      },
     }),
     run.customerId
       ? prisma.customer.findUnique({
           where: { id: run.customerId },
-          select: { firstName: true, lastName: true, email: true },
+          select: {
+            firstName: true, lastName: true, email: true, phone: true, birthday: true,
+            billingStreet: true, billingZip: true, billingCity: true, billingCountry: true,
+          },
         })
       : null,
     run.invoiceId
       ? prisma.invoice.findUnique({
           where: { id: run.invoiceId },
-          select: { number: true, totalCents: true },
+          select: { number: true, totalCents: true, dueDate: true },
         })
       : null,
     run.offerId
       ? prisma.offer.findUnique({
           where: { id: run.offerId },
-          select: { number: true, totalCents: true },
+          select: { number: true, totalCents: true, validUntil: true },
         })
       : null,
     run.shootingId
       ? prisma.shooting.findUnique({
           where: { id: run.shootingId },
-          select: { title: true },
+          select: { title: true, scheduledAt: true, location: true },
+        })
+      : null,
+    run.leadId
+      ? prisma.lead.findUnique({
+          where: { id: run.leadId },
+          select: { firstName: true, lastName: true, email: true },
         })
       : null,
   ]);
@@ -358,13 +394,41 @@ async function loadVariables(run: { customerId: string | null; invoiceId: string
     studio: {
       name: owner?.smtpFromName ?? owner?.studioName ?? owner?.name ?? "",
       fromEmail: owner?.smtpFromEmail ?? null,
+      phone: owner?.studioPhone ?? null,
+      website: owner?.studioWebsite ?? null,
     },
-    customer: customer ?? undefined,
-    invoice: invoice ? { number: invoice.number, total: fmtCents(invoice.totalCents) } : undefined,
-    offer: offer ? { number: offer.number, total: fmtCents(offer.totalCents) } : undefined,
-    shooting: shooting ?? undefined,
+    customer: customer ? {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      fullName: [customer.firstName, customer.lastName].filter(Boolean).join(" "),
+      email: customer.email,
+      phone: customer.phone,
+      birthday: fmtDate(customer.birthday),
+      billingStreet: customer.billingStreet,
+      billingZip: customer.billingZip,
+      billingCity: customer.billingCity,
+      billingCountry: customer.billingCountry,
+    } : undefined,
+    invoice: invoice ? {
+      number: invoice.number,
+      total: fmtCents(invoice.totalCents),
+      dueDate: fmtDate(invoice.dueDate),
+    } : undefined,
+    offer: offer ? {
+      number: offer.number,
+      total: fmtCents(offer.totalCents),
+      validUntil: fmtDate(offer.validUntil),
+    } : undefined,
+    shooting: shooting ? {
+      title: shooting.title,
+      scheduledAt: fmtDate(shooting.scheduledAt),
+      location: shooting.location,
+    } : undefined,
+    lead: lead ? { firstName: lead.firstName, lastName: lead.lastName, email: lead.email } : undefined,
   };
 }
+
+// VARIABLE_GROUPS jetzt in lib/workflow/variables.ts (client-safe).
 
 const VAR_RE = /\{([a-z]+)\.([a-zA-Z]+)\}/g;
 
@@ -418,4 +482,33 @@ async function executeTask(
       ownerId,
     },
   });
+}
+
+/**
+ * Tag-Action: hängt einen Tag an die Kundin oder entfernt ihn.
+ * Voraussetzungen: Run hat einen customerId, Tag gehört dem Owner.
+ */
+async function executeTag(
+  ownerId: string,
+  customerId: string | null,
+  actionType: "tag_add" | "tag_remove",
+  config: TagConfig,
+): Promise<void> {
+  if (!customerId) throw new Error("Tag-Aktion braucht eine Kundin im Kontext.");
+  if (!config.tagId) throw new Error("Tag-ID fehlt in der Konfiguration.");
+
+  const tag = await prisma.tag.findFirst({ where: { id: config.tagId, ownerId } });
+  if (!tag) throw new Error("Tag nicht gefunden (gehört nicht zu diesem User oder wurde gelöscht).");
+
+  if (actionType === "tag_add") {
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: { tags: { connect: { id: tag.id } } },
+    });
+  } else {
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: { tags: { disconnect: { id: tag.id } } },
+    });
+  }
 }

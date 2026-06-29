@@ -15,7 +15,7 @@ const VALID_TRIGGERS = new Set([
   "manual",
 ]);
 const TIME_TRIGGER_SET = new Set(["shooting_before", "shooting_after"]);
-const VALID_ACTIONS = new Set(["email", "task"]);
+const VALID_ACTIONS = new Set(["email", "task", "tag_add", "tag_remove"]);
 
 function s(v: FormDataEntryValue | null): string | null {
   if (v == null) return null;
@@ -167,7 +167,7 @@ export async function addWorkflowStep(workflowId: string, formData: FormData): P
     const body = s(formData.get("body"));
     if (!subject || !body) throw new Error("Betreff und Text dürfen nicht leer sein.");
     config = { to, subject: subject.slice(0, 200), body: body.slice(0, 10_000) };
-  } else {
+  } else if (actionType === "task") {
     const title = s(formData.get("title"));
     if (!title) throw new Error("Aufgabentitel darf nicht leer sein.");
     const description = s(formData.get("description"));
@@ -177,6 +177,13 @@ export async function addWorkflowStep(workflowId: string, formData: FormData): P
       description: description?.slice(0, 2000) ?? null,
       dueInDays: dueInDays || null,
     };
+  } else {
+    // tag_add | tag_remove
+    const tagId = s(formData.get("tagId"));
+    if (!tagId) throw new Error("Bitte einen Tag auswählen.");
+    const tag = await prisma.tag.findFirst({ where: { id: tagId, ownerId: userId } });
+    if (!tag) throw new Error("Tag nicht gefunden.");
+    config = { tagId };
   }
 
   const delayMinutes = Math.max(0, Math.round(n(formData.get("delayMinutes"))));

@@ -15,17 +15,24 @@ export default async function WorkflowDetailPage({
 }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const wf = await prisma.workflow.findFirst({
-    where: { id, ownerId: userId },
-    include: {
-      steps: { orderBy: { position: "asc" } },
-      runs: {
-        orderBy: { triggeredAt: "desc" },
-        take: 10,
-        include: { jobs: { select: { status: true } } },
+  const [wf, tags] = await Promise.all([
+    prisma.workflow.findFirst({
+      where: { id, ownerId: userId },
+      include: {
+        steps: { orderBy: { position: "asc" } },
+        runs: {
+          orderBy: { triggeredAt: "desc" },
+          take: 10,
+          include: { jobs: { select: { status: true } } },
+        },
       },
-    },
-  });
+    }),
+    prisma.tag.findMany({
+      where: { ownerId: userId },
+      orderBy: { label: "asc" },
+      select: { id: true, label: true, color: true },
+    }),
+  ]);
   if (!wf) return notFound();
 
   return (
@@ -62,6 +69,7 @@ export default async function WorkflowDetailPage({
             failedCount: r.jobs.filter((j) => j.status === "failed").length,
           })),
         }}
+        tags={tags}
       />
     </>
   );

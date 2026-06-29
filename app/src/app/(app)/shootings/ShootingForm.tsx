@@ -152,30 +152,16 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <section className="card p-6 space-y-4">
-        <div className="eyebrow eyebrow-muted">Eckdaten</div>
-        <Field label="Titel *" hint={`z.B. „Boudoir-Shooting Anna"`}>
-          <input name="title" defaultValue={initial?.title} className="input" required />
-        </Field>
-        <FormRow>
-          <Field label="Kundin *">
-            <select name="customerId" defaultValue={initial?.customerId ?? ""} className="select" required disabled={!!initial?.id}>
-              <option value="">— wählen —</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Status">
-            <select name="statusId" defaultValue={initial?.statusId ?? ""} className="select">
-              <option value="">— automatisch —</option>
-              {statuses.map((s) => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </select>
-          </Field>
-        </FormRow>
-      </section>
+      {/* Titel, Kundin, Status werden inline im Header oben bearbeitet
+          (ShootingHeaderInlineEdit). Hidden-Inputs spiegeln die Werte,
+          damit das große Update-Form sie nicht versehentlich auf leer setzt. */}
+      {initial?.id && (
+        <>
+          <input type="hidden" name="title" value={initial.title} />
+          <input type="hidden" name="customerId" value={initial.customerId ?? ""} />
+          <input type="hidden" name="statusId" value={initial.statusId ?? ""} />
+        </>
+      )}
 
       <section className="card p-6 space-y-4">
         <div className="eyebrow eyebrow-muted">Paket & Preis</div>

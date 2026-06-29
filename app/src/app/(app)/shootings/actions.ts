@@ -40,12 +40,33 @@ function parseAddons(formData: FormData): Array<{ addonId: string; quantity: num
 
 export async function createShooting(formData: FormData) {
   const userId = await requireUserId();
-  const customerId = s(formData.get("customerId"));
+  let customerId = s(formData.get("customerId"));
   const title = s(formData.get("title"));
   const price = num(formData.get("price"));
   const packageId = s(formData.get("packageId"));
+
+  // Inline-Kundin-Anlage: wenn kein customerId, aber Vor- und Nachname befüllt,
+  // erst neuen Customer anlegen und dann mit dieser ID weitermachen.
+  if (!customerId) {
+    const inlineFirst = s(formData.get("inlineCustomerFirstName"));
+    const inlineLast = s(formData.get("inlineCustomerLastName"));
+    if (inlineFirst && inlineLast) {
+      const created = await prisma.customer.create({
+        data: {
+          ownerId: userId,
+          firstName: inlineFirst,
+          lastName: inlineLast,
+          email: s(formData.get("inlineCustomerEmail")),
+          phone: s(formData.get("inlineCustomerPhone")),
+        },
+        select: { id: true },
+      });
+      customerId = created.id;
+    }
+  }
+
   if (!customerId || !title || price == null) {
-    throw new Error("Kunde, Titel und Preis sind Pflicht.");
+    throw new Error("Kundin (auswählen oder anlegen), Titel und Preis sind Pflicht.");
   }
 
   // Customer-Ownership: niemand darf für fremde Kunden Shootings anlegen.
@@ -216,6 +237,54 @@ export async function createShooting(formData: FormData) {
   revalidatePath("/shootings");
   revalidatePath(`/kunden/${customerId}`);
   redirect(`/shootings/${shooting.id}`);
+}
+
+/**
+ * Inline-Edit-Action für den Shooting-Header (Title / Kundin / Status).
+ * Lisa kann die Eckdaten direkt im Header bearbeiten — schmaler als das große Form.
+ */
+export async function updateShootingMeta(
+  id: string,
+  patch: { title?: string; customerId?: string; statusId?: string | null },
+): Promise<void> {
+  const userId = await requireUserId();
+  const existing = await prisma.shooting.findFirst({ where: { id, ownerId: userId } });
+  if (!existing) throw new Error("Shooting nicht gefunden");
+
+  const data: { title?: string; customerId?: string; statusId?: string | null } = {};
+
+  if (patch.title !== undefined) {
+    const title = patch.title.trim();
+    if (!title) throw new Error("Titel darf nicht leer sein.");
+    data.title = title;
+  }
+
+  if (patch.customerId !== undefined) {
+    const cust = await prisma.customer.findFirst({
+      where: { id: patch.customerId, ownerId: userId },
+      select: { id: true },
+    });
+    if (!cust) throw new Error("Kundin nicht gefunden");
+    data.customerId = cust.id;
+  }
+
+  if (patch.statusId !== undefined) {
+    if (patch.statusId === null || patch.statusId === "") {
+      data.statusId = null;
+    } else {
+      const st = await prisma.shootingStatus.findFirst({
+        where: { id: patch.statusId, ownerId: userId },
+        select: { id: true },
+      });
+      if (!st) throw new Error("Status nicht gefunden");
+      data.statusId = st.id;
+    }
+  }
+
+  await prisma.shooting.update({ where: { id }, data });
+  revalidatePath(`/shootings/${id}`);
+  revalidatePath("/shootings");
+  revalidatePath("/");
 }
 
 export async function updateShooting(id: string, formData: FormData) {

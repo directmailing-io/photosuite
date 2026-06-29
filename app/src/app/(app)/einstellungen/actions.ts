@@ -158,6 +158,17 @@ export async function updateStudioProfile(formData: FormData) {
   revalidatePath("/einstellungen");
 }
 
+// Paket-Struktur (all_in_one | modular) — Whitelist serverseitig.
+export async function setPackageMode(mode: string): Promise<void> {
+  const userId = await requireUserId();
+  if (mode !== "all_in_one" && mode !== "modular") {
+    throw new Error("Ungültige Paket-Struktur.");
+  }
+  await prisma.user.update({ where: { id: userId }, data: { packageMode: mode } });
+  revalidatePath("/einstellungen");
+  revalidatePath("/pakete");
+}
+
 // ---------- Studio-Logo ----------
 
 export async function saveStudioLogo(args: {

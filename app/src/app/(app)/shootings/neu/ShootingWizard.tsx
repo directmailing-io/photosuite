@@ -260,24 +260,45 @@ function DetailsStep({
 
       <section className="card p-6 space-y-4">
         <div className="eyebrow eyebrow-muted">Kundin</div>
-        <Field label="Kundin auswählen *">
+        <Field label="Kundin auswählen" hint="Aus dem Kundenstamm — oder unten direkt neu anlegen.">
           <select
             name="customerId"
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
             className="select"
-            required
           >
-            <option value="">— wählen —</option>
+            <option value="">— wählen oder neu anlegen —</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
             ))}
           </select>
         </Field>
-        {selectedCustomer && (
+        {selectedCustomer ? (
           <div className="flex items-center gap-3 text-sm text-smoke">
             <Avatar url={selectedCustomer.avatarUrl} firstName={selectedCustomer.firstName} lastName={selectedCustomer.lastName} size={32} />
             <span>Shooting wird {selectedCustomer.firstName} {selectedCustomer.lastName} zugeordnet.</span>
+          </div>
+        ) : (
+          <div className="pt-2 border-t border-stone/60 space-y-3">
+            <div className="text-xs text-smoke">
+              Oder direkt eine neue Kundin anlegen — wird im Kundenstamm gespeichert.
+            </div>
+            <FormRow>
+              <Field label="Vorname *">
+                <input name="inlineCustomerFirstName" className="input" placeholder="z.B. Anna" />
+              </Field>
+              <Field label="Nachname *">
+                <input name="inlineCustomerLastName" className="input" placeholder="z.B. Kraus" />
+              </Field>
+            </FormRow>
+            <FormRow>
+              <Field label="E-Mail">
+                <input name="inlineCustomerEmail" type="email" className="input" placeholder="anna@beispiel.de" />
+              </Field>
+              <Field label="Telefon">
+                <input name="inlineCustomerPhone" className="input" placeholder="+49 …" />
+              </Field>
+            </FormRow>
           </div>
         )}
       </section>
@@ -317,7 +338,7 @@ function DetailsStep({
         <button type="button" onClick={onBack} className="btn-ghost">
           <ChevronLeft size={15} /> Zurück
         </button>
-        <button disabled={busy || !customerId} className="btn-accent">
+        <button disabled={busy} className="btn-accent">
           {busy ? "Anlegen…" : "Shooting anlegen"}
         </button>
       </div>

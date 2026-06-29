@@ -17,12 +17,28 @@ type DateItem = {
   description: string | null;
 };
 
+// Voreingestellte Termin-Arten — Lisa wählt schnell aus, Eigenes-Feld bleibt.
+const LABEL_PRESETS = ["Beratung", "Fitting", "Shooting", "Bildauswahl", "Aftershoot"] as const;
+
+// Voreingestellte Orte — analog zum Buchungslink. „Andere" → freitext.
+const LOCATION_PRESETS = ["Studio Bamberg", "Telefon", "Video-Call", "Bei der Kundin"] as const;
+
 function toInputDT(d?: string | null) {
   if (!d) return "";
   const date = new Date(d);
   if (isNaN(date.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// Addiert N Stunden zu einem datetime-local-String und gibt denselben Format zurück.
+function addHoursLocal(value: string, hours: number): string {
+  if (!value) return value;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  d.setHours(d.getHours() + hours);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function DatesManager({ shootingId, dates }: { shootingId: string; dates: DateItem[] }) {
@@ -130,21 +146,149 @@ function DateForm({
   onCancel: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+
+  // Termin-Art (Label) — Dropdown mit Voreinstellungen + Custom.
+  // Initial: bekanntes Preset → Dropdown auf das Preset; sonst → custom mit dem alten Text.
+  const isPresetLabel = !!initial?.label && LABEL_PRESETS.includes(initial.label as any);
+  const [labelMode, setLabelMode] = useState<"preset" | "custom">(
+    !initial?.label || isPresetLabel ? "preset" : "custom",
+  );
+  const [labelPreset, setLabelPreset] = useState<string>(
+    isPresetLabel ? initial!.label : LABEL_PRESETS[2], // default „Shooting"
+  );
+  const [labelCustom, setLabelCustom] = useState<string>(!isPresetLabel ? initial?.label ?? "" : "");
+
+  // Ort — Dropdown mit Voreinstellungen + Custom.
+  const isPresetLocation = !!initial?.location && LOCATION_PRESETS.includes(initial.location as any);
+  const [locationMode, setLocationMode] = useState<"preset" | "custom">(
+    !initial?.location || isPresetLocation ? "preset" : "custom",
+  );
+  const [locationPreset, setLocationPreset] = useState<string>(
+    isPresetLocation ? initial!.location! : LOCATION_PRESETS[0],
+  );
+  const [locationCustom, setLocationCustom] = useState<string>(!isPresetLocation ? initial?.location ?? "" : "");
+
+  // End-Datum mit Auto-Fill: wenn User End nicht manuell gesetzt hat, wird beim
+  // Ändern von Start automatisch Start+2h übernommen. Manuelle Änderungen
+  // bleiben erhalten.
+  const [startAt, setStartAt] = useState<string>(toInputDT(initial?.startAt));
+  const [endAt, setEndAt] = useState<string>(toInputDT(initial?.endAt));
+  const [endTouched, setEndTouched] = useState<boolean>(!!initial?.endAt);
+
+  function onStartChange(v: string) {
+    setStartAt(v);
+    if (!endTouched && v) {
+      setEndAt(addHoursLocal(v, 2));
+    }
+  }
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
-    try { await onSubmit(new FormData(e.currentTarget)); } catch (err: any) { toast.error(err?.message ?? "Fehler"); } finally { setBusy(false); }
+    try {
+      const fd = new FormData(e.currentTarget);
+      // Termin-Art aus Mode auflösen.
+      const labelFinal = labelMode === "preset" ? labelPreset : labelCustom.trim();
+      if (!labelFinal) {
+        toast.error("Termin-Art ist Pflicht");
+        setBusy(false);
+        return;
+      }
+      fd.set("label", labelFinal);
+      // Ort aus Mode auflösen — leer ist erlaubt.
+      const locationFinal = locationMode === "preset" ? locationPreset : locationCustom.trim();
+      fd.set("location", locationFinal);
+      // Start/End aus State (kontrollierte Inputs).
+      fd.set("startAt", startAt);
+      fd.set("endAt", endAt);
+      await onSubmit(fd);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Fehler");
+    } finally {
+      setBusy(false);
+    }
   }
+
   return (
     <form onSubmit={submit} className="card p-3 space-y-2 bg-linen/40">
-      <input name="label" defaultValue={initial?.label ?? "Shooting"} placeholder="Bezeichnung — Fitting, Shooting, Bildauswahl …" className="input h-9 text-sm" required />
-      <div className="grid grid-cols-2 gap-2">
-        <input type="datetime-local" name="startAt" defaultValue={toInputDT(initial?.startAt)} className="input h-9 text-sm" required />
-        <input type="datetime-local" name="endAt" defaultValue={toInputDT(initial?.endAt)} className="input h-9 text-sm" />
+      {/* Termin-Art: Dropdown + Toggle „Eigenes" */}
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+        {labelMode === "preset" ? (
+          <select
+            value={labelPreset}
+            onChange={(e) => setLabelPreset(e.target.value)}
+            className="select h-9 text-sm"
+          >
+            {LABEL_PRESETS.map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
+        ) : (
+          <input
+            value={labelCustom}
+            onChange={(e) => setLabelCustom(e.target.value)}
+            placeholder="Eigene Termin-Art — z.B. Locationscouting"
+            className="input h-9 text-sm"
+            autoFocus
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => setLabelMode((m) => (m === "preset" ? "custom" : "preset"))}
+          className="text-[10px] text-smoke hover:text-ink underline whitespace-nowrap px-1"
+        >
+          {labelMode === "preset" ? "individuell" : "← Vorlage"}
+        </button>
       </div>
-      <input name="location" defaultValue={initial?.location ?? ""} placeholder="Ort — z.B. Studio Bamberg" className="input h-9 text-sm" />
+
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="datetime-local"
+          name="startAt"
+          value={startAt}
+          onChange={(e) => onStartChange(e.target.value)}
+          className="input h-9 text-sm"
+          required
+        />
+        <input
+          type="datetime-local"
+          name="endAt"
+          value={endAt}
+          onChange={(e) => { setEndAt(e.target.value); setEndTouched(true); }}
+          className="input h-9 text-sm"
+          title="Ende — wird automatisch auf Start + 2 Std vorgeschlagen"
+        />
+      </div>
+
+      {/* Ort: Dropdown + Toggle „Eigenes" */}
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+        {locationMode === "preset" ? (
+          <select
+            value={locationPreset}
+            onChange={(e) => setLocationPreset(e.target.value)}
+            className="select h-9 text-sm"
+          >
+            {LOCATION_PRESETS.map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
+        ) : (
+          <input
+            value={locationCustom}
+            onChange={(e) => setLocationCustom(e.target.value)}
+            placeholder="Eigener Ort — z.B. Schloss Seehof"
+            className="input h-9 text-sm"
+            autoFocus
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => setLocationMode((m) => (m === "preset" ? "custom" : "preset"))}
+          className="text-[10px] text-smoke hover:text-ink underline whitespace-nowrap px-1"
+        >
+          {locationMode === "preset" ? "individuell" : "← Vorlage"}
+        </button>
+      </div>
+
       <input name="locationUrl" defaultValue={initial?.locationUrl ?? ""} placeholder="Maps-Link (optional)" className="input h-9 text-sm" />
       <textarea name="description" defaultValue={initial?.description ?? ""} rows={2} placeholder="Info für die Kundin (optional)" className="textarea text-sm" />
+
       <div className="flex justify-end gap-1.5">
         <button type="button" onClick={onCancel} className="btn-ghost h-8"><X size={14} /></button>
         <button disabled={busy} className="btn-primary h-8 px-3"><Check size={14} /> {busy ? "…" : "Speichern"}</button>

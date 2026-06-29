@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { ShootingForm } from "../ShootingForm";
+import { ShootingHeaderInlineEdit } from "./ShootingHeaderInlineEdit";
 import { ChecklistManager } from "./ChecklistManager";
 import { AttachmentManager } from "./AttachmentManager";
 import { DatesManager } from "./DatesManager";
@@ -15,7 +15,6 @@ import { InvoiceQuickActions } from "./InvoiceQuickActions";
 import { updateShooting, deleteShooting } from "../actions";
 import { ExternalLink, Copy } from "lucide-react";
 import { formatEUR } from "@/lib/utils";
-import { StatusBadge } from "@/components/StatusBadge";
 import { CustomerLinkButton } from "./CustomerLinkButton";
 
 export const dynamic = "force-dynamic";
@@ -73,14 +72,18 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <PageHeader
+      <ShootingHeaderInlineEdit
+        shootingId={shooting.id}
         eyebrow={shooting.package?.name ?? "Shooting"}
-        title={shooting.title}
-        subtitle={`${shooting.customer.firstName} ${shooting.customer.lastName}`}
-      >
-        {shooting.status && <StatusBadge label={shooting.status.label} color={shooting.status.color} />}
-        {publicUrl && <CustomerLinkButton url={publicUrl} />}
-      </PageHeader>
+        initial={{
+          title: shooting.title,
+          customerId: shooting.customerId,
+          statusId: shooting.statusId,
+        }}
+        customers={customers.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName }))}
+        statuses={statuses.map((s) => ({ id: s.id, label: s.label, color: s.color }))}
+        actions={publicUrl ? <CustomerLinkButton url={publicUrl} /> : null}
+      />
 
       <div className="card p-5 mb-6 flex flex-wrap items-center gap-5">
         <Link href={`/kunden/${shooting.customer.id}`} className="flex items-center gap-3 hover:underline">
@@ -270,6 +273,8 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               filename: a.filename,
               url: a.url,
               sizeBytes: a.sizeBytes,
+              uploadedBy: a.uploadedBy,
+              createdAt: a.createdAt.toISOString(),
             }))}
           />
         </div>

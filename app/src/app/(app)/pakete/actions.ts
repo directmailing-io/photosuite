@@ -60,12 +60,17 @@ export async function createPackage(formData: FormData) {
     if (pc) safePrimaryContactId = pc.id;
   }
 
+  // Paket-Art ("all_in_one" | "deposit" | "image_pack") — Whitelist serverseitig.
+  const kindRaw = s(formData.get("kind"));
+  const kind = kindRaw === "deposit" || kindRaw === "image_pack" ? kindRaw : "all_in_one";
+
   await prisma.package.create({
     data: {
       ownerId: userId,
       name,
       description: s(formData.get("description")),
       coverUrl,
+      kind,
       price,
       depositAmount: num(formData.get("depositAmount")),
       paymentTerms: s(formData.get("paymentTerms")),
@@ -124,12 +129,18 @@ export async function updatePackage(id: string, formData: FormData) {
     if (pc) safePrimaryContactId = pc.id;
   }
 
+  const kindRaw = s(formData.get("kind"));
+  const kind = kindRaw === "deposit" || kindRaw === "image_pack" || kindRaw === "all_in_one"
+    ? kindRaw
+    : existing.kind;
+
   await prisma.package.update({
     where: { id },
     data: {
       name: s(formData.get("name")) ?? existing.name,
       description: s(formData.get("description")) ?? null,
       coverUrl: coverUrl ?? existing.coverUrl,
+      kind,
       price: num(formData.get("price")) ?? existing.price,
       depositAmount: num(formData.get("depositAmount")) ?? null,
       paymentTerms: s(formData.get("paymentTerms")) ?? null,

@@ -13,6 +13,7 @@ export type PackageInitial = {
   name?: string;
   description?: string | null;
   coverUrl?: string | null;
+  kind?: string;
   price?: number;
   depositAmount?: number | null;
   paymentTerms?: string | null;
@@ -44,11 +45,12 @@ type Props = {
   team: TeamPickerMember[];
   questionnaires: QuestionnaireOption[];
   addons?: AddonOption[];
+  packageMode?: "all_in_one" | "modular";
   action: (formData: FormData) => Promise<void>;
   deleteAction?: () => Promise<void>;
 };
 
-export function PackageForm({ initial, team, questionnaires, addons = [], action, deleteAction }: Props) {
+export function PackageForm({ initial, team, questionnaires, addons = [], packageMode = "all_in_one", action, deleteAction }: Props) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(initial?.coverUrl ?? null);
@@ -184,6 +186,21 @@ export function PackageForm({ initial, team, questionnaires, addons = [], action
           <Field label="Name *">
             <input name="name" defaultValue={initial?.name} className="input" required />
           </Field>
+          {packageMode === "modular" && (
+            <Field
+              label="Paket-Art *"
+              hint="Anzahlung = Kundin bucht damit. Bildpaket = wird bei der Bildauswahl gewählt."
+            >
+              <select name="kind" defaultValue={initial?.kind ?? "deposit"} className="select" required>
+                <option value="deposit">Anzahlungs-Paket (z.B. Solo / Couple / Reise)</option>
+                <option value="image_pack">Bildpaket (z.B. 10 / 20 / 30 Bilder)</option>
+                <option value="all_in_one">Komplettpaket (klassisch)</option>
+              </select>
+            </Field>
+          )}
+          {packageMode !== "modular" && (
+            <input type="hidden" name="kind" value={initial?.kind ?? "all_in_one"} />
+          )}
           <Field label="Beschreibung">
             <textarea name="description" defaultValue={initial?.description ?? ""} rows={4} className="textarea" placeholder="Was beinhaltet das Paket? Wie viele Bilder, Dauer, Extras …" />
           </Field>

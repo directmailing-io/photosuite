@@ -13,6 +13,7 @@ import { AddonManager } from "./AddonManager";
 import { BookingTypeManager } from "./BookingTypeManager";
 import { SettingsTabs, type SettingsTab } from "./SettingsTabs";
 import { ThemePicker } from "./ThemePicker";
+import { PackageModePicker } from "./PackageModePicker";
 import { EmptyState } from "@/components/EmptyState";
 import { requireUserId } from "@/lib/auth";
 import {
@@ -76,6 +77,7 @@ export default async function EinstellungenPage({
               studioAddress: user.studioAddress,
               studioInstagram: user.studioInstagram,
             }} />
+            <PackageModePicker initial={(user.packageMode as "all_in_one" | "modular") ?? "all_in_one"} />
           </div>
         ) : (
           <EmptyState title="Profil nicht ladbar" description="Bitte melde dich neu an." />

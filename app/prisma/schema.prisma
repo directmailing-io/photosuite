@@ -104,6 +104,9 @@ model User {
   // Dashboard-Widget-Auswahl als JSON-Array (z.B. ["revenue_month","shootings_month",...]).
   // null = Default-Set. Whitelist + Cap im Server-Action; Safe-Parse im Server-Component.
   dashboardWidgets       String?
+  // Paket-Struktur: "all_in_one" = klassisches Komplettpaket pro Shooting,
+  // "modular" = Anzahlungs-Paket (Solo/Couple/Reise) + separates Bildpaket.
+  packageMode            String                  @default("all_in_one")
   // "Ganzer Tag" — Standardfenster, das bei AvailabilityWeekly/Override ohne slotsJson greift.
   // Auch der "Ganzer Tag"-Quick-Button im Kalender füllt diese Range ein.
   defaultDayStartMinutes Int                     @default(540) // 09:00
@@ -513,6 +516,9 @@ model Package {
   name                   String
   description            String?
   coverUrl               String?
+  // Paket-Art im modularen Modus: "all_in_one" (default), "deposit" (Anzahlungspaket),
+  // "image_pack" (Bildpaket). Im all_in_one-Modus immer "all_in_one".
+  kind                   String                     @default("all_in_one")
   price                  Float // in EUR
   // Standard-Zahlungsbedingungen (Vorgabe, pro Shooting überschreibbar)
   depositAmount          Float? // z.B. 100€ Anzahlung
@@ -730,6 +736,9 @@ model Attachment {
   url        String
   mimeType   String?
   sizeBytes  Int?
+  // Wer hat hochgeladen: "STUDIO" (Lisa) oder "CUSTOMER" (Kundin via Public-Page).
+  // Default "STUDIO" für Backwards-Compat; Public-Upload-Endpoints setzen "CUSTOMER".
+  uploadedBy String   @default("STUDIO")
   shooting   Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
   shootingId String
   createdAt  DateTime @default(now())

@@ -34,7 +34,7 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
       await addShootingNote(shootingId, fd);
       setText("");
       setStatus("OPEN");
-      toast.success("Notiz angelegt");
+      toast.success("Besprechung angelegt");
       router.refresh();
     } finally { setBusy(false); }
   }
@@ -44,7 +44,7 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
     router.refresh();
   }
   async function onDel(id: string) {
-    if (!confirm("Notiz löschen?")) return;
+    if (!confirm("Besprechung löschen?")) return;
     await deleteShootingNote(id, shootingId);
     router.refresh();
   }
@@ -56,21 +56,27 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-4">
-        <div className="eyebrow eyebrow-muted flex items-center gap-2"><MessageSquare size={13} /> Notizen</div>
+        <div className="eyebrow eyebrow-muted flex items-center gap-2"><MessageSquare size={13} /> Besprechungen</div>
         <div className="flex items-center gap-1 text-xs">
-          {(["ALL", "IMPORTANT", "OPEN", "DONE"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => setFilter(k)}
-              className="px-2 py-1 rounded-md transition"
-              style={{
-                background: filter === k ? "rgb(var(--ink))" : "transparent",
-                color: filter === k ? "rgb(var(--bg))" : "rgb(var(--smoke))",
-              }}
-            >
-              {k === "ALL" ? "Alle" : STATUS[k].label}
-            </button>
-          ))}
+          {(["ALL", "IMPORTANT", "OPEN", "DONE"] as const).map((k) => {
+            const isActive = filter === k;
+            return (
+              <button
+                key={k}
+                onClick={() => setFilter(k)}
+                className="px-2 py-1 rounded-md transition"
+                style={{
+                  // Aktiv: dunkler Hintergrund, helle Schrift.
+                  // Inaktiv: dezent grauer Hintergrund + helles Grau-Text — sichtbar,
+                  // aber nicht visuell konkurrierend mit dem aktiven Filter.
+                  background: isActive ? "rgb(var(--ink))" : "rgb(var(--linen))",
+                  color: isActive ? "rgb(var(--bg))" : "rgb(var(--taupe))",
+                }}
+              >
+                {k === "ALL" ? "Alle" : STATUS[k].label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -80,7 +86,7 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={2}
-          placeholder="Notiz schreiben — Hashtag-frei. Drück Enter zum Bestätigen."
+          placeholder="Mache dir Notizen zu diesem Shooting"
           className="textarea text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -120,7 +126,7 @@ export function NotesManager({ shootingId, notes }: { shootingId: string; notes:
 
       {/* List */}
       {sorted.length === 0 ? (
-        <div className="text-sm text-smoke text-center py-4">Keine Notizen.</div>
+        <div className="text-sm text-smoke text-center py-4">Noch keine Besprechungen.</div>
       ) : (
         <ul className="space-y-2">
           {sorted.map((n) => {

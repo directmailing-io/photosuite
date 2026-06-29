@@ -9,7 +9,7 @@ import { updatePackage, deletePackage } from "../actions";
 export default async function EditPackagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const [pkg, team, questionnaires, addons] = await Promise.all([
+  const [pkg, user, team, questionnaires, addons] = await Promise.all([
     prisma.package.findFirst({
       where: { id, ownerId: userId },
       include: {
@@ -22,6 +22,7 @@ export default async function EditPackagePage({ params }: { params: Promise<{ id
         },
       },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { packageMode: true } }),
     prisma.teamMember.findMany({ where: { ownerId: userId }, orderBy: [{ isOwner: "desc" }, { position: "asc" }] }),
     prisma.questionnaireTemplate.findMany({
       where: { ownerId: userId },
@@ -31,16 +32,19 @@ export default async function EditPackagePage({ params }: { params: Promise<{ id
     prisma.addon.findMany({ where: { ownerId: userId, isActive: true }, orderBy: { position: "asc" } }),
   ]);
   if (!pkg) return notFound();
+  const packageMode = (user?.packageMode ?? "all_in_one") as "all_in_one" | "modular";
 
   return (
     <>
       <PageHeader eyebrow="Paket" title={pkg.name} subtitle="Stammdaten, Preise, Standard-Team und Checklisten-Vorlagen." />
       <PackageForm
+        packageMode={packageMode}
         initial={{
           id: pkg.id,
           name: pkg.name,
           description: pkg.description,
           coverUrl: pkg.coverUrl,
+          kind: pkg.kind,
           price: pkg.price,
           depositAmount: pkg.depositAmount,
           paymentTerms: pkg.paymentTerms,

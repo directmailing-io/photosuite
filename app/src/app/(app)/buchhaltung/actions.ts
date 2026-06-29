@@ -408,6 +408,16 @@ export async function markInvoicePaid(id: string) {
     sendPaymentConfirmation(id, "manual").catch((err) =>
       console.error(`[markInvoicePaid] sendPaymentConfirmation failed: ${err?.message ?? err}`),
     );
+    // Workflow-Trigger: invoice_paid
+    const { triggerWorkflow } = await import("@/lib/workflow/engine");
+    triggerWorkflow("invoice_paid", {
+      ownerId: userId,
+      invoiceId: id,
+      customerId: inv.customerId,
+      shootingId: inv.shootingId,
+    }).catch((err) =>
+      console.error(`[markInvoicePaid] triggerWorkflow failed: ${err?.message ?? err}`),
+    );
   }
 }
 

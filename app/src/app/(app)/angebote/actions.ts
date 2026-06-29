@@ -259,6 +259,13 @@ export async function markOfferAccepted(id: string): Promise<void> {
   });
   revalidatePath(`/angebote/${id}`);
   revalidatePath("/angebote");
+  const { triggerWorkflow } = await import("@/lib/workflow/engine");
+  triggerWorkflow("offer_accepted", {
+    ownerId: userId,
+    offerId: id,
+    customerId: offer.customerId,
+    shootingId: offer.shootingId,
+  }).catch((err) => console.error(`[markOfferAccepted] triggerWorkflow: ${err?.message ?? err}`));
 }
 
 export async function markOfferDeclined(id: string, reason?: string): Promise<void> {
@@ -374,6 +381,13 @@ export async function publicAcceptOffer(token: string): Promise<{ ok: boolean; m
     data: { status: "ACCEPTED", acceptedAt: new Date() },
   });
   revalidatePath(`/angebote/${offer.id}`);
+  const { triggerWorkflow } = await import("@/lib/workflow/engine");
+  triggerWorkflow("offer_accepted", {
+    ownerId: offer.ownerId,
+    offerId: offer.id,
+    customerId: offer.customerId,
+    shootingId: offer.shootingId,
+  }).catch((err) => console.error(`[publicAcceptOffer] triggerWorkflow: ${err?.message ?? err}`));
   return { ok: true };
 }
 

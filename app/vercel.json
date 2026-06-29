@@ -5,5 +5,11 @@
     "src/app/**/*.{ts,tsx}": {
       "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/workflows",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }

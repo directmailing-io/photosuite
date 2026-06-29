@@ -65,7 +65,7 @@ export async function submitPublicLead(slug: string, formData: FormData): Promis
     return { ok: false, reason: "Zu viele Anfragen in kurzer Zeit. Bitte später nochmal versuchen." };
   }
 
-  await prisma.lead.create({
+  const lead = await prisma.lead.create({
     data: {
       ownerId: owner.id,
       firstName,
@@ -79,6 +79,12 @@ export async function submitPublicLead(slug: string, formData: FormData): Promis
       ipHash,
     },
   });
+
+  const { triggerWorkflow } = await import("@/lib/workflow/engine");
+  triggerWorkflow("lead_created", {
+    ownerId: owner.id,
+    leadId: lead.id,
+  }).catch((err) => console.error(`[publicCreateLead] triggerWorkflow: ${err?.message ?? err}`));
 
   return { ok: true };
 }

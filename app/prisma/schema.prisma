@@ -132,6 +132,8 @@ model User {
   bookings               Booking[]
   invoices               Invoice[]
   offers                 Offer[]
+  workflows              Workflow[]
+  workflowRuns           WorkflowRun[]
   tasks                  Task[]
   activities             Activity[]
   paymentSchedules       PaymentSchedule[]
@@ -1287,4 +1289,83 @@ model Booking {
   @@index([bookingTypeId, startAt])
   @@index([status, startAt])
   @@index([ownerId])
+}
+
+// ---------- Workflow-Automation ----------
+//
+// Ein Workflow ist eine Sequenz von Actions, die durch ein Trigger-Event
+// ausgelöst werden (z.B. „Rechnung bezahlt", „Angebot angenommen"). Jeder
+// Step hat eine Verzögerung in Minuten — 0 = sofort, sonst wird ein Job
+// erzeugt, den der Cron-Worker /api/cron/workflows später abarbeitet.
+
+model Workflow {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  // Trigger-Event-Typ: "invoice_paid" | "offer_accepted" | "lead_created"
+  // | "manual" (nur manuell ausführbar, z.B. „Welcome-Sequenz starten")
+  trigger     String
+  isActive    Boolean        @default(true)
+  steps       WorkflowStep[]
+  runs        WorkflowRun[]
+  owner       User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([ownerId])
+  @@index([ownerId, trigger, isActive])
+}
+
+model WorkflowStep {
+  id           String   @id @default(cuid())
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId   String
+  position     Int      @default(0)
+  // Verzögerung ab Trigger-Zeitpunkt. 0 = sofort, 1440 = 1 Tag.
+  delayMinutes Int      @default(0)
+  // "email" | "task"
+  actionType   String
+  // JSON-Config je nach actionType:
+  //  email: { to: "customer" | "owner", subject, body }
+  //  task:  { title, description, dueInDays }
+  config       String
+}
+
+model WorkflowRun {
+  id          String        @id @default(cuid())
+  workflow    Workflow      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId  String
+  triggeredAt DateTime      @default(now())
+  // Kontext: welche Entitäten gehören zu diesem Lauf? Werden für die Template-
+  // Variablen-Auflösung und für die Cleanup-Anzeige genutzt.
+  customerId  String?
+  invoiceId   String?
+  offerId     String?
+  shootingId  String?
+  leadId      String?
+  status      String        @default("pending") // pending | done | failed | cancelled
+  jobs        WorkflowJob[]
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String
+
+  @@index([ownerId])
+  @@index([workflowId])
+}
+
+model WorkflowJob {
+  id         String      @id @default(cuid())
+  run        WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  runId      String
+  // Snapshot des Steps zum Zeitpunkt des Triggers. Falls Lisa den Workflow
+  // später ändert, läuft der Job mit der eingefrorenen Config.
+  stepPosition Int
+  actionType String
+  configSnapshot String // JSON
+  runAt      DateTime
+  status     String      @default("pending") // pending | done | failed | cancelled
+  result     String?     // JSON mit log/error
+  executedAt DateTime?
+
+  @@index([status, runAt])
 }

@@ -84,6 +84,16 @@ export async function markInvoicePaidFromSession(
     console.error(`[markPaidFromSession] sendPaymentConfirmation failed: ${err?.message ?? err}`),
   );
 
+  const { triggerWorkflow } = await import("@/lib/workflow/engine");
+  triggerWorkflow("invoice_paid", {
+    ownerId: inv.ownerId,
+    invoiceId,
+    customerId: inv.customerId,
+    shootingId: inv.shootingId,
+  }).catch((err) =>
+    console.error(`[markPaidFromSession] triggerWorkflow failed: ${err?.message ?? err}`),
+  );
+
   return { alreadyPaid: false };
 }
 

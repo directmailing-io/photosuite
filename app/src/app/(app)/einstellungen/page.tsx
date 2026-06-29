@@ -31,7 +31,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "email", "addons", "status", "tags", "vorlagen", "design"];
+const VALID: SettingsTab[] = ["studio", "rechnung", "zahlungen", "kalender", "buchung", "email", "addons", "status", "tags", "vorlagen", "workflows", "design"];
 
 export default async function EinstellungenPage({
   searchParams,
@@ -180,6 +180,28 @@ export default async function EinstellungenPage({
       {tab === "status" && <StatusSection userId={userId} />}
       {tab === "tags" && <TagsSection userId={userId} />}
       {tab === "vorlagen" && <VorlagenSection userId={userId} />}
+
+      {tab === "workflows" && (
+        <div className="card p-8 text-center">
+          <div className="inline-flex w-14 h-14 rounded-full items-center justify-center mb-4" style={{ background: "rgb(var(--accent-soft))", color: "rgb(var(--accent))" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="8" height="8" x="3" y="3" rx="2" />
+              <path d="M7 11v4a2 2 0 0 0 2 2h4" />
+              <rect width="8" height="8" x="13" y="13" rx="2" />
+            </svg>
+          </div>
+          <h2 className="font-serif text-2xl">Workflows</h2>
+          <p className="text-sm text-smoke mt-2 max-w-md mx-auto leading-relaxed">
+            Automatisierungen für wiederkehrende Abläufe: z.B. „bei Buchung Anzahlungsrechnung + Welcome-Mail",
+            „2 Wochen vor Shooting Reminder", „nach Shooting Rechnung erstellen". Kommt in einer eigenen Iteration —
+            bis dahin kannst du die Schritte manuell aus Shooting-Detail und Kundenkartei steuern.
+          </p>
+          <div className="text-xs text-smoke mt-6 max-w-md mx-auto">
+            Falls du eine konkrete Automatisierung sofort brauchst, sag Bescheid — manche kann ich vorab als
+            Hard-Wire einbauen, bevor das volle Workflow-System steht.
+          </div>
+        </div>
+      )}
 
       {tab === "design" && (
         <div className="space-y-6">

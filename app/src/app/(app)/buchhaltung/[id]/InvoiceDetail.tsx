@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Plus, Trash2, Save, FileText, Send, CircleSlash, CheckCircle2,
   AlertCircle, Download, ExternalLink, ArrowLeftRight, ChevronDown, ChevronRight,
-  Bell, AlertTriangle, FileWarning, CreditCard, Copy, Hourglass,
+  Bell, AlertTriangle, FileWarning, CreditCard, Copy, Hourglass, Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { eurFromCents, eurInputFromCents } from "@/lib/money";
@@ -15,6 +15,7 @@ import {
   updateDraftInvoice, issueInvoice, markInvoicePaid, markInvoiceSent, cancelInvoice,
   createReminder,
 } from "../actions";
+import { sendInvoiceByEmail } from "./sendActions";
 import type { IssuerSnapshot } from "@/lib/invoiceSnapshot";
 
 type Item = {
@@ -461,9 +462,30 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
           )}
           {invoice.status === "ISSUED" && !isCancelled && (
             <>
+              <button
+                onClick={async () => {
+                  if (!confirm("Rechnung per E-Mail an die Kundin schicken (mit PDF im Anhang)?")) return;
+                  setBusy(true);
+                  try {
+                    await sendInvoiceByEmail(invoice.id);
+                    toast.success("Rechnung per Mail verschickt", {
+                      description: "Anhang als PDF + Status aktualisiert.",
+                    });
+                    router.refresh();
+                  } catch (err: any) {
+                    toast.error("Versand fehlgeschlagen", { description: err?.message ?? "" });
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                disabled={busy}
+                className="btn-accent w-full"
+              >
+                <Mail size={14} /> Per E-Mail versenden
+              </button>
               {!invoice.sentAt && (
                 <button onClick={onMarkSent} disabled={busy} className="btn-secondary w-full">
-                  <Send size={14} /> Als versendet markieren
+                  <Send size={14} /> Manuell als versendet markieren
                 </button>
               )}
               {invoice.sentAt && (

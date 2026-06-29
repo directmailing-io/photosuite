@@ -3,171 +3,145 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { CheckSquare, Calendar, ListChecks, Briefcase } from "lucide-react";
-import { TaskList, NewTaskForm, ChecklistRowGroup } from "./TaskComponents";
-import { StatusBadge } from "@/components/StatusBadge";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { CheckSquare, Calendar, ListChecks, Workflow } from "lucide-react";
+import { NewTaskForm, FlatTaskList, type FlatTaskItem } from "./TaskComponents";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Aufgaben-Page mit Flat-Liste (nach Fälligkeit sortiert).
+ *
+ * Sammelt 2 Quellen in eine einheitliche Liste:
+ *   - Task: freie To-Dos (mit optionalem Customer-/Shooting-Bezug)
+ *   - ChecklistItem: internal-Shooting-Checklisten (Audience=INTERNAL)
+ *
+ * Pro Eintrag wird das Shooting als anklickbarer „Tag" gerendert — nicht mehr
+ * als Gruppierungs-Header. Das fokussiert auf die zeitliche Reihenfolge.
+ *
+ * Erledigte Einträge sind unten in einer collapsiblen Sektion.
+ */
 export default async function AufgabenPage() {
   const userId = await requireUserId();
-  const [tasks, customers, shootings] = await Promise.all([
+  const [tasks, customers, checklists] = await Promise.all([
     prisma.task.findMany({
       where: { ownerId: userId },
       include: { customer: true, shooting: true },
-      orderBy: [{ done: "asc" }, { dueAt: "asc" }, { createdAt: "desc" }],
     }),
     prisma.customer.findMany({ where: { ownerId: userId }, orderBy: { firstName: "asc" } }),
-    prisma.shooting.findMany({
+    prisma.checklist.findMany({
       where: {
-        ownerId: userId,
-        checklists: {
-          some: {
-            audience: "INTERNAL",
-            items: { some: {} },
-          },
-        },
+        audience: "INTERNAL",
+        shooting: { ownerId: userId },
       },
       include: {
-        customer: true,
-        status: true,
-        dates: { orderBy: { startAt: "asc" }, take: 1 },
-        checklists: {
-          where: { audience: "INTERNAL" },
-          orderBy: { position: "asc" },
-          include: {
-            items: { orderBy: [{ done: "asc" }, { dueAt: "asc" }, { position: "asc" }] },
-          },
-        },
+        items: true,
+        shooting: { select: { id: true, title: true } },
       },
-      orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
     }),
   ]);
 
-  // Sortiere Shootings nach erstem Termin oder scheduledAt
-  const shootingsSorted = [...shootings].sort((a, b) => {
-    const at = a.dates[0]?.startAt?.getTime() ?? a.scheduledAt?.getTime() ?? Infinity;
-    const bt = b.dates[0]?.startAt?.getTime() ?? b.scheduledAt?.getTime() ?? Infinity;
-    return at - bt;
-  });
+  // Beide Quellen in ein einheitliches Item-Format mappen
+  const items: FlatTaskItem[] = [];
+  for (const t of tasks) {
+    items.push({
+      id: `task:${t.id}`,
+      sourceKind: "task",
+      sourceId: t.id,
+      shootingId: null,
+      checklistId: null,
+      title: t.title,
+      description: t.description,
+      done: t.done,
+      dueAt: t.dueAt?.toISOString() ?? null,
+      customer: t.customer ? { id: t.customer.id, name: `${t.customer.firstName} ${t.customer.lastName}` } : null,
+      shooting: t.shooting ? { id: t.shooting.id, title: t.shooting.title } : null,
+    });
+  }
+  for (const cl of checklists) {
+    for (const it of cl.items) {
+      items.push({
+        id: `cl:${it.id}`,
+        sourceKind: "checklist",
+        sourceId: it.id,
+        shootingId: cl.shooting.id,
+        checklistId: cl.id,
+        title: it.label,
+        description: null,
+        done: it.done,
+        dueAt: it.dueAt?.toISOString() ?? null,
+        customer: null,
+        shooting: { id: cl.shooting.id, title: cl.shooting.title },
+      });
+    }
+  }
 
-  const openTasks = tasks.filter((t) => !t.done);
-  const doneTasks = tasks.filter((t) => t.done);
+  // Sortierung: nicht-fertig zuerst, dann nach Fälligkeit (frühestes oben),
+  // dann nach Title.
+  function dueTime(item: FlatTaskItem): number {
+    if (!item.dueAt) return Number.MAX_SAFE_INTEGER;
+    return new Date(item.dueAt).getTime();
+  }
+  const open = items.filter((i) => !i.done).sort((a, b) => dueTime(a) - dueTime(b));
+  const done = items.filter((i) => i.done).sort((a, b) => dueTime(b) - dueTime(a)); // erledigte: jüngste zuerst
 
-  // Anzahl offene Checklist-Items
-  const openChecklistItems = shootingsSorted.reduce(
-    (sum, s) => sum + s.checklists.reduce((cs, c) => cs + c.items.filter((i) => !i.done).length, 0),
-    0,
-  );
-  const overdueCount = shootingsSorted.reduce(
-    (sum, s) => sum + s.checklists.reduce(
-      (cs, c) => cs + c.items.filter((i) => !i.done && i.dueAt && i.dueAt < new Date()).length, 0), 0);
+  const now = Date.now();
+  const overdue = open.filter((i) => i.dueAt && new Date(i.dueAt).getTime() < now).length;
+  const totalOpen = open.length;
+  const checklistOpen = open.filter((i) => i.sourceKind === "checklist").length;
 
   return (
     <>
       <PageHeader
         eyebrow="Was steht an"
         title="Aufgaben"
-        subtitle="Alle internen Checklisten-Punkte aus deinen Shootings, plus freie To-dos."
-      />
+        subtitle="Alles, was du noch erledigen willst — sortiert nach Datum."
+      >
+        <Link href="/einstellungen?tab=workflows" className="btn-secondary">
+          <Workflow size={15} /> Workflows
+        </Link>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-        <KPI label="Offene To-dos" value={String(openTasks.length)} sub="Freie Aufgaben" icon={<CheckSquare size={15} />} />
-        <KPI label="Offene Punkte" value={String(openChecklistItems)} sub="Aus Shooting-Checklisten" icon={<ListChecks size={15} />} />
-        <KPI label="Überfällig" value={String(overdueCount)} sub="Mit Deadline" icon={<Calendar size={15} />} accent={overdueCount > 0} />
+        <KPI label="Offen gesamt" value={String(totalOpen)} sub="To-dos + Checklisten-Items" icon={<CheckSquare size={15} />} />
+        <KPI label="Aus Checklisten" value={String(checklistOpen)} sub="Aus Shooting-Vorlagen" icon={<ListChecks size={15} />} />
+        <KPI label="Überfällig" value={String(overdue)} sub="Mit verstrichener Deadline" icon={<Calendar size={15} />} accent={overdue > 0} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Shooting-Checklisten */}
-          {shootingsSorted.length === 0 && openTasks.length === 0 ? (
+        <div className="lg:col-span-2 space-y-4">
+          {open.length === 0 ? (
             <EmptyState
               icon={<CheckSquare size={36} strokeWidth={1.25} />}
               title="Alles aufgeräumt"
-              description="Keine offenen Aufgaben aus Shootings, keine freien To-dos."
+              description="Keine offenen Aufgaben."
             />
           ) : (
-            <>
-              {shootingsSorted.length > 0 && (
-                <section className="card">
-                  <div className="px-5 py-3 border-b border-stone/60 flex items-center justify-between">
-                    <div className="eyebrow eyebrow-muted flex items-center gap-2"><Briefcase size={13} /> Pro Shooting</div>
-                  </div>
-                  <div className="divide-y divide-stone/60">
-                    {shootingsSorted.map((s) => {
-                      const open = s.checklists.reduce((cs, c) => cs + c.items.filter((i) => !i.done).length, 0);
-                      const total = s.checklists.reduce((cs, c) => cs + c.items.length, 0);
-                      const nextDate = s.dates[0]?.startAt ?? s.scheduledAt;
-                      return (
-                        <details key={s.id} open={open > 0} className="px-5 py-4 group">
-                          <summary className="flex items-center justify-between cursor-pointer list-none">
-                            <div className="flex-1 min-w-0">
-                              <Link href={`/shootings/${s.id}`} className="font-medium text-sm hover:underline">
-                                {s.title}
-                              </Link>
-                              <div className="text-xs text-smoke mt-0.5 flex items-center gap-2">
-                                <span>{s.customer.firstName} {s.customer.lastName}</span>
-                                {nextDate && <span>· {formatDateTime(nextDate)}</span>}
-                                {s.status && <StatusBadge label={s.status.label} color={s.status.color} />}
-                              </div>
-                            </div>
-                            <div className="text-xs text-smoke tabular-nums ml-3">{open}/{total} offen</div>
-                          </summary>
-                          <div className="mt-3 space-y-4">
-                            {s.checklists.map((cl) => (
-                              <ChecklistRowGroup
-                                key={cl.id}
-                                shootingId={s.id}
-                                checklist={{
-                                  id: cl.id,
-                                  title: cl.title,
-                                  items: cl.items.map((i) => ({
-                                    id: i.id,
-                                    label: i.label,
-                                    done: i.done,
-                                    dueAt: i.dueAt?.toISOString() ?? null,
-                                  })),
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </details>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
+            <section className="card">
+              <div className="px-5 py-3 border-b border-stone/60 flex items-center justify-between">
+                <div className="eyebrow eyebrow-muted">Offen — nach Fälligkeit</div>
+                <div className="text-xs text-smoke">{open.length}</div>
+              </div>
+              <FlatTaskList items={open} />
+            </section>
+          )}
 
-              {openTasks.length > 0 && (
-                <section className="card">
-                  <div className="px-5 py-3 border-b border-stone/60 flex items-center justify-between">
-                    <div className="eyebrow eyebrow-muted">Freie To-dos</div>
-                    <div className="text-xs text-smoke">{openTasks.length}</div>
-                  </div>
-                  <TaskList tasks={openTasks.map(serializeTask)} />
-                </section>
-              )}
-
-              {doneTasks.length > 0 && (
-                <section className="card">
-                  <div className="px-5 py-3 border-b border-stone/60 flex items-center justify-between">
-                    <div className="eyebrow eyebrow-muted">Erledigt</div>
-                    <div className="text-xs text-smoke">{doneTasks.length}</div>
-                  </div>
-                  <TaskList tasks={doneTasks.map(serializeTask)} />
-                </section>
-              )}
-            </>
+          {done.length > 0 && (
+            <details className="card">
+              <summary className="px-5 py-3 border-b border-stone/60 flex items-center justify-between cursor-pointer list-none">
+                <div className="eyebrow eyebrow-muted">Erledigt</div>
+                <div className="text-xs text-smoke">{done.length}</div>
+              </summary>
+              <FlatTaskList items={done} />
+            </details>
           )}
         </div>
 
-        <div>
+        <aside>
           <div className="card p-5 sticky top-6">
-            <div className="eyebrow mb-4 eyebrow-muted">Neue freie Aufgabe</div>
+            <div className="eyebrow mb-4 eyebrow-muted">Neue Aufgabe</div>
             <NewTaskForm customers={customers.map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName}` }))} />
           </div>
-        </div>
+        </aside>
       </div>
     </>
   );
@@ -181,16 +155,4 @@ function KPI({ label, value, sub, icon, accent }: { label: string; value: string
       <div className="text-xs text-smoke mt-1">{sub}</div>
     </div>
   );
-}
-
-function serializeTask(t: any) {
-  return {
-    id: t.id,
-    title: t.title,
-    description: t.description,
-    done: t.done,
-    dueAt: t.dueAt ? t.dueAt.toISOString() : null,
-    customer: t.customer ? { id: t.customer.id, name: `${t.customer.firstName} ${t.customer.lastName}` } : null,
-    shooting: t.shooting ? { id: t.shooting.id, title: t.shooting.title } : null,
-  };
 }

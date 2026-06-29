@@ -151,3 +151,158 @@ export function NewTaskForm({ customers }: { customers: { id: string; label: str
     </form>
   );
 }
+
+export type FlatTaskItem = {
+  id: string;                    // einzigartig, z.B. „task:<id>" oder „cl:<id>"
+  sourceKind: "task" | "checklist";
+  sourceId: string;              // Original-ID in der jeweiligen Tabelle
+  shootingId: string | null;     // für ChecklistItem-Toggle gebraucht
+  checklistId: string | null;
+  title: string;
+  description: string | null;
+  done: boolean;
+  dueAt: string | null;
+  customer: { id: string; name: string } | null;
+  shooting: { id: string; title: string } | null;
+};
+
+/**
+ * Flat-Liste aus Tasks + ChecklistItems, sortiert nach Fälligkeit.
+ * Wird in /aufgaben gerendert und ersetzt die alte „pro Shooting"-Gruppierung.
+ *
+ * Pro Eintrag:
+ *  - Checkbox links → toggelt je nach sourceKind (toggleTask vs. toggleChecklistItem)
+ *  - Titel + Description
+ *  - Shooting-Pill als anklickbarer Link (führt zur Shooting-Detail-Seite)
+ *  - Due-Date mit Überfällig-Highlight
+ */
+export function FlatTaskList({ items }: { items: FlatTaskItem[] }) {
+  const router = useRouter();
+  const now = Date.now();
+
+  async function onToggle(item: FlatTaskItem) {
+    try {
+      if (item.sourceKind === "task") {
+        await toggleTask(item.sourceId, !item.done);
+      } else if (item.shootingId) {
+        // toggleChecklistItem(itemId, done, shootingId)
+        await toggleChecklistItem(item.sourceId, !item.done, item.shootingId);
+      }
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Konnte nicht ändern");
+    }
+  }
+
+  async function onDelete(item: FlatTaskItem) {
+    if (item.sourceKind !== "task") return;          // ChecklistItems werden in der Shooting-Detail gelöscht
+    if (!confirm("Aufgabe löschen?")) return;
+    try {
+      await deleteTask(item.sourceId);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Konnte nicht löschen");
+    }
+  }
+
+  if (items.length === 0) {
+    return <div className="px-5 py-6 text-sm text-smoke text-center">Keine Aufgaben.</div>;
+  }
+
+  return (
+    <ul className="divide-y divide-stone/60">
+      {items.map((item) => {
+        const overdue = !item.done && item.dueAt && new Date(item.dueAt).getTime() < now;
+        return (
+          <li key={item.id} className="px-5 py-3 flex items-start gap-3 group">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={item.done}
+              onClick={() => onToggle(item)}
+              className="shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 transition hover:scale-105"
+              style={{
+                borderColor: item.done ? "rgb(var(--success))" : "rgb(var(--stone))",
+                background: item.done ? "rgb(var(--success))" : "transparent",
+              }}
+              title={item.done ? "Erledigt" : "Erledigen"}
+            >
+              {item.done && (
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M1.5 5.5L4.5 8.5L9.5 2.5" stroke="rgb(var(--paper))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+
+            <div className="flex-1 min-w-0">
+              <div
+                className="text-sm leading-tight"
+                style={{
+                  color: item.done ? "rgb(var(--taupe))" : "rgb(var(--ink))",
+                  textDecoration: item.done ? "line-through" : "none",
+                }}
+              >
+                {item.title}
+              </div>
+              {item.description && (
+                <div className="text-xs text-smoke mt-1 line-clamp-2">{item.description}</div>
+              )}
+              <div className="text-[11px] text-smoke mt-1.5 flex items-center gap-2 flex-wrap">
+                {item.dueAt && (
+                  <span
+                    className="inline-flex items-center gap-1"
+                    style={{ color: overdue ? "rgb(var(--accent))" : "rgb(var(--taupe))" }}
+                  >
+                    <CalendarClock size={11} />
+                    {formatDate(new Date(item.dueAt))}
+                  </span>
+                )}
+                {item.shooting && (
+                  <Link
+                    href={`/shootings/${item.shooting.id}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition hover:bg-linen"
+                    style={{
+                      background: "rgb(var(--linen))",
+                      color: "rgb(var(--taupe))",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Camera size={9} /> {item.shooting.title}
+                  </Link>
+                )}
+                {item.customer && (
+                  <Link
+                    href={`/kunden/${item.customer.id}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition hover:bg-linen"
+                    style={{
+                      background: "rgb(var(--linen))",
+                      color: "rgb(var(--taupe))",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <User size={9} /> {item.customer.name}
+                  </Link>
+                )}
+                {item.sourceKind === "checklist" && (
+                  <span className="text-[10px] text-smoke italic">Aus Checkliste</span>
+                )}
+              </div>
+            </div>
+
+            {item.sourceKind === "task" && (
+              <button
+                type="button"
+                onClick={() => onDelete(item)}
+                className="btn-icon opacity-0 group-hover:opacity-100 transition"
+                style={{ color: "rgb(var(--accent))" }}
+                title="Löschen"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

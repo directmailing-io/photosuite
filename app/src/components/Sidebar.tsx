@@ -35,7 +35,7 @@ const dailyItems: NavItem[] = [
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
   { href: "/buchungen", label: "Buchungen", icon: Inbox },
   { href: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
-  { href: "/buchhaltung", label: "Buchhaltung", icon: Receipt },
+  { href: "/finanzen", label: "Finanzen", icon: Receipt },
 ];
 
 const setupItems: NavItem[] = [

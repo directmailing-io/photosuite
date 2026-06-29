@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Avatar } from "@/components/Avatar";
 import {
   Receipt, ChevronRight, AlertCircle, FileCheck2, CircleDashed, Send,
-  ClipboardX, Inbox, CircleSlash,
+  ClipboardX, Inbox, CircleSlash, Plus, Percent,
 } from "lucide-react";
 import { eurFromCents } from "@/lib/money";
 import { formatDate, relativeDate, cn } from "@/lib/utils";
@@ -32,10 +32,12 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: "Storniert",   color: "#7D7878" },
 };
 
+type PeriodKey = "month" | "quarter" | "year";
+
 export default async function BuchhaltungPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; q?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string; from?: string; to?: string; period?: string }>;
 }) {
   const sp = await searchParams;
   const filter = (sp.filter as FilterKey) ?? "ALL";
@@ -43,6 +45,7 @@ export default async function BuchhaltungPage({
   const fromDate = sp.from ? new Date(sp.from + "T00:00:00") : null;
   // "bis" inklusiv: bis Tagesende
   const toDate = sp.to ? new Date(sp.to + "T23:59:59") : null;
+  const period: PeriodKey = sp.period === "quarter" || sp.period === "year" ? sp.period : "month";
 
   const userId = await requireUserId();
   const [user, all] = await Promise.all([
@@ -103,9 +106,22 @@ export default async function BuchhaltungPage({
     .filter((i) => i.status === "ISSUED")
     .reduce((s, i) => s + i.amountDueCents, 0);
   const overdueSum = all.filter(isOverdue).reduce((s, i) => s + i.amountDueCents, 0);
-  const paidThisMonth = all
-    .filter((i) => i.status === "PAID" && i.paidAt && i.paidAt.getMonth() === now.getMonth() && i.paidAt.getFullYear() === now.getFullYear())
+
+  // Bezahlt-KPI nach Period (month/quarter/year). Period via Dropdown ?period=...
+  const periodStart = (() => {
+    if (period === "year") return new Date(now.getFullYear(), 0, 1);
+    if (period === "quarter") return new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  })();
+  const paidInPeriod = all
+    .filter((i) => i.status === "PAID" && i.paidAt && i.paidAt >= periodStart)
     .reduce((s, i) => s + i.totalCents, 0);
+  // Steuer-Summe im selben Zeitraum (ausgewiesene VAT auf bezahlten Rechnungen).
+  const taxesInPeriod = all
+    .filter((i) => i.status === "PAID" && i.paidAt && i.paidAt >= periodStart)
+    .reduce((s, i) => s + i.vatAmountCents, 0);
+  const paidLabel = period === "year" ? "Bezahlt dieses Jahr" : period === "quarter" ? "Bezahlt dieses Quartal" : "Bezahlt diesen Monat";
+  const taxLabel = period === "year" ? "Steuern dieses Jahr" : period === "quarter" ? "Steuern dieses Quartal" : "Steuern diesen Monat";
 
   const profileMissing =
     !user?.invoiceCompanyName ||
@@ -116,10 +132,14 @@ export default async function BuchhaltungPage({
   return (
     <>
       <PageHeader
-        eyebrow="Buchhaltung"
+        eyebrow="Finanzen"
         title="Rechnungen"
-        subtitle="Alle Rechnungen, Anzahlungen und Stornos — auf einen Klick als PDF, ohne juristisches Risiko."
-      />
+        subtitle="Alle Rechnungen, Anzahlungen und Stornos."
+      >
+        <Link href="/buchhaltung/neu" className="btn-accent">
+          <Plus size={15} /> Neue Rechnung
+        </Link>
+      </PageHeader>
 
       {profileMissing && (
         <div className="card p-4 mb-6 flex items-start gap-3" style={{ background: "rgb(var(--accent-soft))", borderLeftWidth: 3, borderLeftColor: "rgb(var(--accent))" }}>
@@ -137,10 +157,33 @@ export default async function BuchhaltungPage({
       )}
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         <KPI label="Offen" value={eurFromCents(openSum)} sub={`${counts.OPEN} Rechnung${counts.OPEN === 1 ? "" : "en"}`} icon={<Send size={15} />} />
-        <KPI label="Überfällig" value={eurFromCents(overdueSum)} sub={`${counts.OVERDUE} Rechnung${counts.OVERDUE === 1 ? "" : "en"}`} icon={<AlertCircle size={15} />} accent={overdueSum > 0} />
-        <KPI label="Bezahlt diesen Monat" value={eurFromCents(paidThisMonth)} sub="Brutto" icon={<FileCheck2 size={15} />} />
+        <KPI
+          label="Überfällig"
+          value={eurFromCents(overdueSum)}
+          sub={`${counts.OVERDUE} Rechnung${counts.OVERDUE === 1 ? "" : "en"}`}
+          icon={<AlertCircle size={15} />}
+          // Karte selbst in leichtem Rot, wenn Überfälliges existiert — direkt sichtbar.
+          tint={overdueSum > 0 ? "danger" : undefined}
+          href={overdueSum > 0
+            ? `/buchhaltung?${new URLSearchParams({
+                filter: "OVERDUE",
+                ...(sp.q ? { q: sp.q } : {}),
+                ...(sp.from ? { from: sp.from } : {}),
+                ...(sp.to ? { to: sp.to } : {}),
+              }).toString()}`
+            : undefined}
+        />
+        <KPIWithDropdown
+          label={paidLabel}
+          value={eurFromCents(paidInPeriod)}
+          sub="Brutto"
+          icon={<FileCheck2 size={15} />}
+          period={period}
+          preserveParams={sp}
+        />
+        <KPI label={taxLabel} value={eurFromCents(taxesInPeriod)} sub="USt eingenommen" icon={<Percent size={15} />} />
       </div>
 
       <SearchBar />
@@ -229,11 +272,76 @@ export default async function BuchhaltungPage({
   );
 }
 
-function KPI({ label, value, sub, icon, accent }: { label: string; value: string; sub: string; icon: React.ReactNode; accent?: boolean }) {
+function KPI({
+  label, value, sub, icon, tint, href,
+}: {
+  label: string; value: string; sub: string; icon: React.ReactNode;
+  tint?: "danger";
+  href?: string;
+}) {
+  const bg = tint === "danger" ? "rgb(var(--accent-soft))" : undefined;
+  const border = tint === "danger" ? "rgb(var(--accent) / 0.3)" : undefined;
+  const inner = (
+    <div className="card p-4" style={{ background: bg, borderColor: border }}>
+      <div className="flex items-center gap-2" style={{ color: tint === "danger" ? "rgb(var(--accent))" : "rgb(var(--taupe))" }}>
+        {icon}<div className="eyebrow eyebrow-muted" style={{ color: tint === "danger" ? "rgb(var(--accent))" : undefined }}>{label}</div>
+      </div>
+      <div className="font-serif text-2xl mt-2 tabular-nums" style={{ color: tint === "danger" ? "rgb(var(--accent-deep))" : undefined }}>{value}</div>
+      <div className="text-xs mt-1" style={{ color: tint === "danger" ? "rgb(var(--accent))" : "rgb(var(--taupe))" }}>{sub}</div>
+    </div>
+  );
+  if (href) {
+    return <Link href={href} className="block transition hover:scale-[1.01]">{inner}</Link>;
+  }
+  return inner;
+}
+
+function KPIWithDropdown({
+  label, value, sub, icon, period, preserveParams,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  icon: React.ReactNode;
+  period: "month" | "quarter" | "year";
+  preserveParams: { filter?: string; q?: string; from?: string; to?: string };
+}) {
+  function periodUrl(p: "month" | "quarter" | "year"): string {
+    const params = new URLSearchParams();
+    if (preserveParams.filter && preserveParams.filter !== "ALL") params.set("filter", preserveParams.filter);
+    if (preserveParams.q) params.set("q", preserveParams.q);
+    if (preserveParams.from) params.set("from", preserveParams.from);
+    if (preserveParams.to) params.set("to", preserveParams.to);
+    if (p !== "month") params.set("period", p);
+    const qs = params.toString();
+    return qs ? `/buchhaltung?${qs}` : "/buchhaltung";
+  }
   return (
     <div className="card p-4">
-      <div className="flex items-center gap-2 text-smoke">{icon}<div className="eyebrow eyebrow-muted">{label}</div></div>
-      <div className="font-serif text-2xl mt-2 tabular-nums" style={{ color: accent ? "rgb(var(--accent))" : undefined }}>{value}</div>
+      <div className="flex items-center justify-between gap-2 text-smoke">
+        <div className="flex items-center gap-2">{icon}<div className="eyebrow eyebrow-muted">{label}</div></div>
+        <div className="flex gap-0.5 text-[10px]">
+          {(["month", "quarter", "year"] as const).map((p) => {
+            const isActive = period === p;
+            const labelShort = p === "month" ? "M" : p === "quarter" ? "Q" : "J";
+            return (
+              <Link
+                key={p}
+                href={periodUrl(p)}
+                className="px-1.5 py-0.5 rounded transition"
+                style={{
+                  background: isActive ? "rgb(var(--ink))" : "transparent",
+                  color: isActive ? "rgb(var(--bg))" : "rgb(var(--taupe))",
+                }}
+                title={p === "month" ? "Monat" : p === "quarter" ? "Quartal" : "Jahr"}
+              >
+                {labelShort}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+      <div className="font-serif text-2xl mt-2 tabular-nums">{value}</div>
       <div className="text-xs text-smoke mt-1">{sub}</div>
     </div>
   );
@@ -257,8 +365,18 @@ function FilterChip({
       href={qs ? `/buchhaltung?${qs}` : "/buchhaltung"}
       className="badge transition"
       style={{
-        background: active ? "rgb(var(--ink))" : accent && count > 0 ? "rgb(var(--accent-soft))" : "rgb(var(--paper))",
-        color: active ? "rgb(var(--bg))" : accent && count > 0 ? "rgb(var(--accent-deep))" : "rgb(var(--smoke))",
+        // Inaktive Chips dezent grau hinterlegen, damit sie lesbar in allen Themes sind
+        // (vorher: weiß auf weißem Hintergrund kaum erkennbar)
+        background: active
+          ? "rgb(var(--ink))"
+          : accent && count > 0
+            ? "rgb(var(--accent-soft))"
+            : "rgb(var(--linen))",
+        color: active
+          ? "rgb(var(--bg))"
+          : accent && count > 0
+            ? "rgb(var(--accent-deep))"
+            : "rgb(var(--taupe))",
         border: active ? "none" : "1px solid rgb(var(--stone))",
         padding: "6px 12px",
       }}

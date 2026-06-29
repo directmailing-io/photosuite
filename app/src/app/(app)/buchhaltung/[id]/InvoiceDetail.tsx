@@ -75,6 +75,16 @@ type Props = {
     fee1Cents: number; fee2Cents: number; fee3Cents: number;
   };
   stripeReady: boolean;
+  catalog: CatalogArticle[];
+};
+
+export type CatalogArticle = {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: string;
+  unit: string | null;
+  defaultPriceCents: number;
 };
 
 function toDateInput(iso: string | null) {
@@ -84,7 +94,7 @@ function toDateInput(iso: string | null) {
 
 const REMINDER_LABELS = ["Keine", "Zahlungserinnerung", "1. Mahnung", "2. Mahnung"];
 
-export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
+export function InvoiceDetail({ invoice, reminderConfig, stripeReady, catalog }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<Item[]>(invoice.items);
@@ -276,12 +286,28 @@ export function InvoiceDetail({ invoice, reminderConfig, stripeReady }: Props) {
         </section>
 
         <section className="card p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <div className="eyebrow eyebrow-muted">Positionen</div>
             {isDraft && (
-              <button type="button" onClick={addItem} className="btn-secondary text-xs h-8">
-                <Plus size={13} /> Position
-              </button>
+              <div className="flex items-center gap-2">
+                <ArticlePicker
+                  catalog={catalog}
+                  onPick={(a) => {
+                    setItems((prev) => [...prev, {
+                      id: `tmp-${Date.now()}`,
+                      title: a.name,
+                      description: a.description,
+                      quantity: 1,
+                      unit: a.unit ?? "Pauschal",
+                      unitPriceCents: a.defaultPriceCents,
+                      totalCents: a.defaultPriceCents,
+                    }]);
+                  }}
+                />
+                <button type="button" onClick={addItem} className="btn-secondary text-xs h-8">
+                  <Plus size={13} /> Leere Position
+                </button>
+              </div>
             )}
           </div>
 
@@ -788,6 +814,103 @@ function PaymentCard({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Picker für Artikel-Katalog. Zeigt SERVICE + PRODUCT in eigenen Sections,
+ * mit Suchfeld zum Filtern. Beim Auswahl wird ein neues Invoice-Item mit
+ * den Snapshot-Daten erzeugt (Preis, Beschreibung, Einheit).
+ */
+function ArticlePicker({
+  catalog,
+  onPick,
+}: {
+  catalog: CatalogArticle[];
+  onPick: (a: CatalogArticle) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  if (catalog.length === 0) {
+    return null;
+  }
+
+  const q = search.trim().toLowerCase();
+  const filter = (a: CatalogArticle) =>
+    !q || a.name.toLowerCase().includes(q) || (a.description ?? "").toLowerCase().includes(q);
+  const services = catalog.filter((a) => a.kind === "SERVICE" && filter(a));
+  const products = catalog.filter((a) => a.kind === "PRODUCT" && filter(a));
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="btn-accent text-xs h-8"
+      >
+        <Plus size={13} /> Aus Katalog
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 mt-1 z-50 w-80 max-h-96 overflow-y-auto rounded-lg border shadow-md"
+            style={{ background: "rgb(var(--paper))", borderColor: "rgb(var(--stone))" }}
+          >
+            <div className="p-2 border-b border-stone/60">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Suchen…"
+                className="input h-8 text-sm"
+                autoFocus
+              />
+            </div>
+            <PickerGroup title="Dienstleistungen" items={services} onPick={(a) => { onPick(a); setOpen(false); }} />
+            <PickerGroup title="Produkte" items={products} onPick={(a) => { onPick(a); setOpen(false); }} />
+            {services.length === 0 && products.length === 0 && (
+              <div className="text-xs text-smoke text-center py-6">Keine Treffer.</div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PickerGroup({
+  title, items, onPick,
+}: {
+  title: string;
+  items: CatalogArticle[];
+  onPick: (a: CatalogArticle) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-smoke font-semibold">
+        {title}
+      </div>
+      {items.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          onClick={() => onPick(a)}
+          className="w-full text-left px-3 py-2 hover:bg-linen transition flex items-center gap-3 border-t border-stone/40 first:border-0"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate">{a.name}</div>
+            {a.description && (
+              <div className="text-xs text-smoke truncate">{a.description}</div>
+            )}
+          </div>
+          <div className="text-xs tabular-nums text-smoke shrink-0">
+            {(a.defaultPriceCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+          </div>
+        </button>
+      ))}
     </div>
   );
 }

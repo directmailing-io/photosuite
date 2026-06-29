@@ -17,7 +17,7 @@ export default async function InvoicePage({
 }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const [inv, user] = await Promise.all([
+  const [inv, user, catalog] = await Promise.all([
     prisma.invoice.findFirst({
       where: { id, ownerId: userId },
       include: {
@@ -30,6 +30,11 @@ export default async function InvoicePage({
       },
     }),
     prisma.user.findUnique({ where: { id: userId } }),
+    prisma.articleCatalog.findMany({
+      where: { ownerId: userId, isActive: true },
+      orderBy: [{ kind: "asc" }, { position: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, description: true, kind: true, unit: true, defaultPriceCents: true },
+    }),
   ]);
   if (!inv) return notFound();
 
@@ -125,6 +130,7 @@ export default async function InvoicePage({
           fee3Cents: user?.reminderFee3Cents ?? 1000,
         }}
         stripeReady={!!user?.stripeSecretKeyEnc && !!user?.stripeChargesEnabled}
+        catalog={catalog}
       />
     </>
   );

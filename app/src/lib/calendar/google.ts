@@ -16,6 +16,7 @@ const SCOPES = [
   "email",
 ];
 const APP_TAG_KEY = "lisaCrmShootingId";
+const APP_TAG_KEY_DATE = "lisaCrmShootingDateId";
 const APP_ORIGIN_KEY = "lisaCrmOrigin";
 const APP_ORIGIN_VALUE = "lisa-crm";
 
@@ -337,6 +338,83 @@ export async function deleteShootingFromGoogle(conn: CalendarConnection, shootin
       calendarId: targetCalendarId,
       eventId,
     });
+  } catch (err: any) {
+    if (err?.code !== 404 && err?.response?.status !== 404) throw err;
+  }
+}
+
+/**
+ * Push eines konkreten Shooting-Termins in den Google-Kalender.
+ * Analog zu upsertShootingInGoogle, aber mit eigenem Tag-Key, damit Termine
+ * und Shootings nicht kollidieren (z.B. wenn Shooting + Date dasselbe Datum haben).
+ */
+export async function upsertDateInGoogle(args: {
+  conn: CalendarConnection;
+  dateId: string;
+  title: string;
+  startAt: Date;
+  endAt: Date;
+  location?: string | null;
+  description?: string | null;
+}): Promise<{ eventId: string }> {
+  const calendar = await googleClientForConnection(args.conn);
+  const targetCalendarId = await getPushTargetCalendarId(args.conn);
+
+  const pseudonymize = args.conn.pseudonymize;
+  const summary = pseudonymize ? `Termin #${args.dateId.slice(-6)}` : args.title;
+
+  const existing = await calendar.events.list({
+    calendarId: targetCalendarId,
+    privateExtendedProperty: [`${APP_TAG_KEY_DATE}=${args.dateId}`],
+    maxResults: 1,
+    showDeleted: false,
+  });
+  const existingId = existing.data.items?.[0]?.id ?? null;
+
+  const requestBody: calendar_v3.Schema$Event = {
+    summary,
+    description: pseudonymize ? `Erstellt durch Lisa CRM` : (args.description ?? `Lisa CRM · Termin`),
+    location: pseudonymize ? undefined : args.location ?? undefined,
+    start: { dateTime: args.startAt.toISOString(), timeZone: args.conn.externalCalendarTz ?? "Europe/Berlin" },
+    end: { dateTime: args.endAt.toISOString(), timeZone: args.conn.externalCalendarTz ?? "Europe/Berlin" },
+    extendedProperties: {
+      private: {
+        [APP_TAG_KEY_DATE]: args.dateId,
+        [APP_ORIGIN_KEY]: APP_ORIGIN_VALUE,
+      },
+    },
+    source: { title: "Lisa CRM", url: process.env.APP_BASE_URL ?? "" },
+  };
+
+  if (existingId) {
+    const res = await calendar.events.update({
+      calendarId: targetCalendarId,
+      eventId: existingId,
+      requestBody,
+    });
+    return { eventId: res.data.id ?? existingId };
+  }
+
+  const res = await calendar.events.insert({
+    calendarId: targetCalendarId,
+    requestBody,
+  });
+  return { eventId: res.data.id ?? "" };
+}
+
+export async function deleteDateFromGoogle(conn: CalendarConnection, dateId: string): Promise<void> {
+  const calendar = await googleClientForConnection(conn);
+  let targetCalendarId: string;
+  try { targetCalendarId = await getPushTargetCalendarId(conn); } catch { return; }
+  const res = await calendar.events.list({
+    calendarId: targetCalendarId,
+    privateExtendedProperty: [`${APP_TAG_KEY_DATE}=${dateId}`],
+    maxResults: 1,
+  });
+  const eventId = res.data.items?.[0]?.id;
+  if (!eventId) return;
+  try {
+    await calendar.events.delete({ calendarId: targetCalendarId, eventId });
   } catch (err: any) {
     if (err?.code !== 404 && err?.response?.status !== 404) throw err;
   }

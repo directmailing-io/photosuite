@@ -92,6 +92,17 @@ export async function createShooting(formData: FormData) {
     : null;
   if (pkg) safePackageId = pkg.id;
 
+  // Modular-Modus: optionales Bildpaket. Ownership-Check, kein Throw bei leer.
+  const imagePackageIdRaw = s(formData.get("imagePackageId"));
+  let safeImagePackageId: string | null = null;
+  if (imagePackageIdRaw) {
+    const ipkg = await prisma.package.findFirst({
+      where: { id: imagePackageIdRaw, ownerId: userId },
+      select: { id: true },
+    });
+    if (ipkg) safeImagePackageId = ipkg.id;
+  }
+
   const slug = generateSlug(customer.firstName);
 
   // Add-Ons mit Preis-Snapshot vorbereiten — Ownership-Filter auf eigene Add-Ons.
@@ -161,6 +172,7 @@ export async function createShooting(formData: FormData) {
       publicSlug: slug,
       customerId,
       packageId: safePackageId,
+      imagePackageId: safeImagePackageId,
       statusId: safeStatusId,
       description: s(formData.get("description")) ?? pkg?.description ?? null,
       scheduledAt: dt(formData.get("scheduledAt")) ?? null,
@@ -304,6 +316,23 @@ export async function updateShooting(id: string, formData: FormData) {
     if (pk) safePackageId = pk.id;
   }
 
+  // imagePackageId — leerer String = explicit unset.
+  // Default: bestehender Wert wird beibehalten, wenn das Feld nicht im Form ist.
+  const imagePackageIdRaw = formData.get("imagePackageId");
+  let safeImagePackageId: string | null = existing.imagePackageId;
+  if (imagePackageIdRaw !== null) {
+    const trimmed = String(imagePackageIdRaw).trim();
+    if (trimmed === "") {
+      safeImagePackageId = null;
+    } else {
+      const ipk = await prisma.package.findFirst({
+        where: { id: trimmed, ownerId: userId },
+        select: { id: true },
+      });
+      safeImagePackageId = ipk ? ipk.id : existing.imagePackageId;
+    }
+  }
+
   // ShootingStatus-Ownership prüfen.
   let safeStatusId: string | null = existing.statusId;
   if (newStatusId) {
@@ -374,6 +403,7 @@ export async function updateShooting(id: string, formData: FormData) {
     data: {
       title: s(formData.get("title")) ?? existing.title,
       packageId: safePackageId,
+      imagePackageId: safeImagePackageId,
       statusId: safeStatusId,
       description: s(formData.get("description")) ?? null,
       scheduledAt: dt(formData.get("scheduledAt")) ?? null,
@@ -541,6 +571,22 @@ export async function moveShootingToDate(shootingId: string, isoDate: string) {
 
 // ---------- Termine ----------
 
+// Sammelt + validiert attachmentIds aus FormData (multiple-Werte als "attachmentIds").
+// Nur eigene Anhänge dürfen verlinkt werden (über Shooting-Ownership).
+async function safeAttachmentIdsForShooting(
+  shootingId: string,
+  ownerId: string,
+  formData: FormData,
+): Promise<string[]> {
+  const raw = formData.getAll("attachmentIds").map(String).filter(Boolean);
+  if (raw.length === 0) return [];
+  const owned = await prisma.attachment.findMany({
+    where: { id: { in: raw }, shootingId, shooting: { ownerId } },
+    select: { id: true },
+  });
+  return owned.map((a) => a.id);
+}
+
 export async function addShootingDate(shootingId: string, formData: FormData) {
   const userId = await requireUserId();
   // Shooting-Ownership prüfen.
@@ -549,27 +595,61 @@ export async function addShootingDate(shootingId: string, formData: FormData) {
   const label = s(formData.get("label"));
   const startAt = dt(formData.get("startAt"));
   if (!label || !startAt) throw new Error("Bezeichnung und Startzeit sind Pflicht.");
+  const endAt = dt(formData.get("endAt")) ?? null;
+  const location = s(formData.get("location")) ?? null;
+  const description = s(formData.get("description")) ?? null;
+  const syncToCalendar = formData.get("syncToCalendar") === "on";
   const max = await prisma.shootingDate.findFirst({
     where: { shootingId },
     orderBy: { position: "desc" },
   });
-  await prisma.shootingDate.create({
+  const created = await prisma.shootingDate.create({
     data: {
       shootingId,
       label,
       startAt,
-      endAt: dt(formData.get("endAt")) ?? null,
-      location: s(formData.get("location")),
+      endAt,
+      location,
       locationUrl: s(formData.get("locationUrl")),
-      description: s(formData.get("description")),
+      description,
       position: (max?.position ?? -1) + 1,
+      syncToCalendar,
     },
   });
+
+  // Attachment-Zuordnungen (Multi-Select aus DateForm). Ownership ist via
+  // shootingId gesichert — wir setzen shootingDateId nur für Attachments,
+  // die zu diesem Shooting gehören.
+  const safeAttIds = await safeAttachmentIdsForShooting(shootingId, userId, formData);
+  if (safeAttIds.length > 0) {
+    await prisma.attachment.updateMany({
+      where: { id: { in: safeAttIds }, shootingId },
+      data: { shootingDateId: created.id },
+    });
+  }
+
+  // Calendar-Push (best-effort, kein Throw).
+  if (syncToCalendar) {
+    try {
+      const { pushDateToCalendar } = await import("@/lib/calendar/sync");
+      await pushDateToCalendar(userId, {
+        dateId: created.id,
+        title: label,
+        startAt,
+        endAt: endAt ?? new Date(startAt.getTime() + 60 * 60_000),
+        location,
+        description,
+      });
+    } catch {
+      // ignorieren — Sync ist Best-Effort
+    }
+  }
+
   // Wenn das Shooting noch kein primäres scheduledAt hat, übernehmen
   if (!sh.scheduledAt) {
     await prisma.shooting.update({
       where: { id: shootingId },
-      data: { scheduledAt: startAt, location: s(formData.get("location")) },
+      data: { scheduledAt: startAt, location },
     });
   }
   revalidatePath(`/shootings/${shootingId}`);
@@ -584,17 +664,60 @@ export async function updateShootingDate(id: string, shootingId: string, formDat
   if (!sd) throw new Error("Termin nicht gefunden");
   const startAt = dt(formData.get("startAt"));
   if (!startAt) throw new Error("Startzeit ist Pflicht.");
+  const endAt = dt(formData.get("endAt")) ?? null;
+  const label = s(formData.get("label")) ?? "Termin";
+  const location = s(formData.get("location")) ?? null;
+  const description = s(formData.get("description")) ?? null;
+  const syncToCalendar = formData.get("syncToCalendar") === "on";
+
   await prisma.shootingDate.update({
     where: { id },
     data: {
-      label: s(formData.get("label")) ?? "Termin",
+      label,
       startAt,
-      endAt: dt(formData.get("endAt")) ?? null,
-      location: s(formData.get("location")) ?? null,
+      endAt,
+      location,
       locationUrl: s(formData.get("locationUrl")) ?? null,
-      description: s(formData.get("description")) ?? null,
+      description,
+      syncToCalendar,
     },
   });
+
+  // Attachment-Re-Assignment: erst alle aktuellen Zuordnungen lösen, dann neue setzen.
+  // Sicher gegen IDOR: safeAttachmentIdsForShooting filtert auf shootingId.
+  const safeAttIds = await safeAttachmentIdsForShooting(shootingId, userId, formData);
+  await prisma.attachment.updateMany({
+    where: { shootingDateId: id, shootingId },
+    data: { shootingDateId: null },
+  });
+  if (safeAttIds.length > 0) {
+    await prisma.attachment.updateMany({
+      where: { id: { in: safeAttIds }, shootingId },
+      data: { shootingDateId: id },
+    });
+  }
+
+  // Calendar-Sync-Hooks: push wenn syncToCalendar wahr, sonst remove (Wechsel).
+  try {
+    if (syncToCalendar) {
+      const { pushDateToCalendar } = await import("@/lib/calendar/sync");
+      await pushDateToCalendar(userId, {
+        dateId: id,
+        title: label,
+        startAt,
+        endAt: endAt ?? new Date(startAt.getTime() + 60 * 60_000),
+        location,
+        description,
+      });
+    } else if (sd.syncToCalendar) {
+      // war vorher gesynct, jetzt nicht mehr → aus Kalender entfernen
+      const { removeDateFromCalendar } = await import("@/lib/calendar/sync");
+      await removeDateFromCalendar(userId, id);
+    }
+  } catch {
+    // ignorieren — Sync ist Best-Effort
+  }
+
   revalidatePath(`/shootings/${shootingId}`);
 }
 
@@ -605,6 +728,16 @@ export async function deleteShootingDate(id: string, shootingId: string) {
   });
   if (!sd) throw new Error("Termin nicht gefunden");
   await prisma.shootingDate.delete({ where: { id } });
+
+  // Wenn der Date gesynct war, auch aus dem Kalender entfernen.
+  if (sd.syncToCalendar) {
+    try {
+      const { removeDateFromCalendar } = await import("@/lib/calendar/sync");
+      await removeDateFromCalendar(userId, id);
+    } catch {
+      // ignorieren
+    }
+  }
   revalidatePath(`/shootings/${shootingId}`);
 }
 

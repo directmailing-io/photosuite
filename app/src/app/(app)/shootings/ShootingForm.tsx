@@ -11,6 +11,7 @@ type Customer = { id: string; firstName: string; lastName: string };
 type Pkg = {
   id: string;
   name: string;
+  kind?: string;
   price: number;
   description: string | null;
   depositAmount: number | null;
@@ -32,6 +33,7 @@ export type ShootingInitial = {
   title?: string;
   customerId?: string;
   packageId?: string | null;
+  imagePackageId?: string | null;
   statusId?: string | null;
   description?: string | null;
   price?: number;
@@ -51,11 +53,12 @@ type Props = {
   statuses: Status[];
   team: TeamPickerMember[];
   addons?: AddonOpt[];
+  packageMode?: "all_in_one" | "modular";
   action: (formData: FormData) => Promise<void>;
   deleteAction?: () => Promise<void>;
 };
 
-export function ShootingForm({ initial, customers, packages, statuses, team, addons = [], action, deleteAction }: Props) {
+export function ShootingForm({ initial, customers, packages, statuses, team, addons = [], packageMode = "all_in_one", action, deleteAction }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [packageId, setPackageId] = useState<string | null>(initial?.packageId ?? null);
@@ -165,7 +168,10 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
 
       <section className="card p-6 space-y-4">
         <div className="eyebrow eyebrow-muted">Paket & Preis</div>
-        <Field label="Paket" hint="Wählst du ein Paket, übernehmen wir Preis, Anzahlung, Bedingungen und Checklisten — du kannst alles überschreiben.">
+        <Field
+          label={packageMode === "modular" ? "Anzahlungs-Paket" : "Paket"}
+          hint="Wählst du ein Paket, übernehmen wir Preis, Anzahlung, Bedingungen und Checklisten — du kannst alles überschreiben."
+        >
           <select
             name="packageId"
             value={packageId ?? ""}
@@ -173,11 +179,31 @@ export function ShootingForm({ initial, customers, packages, statuses, team, add
             className="select"
           >
             <option value="">— ohne Paket (individuell) —</option>
-            {activePackages.map((p) => (
-              <option key={p.id} value={p.id}>{p.name} · {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(p.price)}</option>
-            ))}
+            {activePackages
+              .filter((p) => packageMode !== "modular" || (p as any).kind !== "image_pack")
+              .map((p) => (
+                <option key={p.id} value={p.id}>{p.name} · {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(p.price)}</option>
+              ))}
           </select>
         </Field>
+
+        {/* Bildpaket-Auswahl nur im modular-Modus. Kann jetzt oder später gesetzt werden. */}
+        {packageMode === "modular" && (
+          <Field label="Bildpaket" hint="Wird bei der Bildauswahl gewählt — du kannst es auch jetzt schon festlegen.">
+            <select
+              name="imagePackageId"
+              defaultValue={initial?.imagePackageId ?? ""}
+              className="select"
+            >
+              <option value="">— später wählen —</option>
+              {activePackages
+                .filter((p) => (p as any).kind === "image_pack" || (p as any).kind === "all_in_one")
+                .map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} · {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(p.price)}</option>
+                ))}
+            </select>
+          </Field>
+        )}
         <FormRow>
           <Field label="Preis (€) *"><input name="price" type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} className="input" required /></Field>
           <Field label="Anzahlung (€)"><input name="depositAmount" type="number" step="0.01" min="0" value={deposit} onChange={(e) => setDeposit(e.target.value)} className="input" /></Field>

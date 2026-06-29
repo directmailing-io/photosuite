@@ -13,6 +13,7 @@ type Pkg = {
   name: string;
   description: string | null;
   coverUrl: string | null;
+  kind: string;
   price: number;
   depositAmount: number | null;
   paymentTerms: string | null;
@@ -23,6 +24,7 @@ type Customer = { id: string; firstName: string; lastName: string; avatarUrl: st
 type Status = { id: string; label: string; color: string };
 
 type Props = {
+  packageMode: "all_in_one" | "modular";
   packages: Pkg[];
   customers: Customer[];
   statuses: Status[];
@@ -30,27 +32,47 @@ type Props = {
   action: (formData: FormData) => Promise<void>;
 };
 
-export function ShootingWizard({ packages, customers, statuses, defaultCustomerId, action }: Props) {
-  const router = useRouter();
+// Im modular-Mode wählt User 2 Pakete: Anzahlung (Pflicht) + Bildpaket (optional).
+// Im all_in_one-Mode wie bisher: 1 Paket oder „individual".
+export type WizardSelection =
+  | { mode: "all_in_one"; pkg: Pkg | "individual" }
+  | { mode: "modular"; depositPkg: Pkg; imagePkg: Pkg | null };
+
+export function ShootingWizard({ packageMode, packages, customers, statuses, defaultCustomerId, action }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [pkg, setPkg] = useState<Pkg | "individual" | null>(null);
+  const [selection, setSelection] = useState<WizardSelection | null>(null);
+
+  // Pakete für die jeweilige Spalte filtern. „all_in_one"-Pakete tauchen in
+  // beiden Listen auf, damit Lisa beim Mode-Wechsel keine Lücken hat.
+  const depositCandidates = packages.filter((p) => p.kind === "deposit" || p.kind === "all_in_one");
+  const imageCandidates = packages.filter((p) => p.kind === "image_pack" || p.kind === "all_in_one");
 
   return (
     <div className="space-y-6">
       <Stepper step={step} />
 
-      {step === 1 && (
+      {step === 1 && packageMode === "all_in_one" && (
         <PackageStep
           packages={packages}
-          selected={pkg}
-          onSelect={setPkg}
-          onContinue={() => pkg && setStep(2)}
+          selected={selection?.mode === "all_in_one" ? selection.pkg : null}
+          onSelect={(p) => setSelection(p === null ? null : { mode: "all_in_one", pkg: p })}
+          onContinue={() => selection && setStep(2)}
         />
       )}
 
-      {step === 2 && pkg && (
+      {step === 1 && packageMode === "modular" && (
+        <ModularPackageStep
+          depositPackages={depositCandidates}
+          imagePackages={imageCandidates}
+          selection={selection?.mode === "modular" ? selection : null}
+          onSelect={(s) => setSelection(s)}
+          onContinue={() => setStep(2)}
+        />
+      )}
+
+      {step === 2 && selection && (
         <DetailsStep
-          pkg={pkg === "individual" ? null : pkg}
+          selection={selection}
           customers={customers}
           statuses={statuses}
           defaultCustomerId={defaultCustomerId}
@@ -84,6 +106,184 @@ function StepDot({ n, active, done, label }: { n: number; active: boolean; done:
         {done ? <Check size={14} /> : n}
       </div>
       <span className={cn("font-medium", active ? "text-ink" : "text-smoke")}>{label}</span>
+    </div>
+  );
+}
+
+/* -------------------- Modular: 2-Spalten-Picker -------------------- */
+
+function ModularPackageStep({
+  depositPackages,
+  imagePackages,
+  selection,
+  onSelect,
+  onContinue,
+}: {
+  depositPackages: Pkg[];
+  imagePackages: Pkg[];
+  selection: { mode: "modular"; depositPkg: Pkg; imagePkg: Pkg | null } | null;
+  onSelect: (s: { mode: "modular"; depositPkg: Pkg; imagePkg: Pkg | null }) => void;
+  onContinue: () => void;
+}) {
+  const depositSelected = selection?.depositPkg ?? null;
+  const imageSelected = selection?.imagePkg ?? null;
+
+  function setDeposit(p: Pkg) {
+    onSelect({ mode: "modular", depositPkg: p, imagePkg: imageSelected });
+  }
+  function setImage(p: Pkg | null) {
+    if (!depositSelected) return;
+    onSelect({ mode: "modular", depositPkg: depositSelected, imagePkg: p });
+  }
+
+  return (
+    <div className="space-y-6">
+      <section>
+        <div className="eyebrow eyebrow-muted mb-3">Schritt 1 — Anzahlungs-Paket *</div>
+        <div className="text-sm text-smoke mb-4">
+          Was die Kundin bei Buchung wählt — z.B. Solo, Couple, Reise.
+        </div>
+        {depositPackages.length === 0 ? (
+          <div className="card p-6 text-center text-sm text-smoke italic">
+            Noch keine Anzahlungs-Pakete. Lege eines unter „Pakete" an.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {depositPackages.map((p) => (
+              <PackageTile
+                key={p.id}
+                pkg={p}
+                active={depositSelected?.id === p.id}
+                onClick={() => setDeposit(p)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div className="eyebrow eyebrow-muted mb-3">Schritt 2 — Bildpaket (optional)</div>
+        <div className="text-sm text-smoke mb-4">
+          Kann jetzt schon gewählt werden — oder später bei der Bildauswahl.
+        </div>
+        {imagePackages.length === 0 ? (
+          <div className="card p-6 text-center text-sm text-smoke italic">
+            Noch keine Bildpakete. Lege eines unter „Pakete" an oder lasse das hier später leer.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* „Später wählen" Karte */}
+            <button
+              type="button"
+              onClick={() => setImage(null)}
+              disabled={!depositSelected}
+              className={cn(
+                "card card-hover overflow-hidden text-left flex flex-col transition-all p-5",
+                imageSelected === null && depositSelected && "ring-2",
+              )}
+              style={{
+                borderColor: imageSelected === null && depositSelected ? "rgb(var(--accent))" : undefined,
+                borderStyle: "dashed",
+                opacity: depositSelected ? 1 : 0.4,
+              }}
+            >
+              <Sparkles size={28} strokeWidth={1.2} className="text-taupe mb-2" />
+              <div className="font-serif text-xl">Später wählen</div>
+              <div className="text-xs text-smoke mt-1">
+                Bildpaket wird bei der Bildauswahl bestimmt — nichts jetzt festlegen.
+              </div>
+            </button>
+            {imagePackages.map((p) => (
+              <PackageTile
+                key={p.id}
+                pkg={p}
+                active={imageSelected?.id === p.id}
+                disabled={!depositSelected}
+                onClick={() => setImage(p)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          disabled={!depositSelected}
+          onClick={onContinue}
+          className="btn-accent disabled:opacity-50"
+        >
+          Weiter <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PackageTile({
+  pkg, active, disabled, onClick,
+}: {
+  pkg: Pkg;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn("card card-hover overflow-hidden text-left flex flex-col transition-all", active && "ring-2", disabled && "opacity-40 cursor-not-allowed")}
+      style={{
+        borderColor: active ? "rgb(var(--accent))" : undefined,
+        boxShadow: active ? "0 0 0 3px rgba(200,16,46,0.15)" : undefined,
+      }}
+    >
+      <div className="aspect-[16/9] bg-linen relative overflow-hidden">
+        {pkg.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={pkg.coverUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-taupe">
+            <PackageIcon size={42} strokeWidth={1} />
+          </div>
+        )}
+        {active && (
+          <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center shadow-md">
+            <Check size={15} />
+          </div>
+        )}
+      </div>
+      <div className="p-4 flex-1">
+        <div className="font-serif text-xl">{pkg.name}</div>
+        {pkg.description && <div className="text-xs text-smoke mt-1 line-clamp-2">{pkg.description}</div>}
+        <div className="hairline mt-3 pt-3 flex items-center justify-between text-xs">
+          <div className="font-serif text-base tabular-nums">{formatEUR(pkg.price)}</div>
+          <div className="flex items-center gap-2 text-smoke">
+            {pkg.durationMin && <span className="flex items-center gap-1"><Clock size={11} /> {pkg.durationMin} min</span>}
+            {pkg.checklistCount > 0 && <span className="flex items-center gap-1"><ListChecks size={11} /> {pkg.checklistCount}</span>}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function PackagePreviewCard({ label, pkg }: { label: string; pkg: Pkg }) {
+  return (
+    <div className="card p-4 flex items-center gap-3 bg-paper">
+      <div className="w-14 h-14 rounded-lg bg-linen overflow-hidden shrink-0">
+        {pkg.coverUrl
+          ? <img src={pkg.coverUrl} alt="" className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center text-taupe"><PackageIcon size={22} strokeWidth={1} /></div>}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="eyebrow eyebrow-muted">{label}</div>
+        <div className="font-serif text-lg truncate">{pkg.name}</div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className="font-serif text-lg tabular-nums">{formatEUR(pkg.price)}</div>
+      </div>
     </div>
   );
 }
@@ -190,32 +390,50 @@ function PackageStep({
 }
 
 function DetailsStep({
-  pkg,
+  selection,
   customers,
   statuses,
   defaultCustomerId,
   onBack,
   action,
 }: {
-  pkg: Pkg | null;
+  selection: WizardSelection;
   customers: Customer[];
   statuses: Status[];
   defaultCustomerId?: string;
   onBack: () => void;
   action: (fd: FormData) => Promise<void>;
 }) {
+  // Aktive Pakete je nach Mode: bei all_in_one EIN Paket (oder „individual"),
+  // bei modular Anzahlungs- + optionales Bildpaket.
+  const primaryPkg: Pkg | null =
+    selection.mode === "all_in_one"
+      ? selection.pkg === "individual" ? null : selection.pkg
+      : selection.depositPkg;
+  const imagePkg: Pkg | null = selection.mode === "modular" ? selection.imagePkg : null;
+
+  // Aggregat-Preis für „all_in_one": pkg.price.
+  // Für „modular": deposit.price + image.price (wenn beide vorhanden).
+  const aggregatePrice = (primaryPkg?.price ?? 0) + (imagePkg?.price ?? 0);
+  const aggregateDeposit = selection.mode === "modular"
+    ? primaryPkg?.price ?? 0  // im modular ist das Anzahlungspaket selbst die Anzahlung
+    : primaryPkg?.depositAmount ?? 0;
+
   const [busy, setBusy] = useState(false);
   const [customerId, setCustomerId] = useState(defaultCustomerId ?? "");
-  const [price, setPrice] = useState(pkg ? String(pkg.price) : "");
-  const [deposit, setDeposit] = useState(pkg?.depositAmount ? String(pkg.depositAmount) : "");
-  const [terms, setTerms] = useState(pkg?.paymentTerms ?? "");
-  const [description, setDescription] = useState(pkg?.description ?? "");
+  const [price, setPrice] = useState(aggregatePrice ? String(aggregatePrice) : "");
+  const [deposit, setDeposit] = useState(aggregateDeposit ? String(aggregateDeposit) : "");
+  const [terms, setTerms] = useState(primaryPkg?.paymentTerms ?? "");
+  const [description, setDescription] = useState(primaryPkg?.description ?? "");
   const [title, setTitle] = useState("");
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
 
-  // Auto-title: "{Paket} {Vorname}"
-  const suggested = pkg && selectedCustomer ? `${pkg.name} · ${selectedCustomer.firstName}` : selectedCustomer ? `Shooting ${selectedCustomer.firstName}` : "";
+  // Auto-title bei modular: zeigt beide Paket-Namen, falls vorhanden.
+  const baseTitle = selection.mode === "modular"
+    ? imagePkg ? `${primaryPkg!.name} + ${imagePkg.name}` : primaryPkg!.name
+    : primaryPkg?.name ?? "Shooting";
+  const suggested = selectedCustomer ? `${baseTitle} · ${selectedCustomer.firstName}` : "";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -223,7 +441,8 @@ function DetailsStep({
     try {
       const fd = new FormData(e.currentTarget);
       if (!fd.get("title")) fd.set("title", suggested);
-      if (pkg) fd.set("packageId", pkg.id);
+      if (primaryPkg) fd.set("packageId", primaryPkg.id);
+      if (imagePkg) fd.set("imagePackageId", imagePkg.id);
       await action(fd);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler");
@@ -233,22 +452,40 @@ function DetailsStep({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      {pkg && (
+      {selection.mode === "modular" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <PackagePreviewCard label="Anzahlungs-Paket" pkg={selection.depositPkg} />
+          {imagePkg
+            ? <PackagePreviewCard label="Bildpaket" pkg={imagePkg} />
+            : (
+              <div className="card p-5 flex items-center gap-3 bg-paper">
+                <Sparkles size={20} className="text-taupe" />
+                <div>
+                  <div className="font-medium text-sm">Bildpaket: später wählen</div>
+                  <div className="text-xs text-smoke">Wird bei der Bildauswahl bestimmt.</div>
+                </div>
+              </div>
+            )}
+        </div>
+      ) : primaryPkg ? (
         <div className="card p-5 flex items-center gap-4 bg-paper">
           <div className="w-20 h-20 rounded-lg bg-linen overflow-hidden shrink-0">
-            {pkg.coverUrl ? <img src={pkg.coverUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-taupe"><PackageIcon size={28} strokeWidth={1} /></div>}
+            {primaryPkg.coverUrl
+              ? <img src={primaryPkg.coverUrl} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center text-taupe"><PackageIcon size={28} strokeWidth={1} /></div>}
           </div>
           <div className="flex-1">
             <div className="eyebrow eyebrow-muted">Ausgewähltes Paket</div>
-            <div className="font-serif text-2xl">{pkg.name}</div>
-            <div className="text-xs text-smoke mt-1">Preis, Bedingungen, Beschreibung{pkg.checklistCount > 0 && ` und ${pkg.checklistCount} Checklisten`} werden vorgeladen — alles unten überschreibbar.</div>
+            <div className="font-serif text-2xl">{primaryPkg.name}</div>
+            <div className="text-xs text-smoke mt-1">
+              Preis, Bedingungen, Beschreibung{primaryPkg.checklistCount > 0 && ` und ${primaryPkg.checklistCount} Checklisten`} werden vorgeladen — alles unten überschreibbar.
+            </div>
           </div>
           <div className="text-right">
-            <div className="font-serif text-2xl tabular-nums">{formatEUR(pkg.price)}</div>
+            <div className="font-serif text-2xl tabular-nums">{formatEUR(primaryPkg.price)}</div>
           </div>
         </div>
-      )}
-      {!pkg && (
+      ) : (
         <div className="card p-5 flex items-center gap-3 bg-paper">
           <Sparkles size={20} className="text-taupe" />
           <div>

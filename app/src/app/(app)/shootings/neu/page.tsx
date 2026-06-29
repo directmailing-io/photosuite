@@ -11,7 +11,8 @@ export default async function NeuShootingPage({
 }) {
   const sp = await searchParams;
   const userId = await requireUserId();
-  const [customers, packages, statuses] = await Promise.all([
+  const [user, customers, packages, statuses] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { packageMode: true } }),
     prisma.customer.findMany({ where: { ownerId: userId }, orderBy: [{ firstName: "asc" }] }),
     prisma.package.findMany({
       where: { ownerId: userId, isActive: true },
@@ -20,6 +21,7 @@ export default async function NeuShootingPage({
     }),
     prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
   ]);
+  const packageMode = (user?.packageMode ?? "all_in_one") as "all_in_one" | "modular";
   return (
     <>
       <PageHeader
@@ -28,12 +30,14 @@ export default async function NeuShootingPage({
         subtitle="In zwei Schritten — erst Paket, dann Kundin & Eckdaten."
       />
       <ShootingWizard
+        packageMode={packageMode}
         customers={customers.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, avatarUrl: c.avatarUrl }))}
         packages={packages.map((p) => ({
           id: p.id,
           name: p.name,
           description: p.description,
           coverUrl: p.coverUrl,
+          kind: p.kind,
           price: p.price,
           depositAmount: p.depositAmount,
           paymentTerms: p.paymentTerms,

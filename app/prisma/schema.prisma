@@ -370,13 +370,17 @@ model ExternalCalendarEvent {
   summary         String? // optional, nur für UI-Hint (max 80 chars), KEINE Description/Location
   etag            String?
   isOurs          Boolean            @default(false) // von unserer App angelegt (extendedProperties / X-LISA-ORIGIN)
-  ourShootingId   String? // Verknüpfung zu Shooting (für Roundtrip)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  ourShootingId     String? // Verknüpfung zu Shooting (für Roundtrip)
+  // Alternative Verknüpfung zu einem konkreten Shooting-Termin — falls dieser
+  // Event aus einer ShootingDate stammt (nicht aus dem Shooting selber).
+  ourShootingDateId String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@unique([connectionId, externalEventId])
   @@index([connectionId, startAt, endAt])
   @@index([ourShootingId])
+  @@index([ourShootingDateId])
 }
 
 // Idempotenz-Store für Stripe-Webhooks. Verhindert doppelte Verarbeitung bei Retries.
@@ -530,7 +534,8 @@ model Package {
   bookingBufferAfterMin  Int                        @default(15)
   isActive               Boolean                    @default(true)
   position               Int                        @default(0)
-  shootings              Shooting[]
+  shootings              Shooting[]                 @relation("ShootingPrimaryPackage")
+  imageShootings         Shooting[]                 @relation("ShootingImagePackage")
   checklistTemplates     PackageChecklistTemplate[]
   defaultQuestionnaires  QuestionnaireTemplate[]    @relation("PackageDefaultQuestionnaires")
   // Default-Team für neue Shootings
@@ -636,8 +641,12 @@ model Shooting {
   publicSlug       String? // für Kundenansicht /k/[slug]
   customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId       String
-  package          Package?         @relation(fields: [packageId], references: [id])
+  // Primärpaket: bei „all_in_one" das Komplettpaket, bei „modular" das Anzahlungspaket.
+  package          Package?         @relation("ShootingPrimaryPackage", fields: [packageId], references: [id])
   packageId        String?
+  // Modular-Modus: optionales Bildpaket (wird bei der Bildauswahl gewählt).
+  imagePackage     Package?         @relation("ShootingImagePackage", fields: [imagePackageId], references: [id])
+  imagePackageId   String?
   status           ShootingStatus?  @relation(fields: [statusId], references: [id])
   statusId         String?
   description      String?
@@ -681,8 +690,8 @@ model Shooting {
 }
 
 model ShootingDate {
-  id          String    @id @default(cuid())
-  shooting    Shooting  @relation(fields: [shootingId], references: [id], onDelete: Cascade)
+  id          String       @id @default(cuid())
+  shooting    Shooting     @relation(fields: [shootingId], references: [id], onDelete: Cascade)
   shootingId  String
   label       String // z.B. "Fitting", "Shooting", "Bildauswahl"
   startAt     DateTime
@@ -690,7 +699,12 @@ model ShootingDate {
   location    String?
   locationUrl String? // Maps-Link
   description String? // optional, kurze Info für die Kundin
-  position    Int       @default(0)
+  position    Int          @default(0)
+  // Opt-in pro Termin: wenn true, wird der Termin in alle aktiven Kalender-
+  // Verbindungen gepusht (analog zu Shootings, aber separat steuerbar).
+  syncToCalendar Boolean   @default(false)
+  // Dateien, die diesem konkreten Termin zugeordnet sind (z.B. Fitting-Checkliste).
+  attachments    Attachment[]
 
   @@index([shootingId, startAt])
 }
@@ -731,17 +745,23 @@ model ChecklistItem {
 }
 
 model Attachment {
-  id         String   @id @default(cuid())
-  filename   String
-  url        String
-  mimeType   String?
-  sizeBytes  Int?
+  id              String        @id @default(cuid())
+  filename        String
+  url             String
+  mimeType        String?
+  sizeBytes       Int?
   // Wer hat hochgeladen: "STUDIO" (Lisa) oder "CUSTOMER" (Kundin via Public-Page).
   // Default "STUDIO" für Backwards-Compat; Public-Upload-Endpoints setzen "CUSTOMER".
-  uploadedBy String   @default("STUDIO")
-  shooting   Shooting @relation(fields: [shootingId], references: [id], onDelete: Cascade)
-  shootingId String
-  createdAt  DateTime @default(now())
+  uploadedBy      String        @default("STUDIO")
+  shooting        Shooting      @relation(fields: [shootingId], references: [id], onDelete: Cascade)
+  shootingId      String
+  // Optional: zu welchem konkreten Termin gehört diese Datei (z.B. Fitting-Checkliste).
+  // SetNull bei Date-Delete → Datei bleibt im Shooting erhalten, nur Zuordnung weg.
+  shootingDate    ShootingDate? @relation(fields: [shootingDateId], references: [id], onDelete: SetNull)
+  shootingDateId  String?
+  createdAt       DateTime      @default(now())
+
+  @@index([shootingDateId])
 }
 
 // -------------------- FRAGEBÖGEN --------------------

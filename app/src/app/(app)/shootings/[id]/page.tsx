@@ -22,17 +22,18 @@ export const dynamic = "force-dynamic";
 export default async function ShootingDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const [shooting, customers, packages, statuses, team, qTemplates, allAddons] = await Promise.all([
+  const [shooting, user, customers, packages, statuses, team, qTemplates, allAddons, calendarConnCount] = await Promise.all([
     prisma.shooting.findFirst({
       where: { id, ownerId: userId },
       include: {
         customer: true,
         package: true,
+        imagePackage: true,
         status: true,
         team: true,
         primaryContact: true,
         addons: { orderBy: { position: "asc" }, include: { addon: true } },
-        dates: { orderBy: [{ startAt: "asc" }] },
+        dates: { orderBy: [{ startAt: "asc" }], include: { attachments: { select: { id: true } } } },
         notes: { orderBy: { createdAt: "desc" } },
         checklists: {
           orderBy: [{ audience: "asc" }, { position: "asc" }],
@@ -51,6 +52,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         invoices: { orderBy: { createdAt: "desc" } },
       },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { packageMode: true } }),
     prisma.customer.findMany({ where: { ownerId: userId }, orderBy: [{ firstName: "asc" }] }),
     prisma.package.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" }, include: { addons: true } }),
     prisma.shootingStatus.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
@@ -61,13 +63,19 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
       include: { _count: { select: { fields: true } } },
     }),
     prisma.addon.findMany({ where: { ownerId: userId }, orderBy: { position: "asc" } }),
+    prisma.calendarConnection.count({
+      where: { userId, status: "active", syncEnabled: true, externalCalendarId: { not: null } },
+    }),
   ]);
   if (!shooting) return notFound();
+  const packageMode = (user?.packageMode ?? "all_in_one") as "all_in_one" | "modular";
 
   const publicUrl = shooting.publicSlug ? `/k/${shooting.publicSlug}` : null;
-  // Gesamt-Preis = Paket + Add-Ons (Snapshot). Restbetrag basiert auf diesem Gesamt.
+  // Gesamt-Preis = (Anzahlungspaket-Preis) + (Bildpaket-Preis, falls modular) + Add-Ons.
+  // Im all_in_one-Mode ist imagePackage immer null → Bildpaket-Term = 0.
   const addonsTotal = shooting.addons.reduce((sum, b) => sum + b.unitPrice * b.quantity, 0);
-  const grandTotal = (shooting.price ?? 0) + addonsTotal;
+  const imagePackagePrice = shooting.imagePackage?.price ?? 0;
+  const grandTotal = (shooting.price ?? 0) + imagePackagePrice + addonsTotal;
   const remaining = grandTotal - (shooting.depositAmount ?? 0);
 
   return (
@@ -95,9 +103,20 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         </Link>
         <div className="hidden md:block w-px h-10 bg-stone" />
         <div>
-          <div className="text-xs text-smoke">{addonsTotal > 0 ? "Paket" : "Preis"}</div>
+          <div className="text-xs text-smoke">
+            {shooting.imagePackage ? "Anzahlung-Paket" : addonsTotal > 0 ? "Paket" : "Preis"}
+          </div>
           <div className="font-medium tabular-nums">{formatEUR(shooting.price)}</div>
         </div>
+        {shooting.imagePackage && (
+          <>
+            <div className="hidden md:block w-px h-10 bg-stone" />
+            <div>
+              <div className="text-xs text-smoke">Bildpaket · {shooting.imagePackage.name}</div>
+              <div className="font-medium tabular-nums">{formatEUR(shooting.imagePackage.price)}</div>
+            </div>
+          </>
+        )}
         {addonsTotal > 0 && (
           <>
             <div className="hidden md:block w-px h-10 bg-stone" />
@@ -146,6 +165,8 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
         <div className="lg:col-span-3 space-y-6">
           <DatesManager
             shootingId={shooting.id}
+            hasCalendarConnection={calendarConnCount > 0}
+            attachments={shooting.attachments.map((a) => ({ id: a.id, filename: a.filename }))}
             dates={shooting.dates.map((d) => ({
               id: d.id,
               label: d.label,
@@ -154,6 +175,8 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               location: d.location,
               locationUrl: d.locationUrl,
               description: d.description,
+              syncToCalendar: d.syncToCalendar,
+              attachmentIds: d.attachments.map((a) => a.id),
             }))}
           />
 
@@ -169,11 +192,13 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
 
           <div>
             <ShootingForm
+              packageMode={packageMode}
               initial={{
                 id: shooting.id,
                 title: shooting.title,
                 customerId: shooting.customerId,
                 packageId: shooting.packageId,
+                imagePackageId: shooting.imagePackageId,
                 statusId: shooting.statusId,
                 description: shooting.description,
                 price: shooting.price,
@@ -187,7 +212,7 @@ export default async function ShootingDetail({ params }: { params: Promise<{ id:
               }}
               customers={customers}
               packages={packages.map((p) => ({
-                id: p.id, name: p.name, price: p.price, description: p.description,
+                id: p.id, name: p.name, kind: p.kind, price: p.price, description: p.description,
                 depositAmount: p.depositAmount, paymentTerms: p.paymentTerms, durationMin: p.durationMin,
                 isActive: p.isActive, primaryContactId: p.primaryContactId,
                 availableAddonIds: p.addons.map((a) => a.id),

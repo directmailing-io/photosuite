@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import {
   syncGoogleEvents, upsertShootingInGoogle, deleteShootingFromGoogle,
+  upsertDateInGoogle, deleteDateFromGoogle,
 } from "./google";
 import {
   syncCalDAVEvents, upsertShootingInCalDAV, deleteShootingFromCalDAV,
@@ -128,6 +129,60 @@ export async function pushShootingToCalendar(userId: string, args: {
         where: { id: conn.id },
         data: { lastSyncError: `Push-Fehler: ${err?.message?.slice(0, 200) ?? "?"}` },
       });
+    }
+  }));
+}
+
+/**
+ * Push eines konkreten ShootingDate-Eintrags in alle aktiven Kalender-Verbindungen.
+ * Wird aufgerufen, wenn `ShootingDate.syncToCalendar === true` ist.
+ * CalDAV-Push für Dates ist noch nicht implementiert (best-effort, kein Throw).
+ */
+export async function pushDateToCalendar(userId: string, args: {
+  dateId: string;
+  title: string;
+  startAt: Date;
+  endAt: Date;
+  location?: string | null;
+  description?: string | null;
+}): Promise<void> {
+  const conns = await prisma.calendarConnection.findMany({
+    where: { userId, status: "active", syncEnabled: true, externalCalendarId: { not: null } },
+  });
+  await Promise.allSettled(conns.map(async (conn) => {
+    try {
+      if (conn.provider === "google") {
+        await upsertDateInGoogle({
+          conn,
+          dateId: args.dateId,
+          title: args.title,
+          startAt: args.startAt,
+          endAt: args.endAt,
+          location: args.location,
+          description: args.description,
+        });
+      }
+      // CalDAV-Push für Dates: noch nicht implementiert. Lisa nutzt aktuell Google.
+    } catch (err: any) {
+      await prisma.calendarConnection.update({
+        where: { id: conn.id },
+        data: { lastSyncError: `Termin-Push-Fehler: ${err?.message?.slice(0, 200) ?? "?"}` },
+      });
+    }
+  }));
+}
+
+export async function removeDateFromCalendar(userId: string, dateId: string): Promise<void> {
+  const conns = await prisma.calendarConnection.findMany({
+    where: { userId, status: "active", syncEnabled: true, externalCalendarId: { not: null } },
+  });
+  await Promise.allSettled(conns.map(async (conn) => {
+    try {
+      if (conn.provider === "google") {
+        await deleteDateFromGoogle(conn, dateId);
+      }
+    } catch {
+      // ignorieren — beim nächsten Sync-Lauf wird neu versucht
     }
   }));
 }

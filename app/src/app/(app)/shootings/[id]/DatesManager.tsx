@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarPlus, Trash2, Pencil, MapPin, Calendar, Clock, Check, X } from "lucide-react";
+import { CalendarPlus, Trash2, Pencil, MapPin, Calendar, Clock, Check, X, RefreshCw, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { addShootingDate, updateShootingDate, deleteShootingDate } from "../actions";
 import { formatDateTime } from "@/lib/utils";
@@ -15,6 +15,13 @@ type DateItem = {
   location: string | null;
   locationUrl: string | null;
   description: string | null;
+  syncToCalendar: boolean;
+  attachmentIds: string[];
+};
+
+export type AvailableAttachment = {
+  id: string;
+  filename: string;
 };
 
 // Voreingestellte Termin-Arten — Lisa wählt schnell aus, Eigenes-Feld bleibt.
@@ -41,7 +48,17 @@ function addHoursLocal(value: string, hours: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function DatesManager({ shootingId, dates }: { shootingId: string; dates: DateItem[] }) {
+export function DatesManager({
+  shootingId,
+  dates,
+  attachments,
+  hasCalendarConnection,
+}: {
+  shootingId: string;
+  dates: DateItem[];
+  attachments: AvailableAttachment[];
+  hasCalendarConnection: boolean;
+}) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -79,6 +96,8 @@ export function DatesManager({ shootingId, dates }: { shootingId: string; dates:
             {editing === d.id ? (
               <DateForm
                 initial={d}
+                attachments={attachments}
+                hasCalendarConnection={hasCalendarConnection}
                 onCancel={() => setEditing(null)}
                 onSubmit={async (fd) => {
                   await updateShootingDate(d.id, shootingId, fd);
@@ -90,8 +109,22 @@ export function DatesManager({ shootingId, dates }: { shootingId: string; dates:
             ) : (
               <div className="group">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-medium text-sm">{d.label}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                      <span>{d.label}</span>
+                      {d.syncToCalendar && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                          style={{
+                            background: "rgb(var(--success-soft))",
+                            color: "rgb(var(--success-deep))",
+                          }}
+                          title="Wird in deinen Kalender exportiert"
+                        >
+                          <RefreshCw size={9} /> Sync
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-smoke mt-0.5 flex flex-wrap items-center gap-2">
                       <span className="flex items-center gap-1"><Clock size={11} /> {formatDateTime(d.startAt)}{d.endAt && ` – ${new Date(d.endAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`}</span>
                       {d.location && (
@@ -100,6 +133,11 @@ export function DatesManager({ shootingId, dates }: { shootingId: string; dates:
                           {d.locationUrl ? (
                             <a href={d.locationUrl} target="_blank" className="hover:underline">{d.location}</a>
                           ) : d.location}
+                        </span>
+                      )}
+                      {d.attachmentIds.length > 0 && (
+                        <span className="flex items-center gap-1" title="Zugeordnete Dateien">
+                          <Paperclip size={11} /> {d.attachmentIds.length}
                         </span>
                       )}
                     </div>
@@ -121,6 +159,8 @@ export function DatesManager({ shootingId, dates }: { shootingId: string; dates:
           <li className="relative pl-7">
             <span className="absolute left-0 top-2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-bg" />
             <DateForm
+              attachments={attachments}
+              hasCalendarConnection={hasCalendarConnection}
               onCancel={() => setAdding(false)}
               onSubmit={async (fd) => {
                 await addShootingDate(shootingId, fd);
@@ -138,14 +178,31 @@ export function DatesManager({ shootingId, dates }: { shootingId: string; dates:
 
 function DateForm({
   initial,
+  attachments,
+  hasCalendarConnection,
   onSubmit,
   onCancel,
 }: {
   initial?: DateItem;
+  attachments: AvailableAttachment[];
+  hasCalendarConnection: boolean;
   onSubmit: (fd: FormData) => Promise<void>;
   onCancel: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [syncToCalendar, setSyncToCalendar] = useState<boolean>(initial?.syncToCalendar ?? false);
+  const [selectedAttachmentIds, setSelectedAttachmentIds] = useState<Set<string>>(
+    () => new Set(initial?.attachmentIds ?? []),
+  );
+
+  function toggleAttachment(id: string) {
+    setSelectedAttachmentIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // Termin-Art (Label) — Dropdown mit Voreinstellungen + Custom.
   // Initial: bekanntes Preset → Dropdown auf das Preset; sonst → custom mit dem alten Text.
@@ -201,6 +258,12 @@ function DateForm({
       // Start/End aus State (kontrollierte Inputs).
       fd.set("startAt", startAt);
       fd.set("endAt", endAt);
+      // Sync-Toggle (checkbox als "on"/missing — wir setzen explizit).
+      fd.delete("syncToCalendar");
+      if (syncToCalendar) fd.set("syncToCalendar", "on");
+      // Attachment-IDs — alle ausgewählten als multiple Werte appenden.
+      fd.delete("attachmentIds");
+      selectedAttachmentIds.forEach((id) => fd.append("attachmentIds", id));
       await onSubmit(fd);
     } catch (err: any) {
       toast.error(err?.message ?? "Fehler");
@@ -288,6 +351,65 @@ function DateForm({
 
       <input name="locationUrl" defaultValue={initial?.locationUrl ?? ""} placeholder="Maps-Link (optional)" className="input h-9 text-sm" />
       <textarea name="description" defaultValue={initial?.description ?? ""} rows={2} placeholder="Info für die Kundin (optional)" className="textarea text-sm" />
+
+      {/* Kalender-Sync: opt-in pro Termin. Nur sichtbar, wenn überhaupt eine
+          Verbindung existiert — sonst greift der Toggle nicht. */}
+      <label
+        className="flex items-start gap-2 text-xs p-2 rounded-md cursor-pointer"
+        style={{
+          background: hasCalendarConnection ? "rgb(var(--linen))" : "transparent",
+          opacity: hasCalendarConnection ? 1 : 0.5,
+          cursor: hasCalendarConnection ? "pointer" : "not-allowed",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={syncToCalendar}
+          onChange={(e) => setSyncToCalendar(e.target.checked)}
+          disabled={!hasCalendarConnection}
+          className="mt-0.5"
+        />
+        <div className="flex-1">
+          <div className="font-medium" style={{ color: "rgb(var(--ink))" }}>
+            In Kalender übertragen
+          </div>
+          <div style={{ color: "rgb(var(--taupe))" }}>
+            {hasCalendarConnection
+              ? "Termin wird in deinen verbundenen Kalender exportiert."
+              : "Erst Kalender unter Einstellungen → Kalender verbinden."}
+          </div>
+        </div>
+      </label>
+
+      {/* Datei-Zuordnung: bestehende Anhänge des Shootings können diesem Termin
+          zugeordnet werden (z.B. Fitting-Checkliste). */}
+      {attachments.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] uppercase tracking-wider text-smoke font-semibold flex items-center gap-1">
+            <Paperclip size={10} /> Dateien zum Termin
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {attachments.map((a) => {
+              const checked = selectedAttachmentIds.has(a.id);
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => toggleAttachment(a.id)}
+                  className="text-[11px] rounded-full border px-2 py-0.5 transition-colors flex items-center gap-1"
+                  style={{
+                    borderColor: checked ? "rgb(70, 115, 70)" : "rgb(var(--stone))",
+                    background: checked ? "rgba(120, 167, 119, 0.12)" : "rgb(var(--paper))",
+                    color: checked ? "rgb(70, 115, 70)" : "rgb(var(--taupe))",
+                  }}
+                >
+                  {checked ? <Check size={9} /> : <Paperclip size={9} />} {a.filename}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end gap-1.5">
         <button type="button" onClick={onCancel} className="btn-ghost h-8"><X size={14} /></button>
